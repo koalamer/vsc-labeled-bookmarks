@@ -40,15 +40,21 @@ export function activate(context: vscode.ExtensionContext) {
 		// vscode.window.showInformationMessage(path.join(__dirname, '..', 'resources', 'light', 'asd.svg'));
 
 		// set a decoration on some line
-		// let deco = vscode.window.createTextEditorDecorationType(
-		// 	{
-		// 		gutterIconPath: path.join(__dirname, '..', 'resources', 'test.svg'),
-		// 		gutterIconSize: '85%',
-		// 	}
-		// );
-		// let range = new vscode.Range(1, 0, 1, 0);
-		// let editor = vscode.window.activeTextEditor;
-		// editor?.setDecorations(deco, [range]);
+		let deco = vscode.window.createTextEditorDecorationType(
+			{
+				gutterIconPath: path.join(__dirname, '..', 'resources', 'bookmark.svg'),
+				gutterIconSize: 'contain',
+			}
+		);
+		let range1 = new vscode.Range(1, 0, 1, 0);
+		let range2 = new vscode.Range(2, 0, 3, 0);
+		let editor = vscode.window.activeTextEditor;
+		editor?.setDecorations(deco, [range1, range2]);
+		// Available values are 'auto', 'contain', 'cover' and any percentage
+
+		// get theme color
+		let thecol = new vscode.ThemeColor('editorGutter.background');
+		thecol
 
 		// show quick pick
 		// let selected = vscode.window.showQuickPick([
