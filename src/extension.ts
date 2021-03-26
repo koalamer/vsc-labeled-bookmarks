@@ -3,6 +3,8 @@
 import * as vscode from 'vscode';
 import { InputBoxOptions } from 'vscode';
 
+import * as path from 'path';
+
 import { QuickPickItem } from 'vscode';
 
 class PickItem implements QuickPickItem {
@@ -34,6 +36,20 @@ export function activate(context: vscode.ExtensionContext) {
 		// Display a message box to the user
 		// vscode.window.showInformationMessage('Hello World from vsc-labeled-bookmarks!');
 
+		// make a relative filename
+		// vscode.window.showInformationMessage(path.join(__dirname, '..', 'resources', 'light', 'asd.svg'));
+
+		// set a decoration on some line
+		// let deco = vscode.window.createTextEditorDecorationType(
+		// 	{
+		// 		gutterIconPath: path.join(__dirname, '..', 'resources', 'test.svg'),
+		// 		gutterIconSize: '85%',
+		// 	}
+		// );
+		// let range = new vscode.Range(1, 0, 1, 0);
+		// let editor = vscode.window.activeTextEditor;
+		// editor?.setDecorations(deco, [range]);
+
 		// show quick pick
 		// let selected = vscode.window.showQuickPick([
 		// 	"alma - korte/zebra.php 123",
@@ -56,15 +72,15 @@ export function activate(context: vscode.ExtensionContext) {
 		// let input = vscode.window.showInputBox({ placeHolder: "pholder", prompt: "prompt\nmultiline" });
 
 		// show location
-		let editor = vscode.window.activeTextEditor;
-		if (typeof editor !== 'undefined') {
-			if (editor.selections.length === 0) {
-				vscode.window.showInformationMessage('Nope!');
-			} else {
-				let selection = editor.selection;
-				vscode.window.showInformationMessage('Selection: char ' + selection.start.character + ' line ' + selection.start.line + ', file ' + editor.document.fileName);
-			}
-		}
+		// let editor = vscode.window.activeTextEditor;
+		// if (typeof editor !== 'undefined') {
+		// 	if (editor.selections.length === 0) {
+		// 		vscode.window.showInformationMessage('Nope!');
+		// 	} else {
+		// 		let selection = editor.selection;
+		// 		vscode.window.showInformationMessage('Selection: char ' + selection.start.character + ' line ' + selection.start.line + ', file ' + editor.document.fileName);
+		// 	}
+		// }
 
 		// open a file
 		// let doc = await vscode.workspace.openTextDocument('C:/Users/Balu/vimfiles/syntax/go.vim'); // calls back into the provider
