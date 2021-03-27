@@ -10,14 +10,14 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:vsc-labeled-bookmarks.helloWorld"
+    "onCommand:vsc-labeled-bookmarks.toggleBookmark"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "vsc-labeled-bookmarks.helloWorld",
-        "title": "Hello World"
+        "command": "vsc-labeled-bookmarks.toggleBookmark",
+        "title": "Bookmarks: toggle bookmark"
       }
     ]
   },

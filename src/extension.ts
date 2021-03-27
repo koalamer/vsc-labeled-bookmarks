@@ -1,37 +1,35 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { InputBoxOptions, Uri } from 'vscode';
+import { ExtensionContext, Uri } from 'vscode';
 
-import * as path from 'path';
+import { Group } from "./group";
 
-import { QuickPickItem } from 'vscode';
-import { fstat } from 'node:fs';
+let groups: Array<Group>;
+let currentGroup: number;
 
-class PickItem implements QuickPickItem {
-	label: string;
-	description: string;
-	detail: string;
+// class PickItem implements QuickPickItem {
+//	import { QuickPickItem } from 'vscode';
+// 	label: string;
+// 	description: string;
+// 	detail: string;
+// 	constructor(label: string, description: string, detail: string) {
+// 		this.label = label;
+// 		this.description = description;
+// 		this.detail = detail;
+// 	}
+// }
 
-	constructor(label: string, description: string, detail: string) {
-		this.label = label;
-		this.description = description;
-		this.detail = detail;
-	}
-}
+export function activate(context: ExtensionContext) {
+	let svgDir = Uri.joinPath(context.globalStorageUri, "svg");
+	await vscode.workspace.fs.createDirectory(svgDir);
+	Group.svgDir = svgDir;
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
-
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "vsc-labeled-bookmarks" is now active!');
+	groups = [];
+	currentGroup = 0;
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('vsc-labeled-bookmarks.helloWorld', async () => {
+	let disposable = vscode.commands.registerCommand('vsc-labeled-bookmarks.toggleBookmark', () => {
 		// The code you place here will be executed every time your command is executed
 
 		// Display a message box to the user
@@ -98,6 +96,7 @@ export function activate(context: vscode.ExtensionContext) {
 		// }
 
 		// stat non existing / not existing file
+		// import { fstat } from 'node:fs';
 		// try {
 		// 	let stat = await vscode.workspace.fs.stat(Uri.file(path.join(__dirname, '..', 'resources', 'bmffff66.svg')));
 		// 	vscode.window.showInformationMessage("Stat 1 size: " + stat.size + " mtime: " + stat.mtime + " type: " + stat.type);
@@ -108,44 +107,51 @@ export function activate(context: vscode.ExtensionContext) {
 		// }
 
 		// writing an svg
-		let svgDir = Uri.joinPath(context.globalStorageUri, "svg");
-		try {
-			await vscode.workspace.fs.createDirectory(svgDir);
-			vscode.window.showInformationMessage(svgDir.path + " created");
-		} catch (e) {
-			vscode.window.showInformationMessage("dir " + svgDir.path + " exception");
-		}
+		// let svgDir = Uri.joinPath(context.globalStorageUri, "svg");
+		// try {
+		// 	await vscode.workspace.fs.createDirectory(svgDir);
+		// 	vscode.window.showInformationMessage(svgDir.path + " created");
+		// } catch (e) {
+		// 	vscode.window.showInformationMessage("dir " + svgDir.path + " exception");
+		// }
 
-		let svgSource = new Uint8Array([0x3c, 0x73, 0x76, 0x67, 0x20, 0x78, 0x6d, 0x6c, 0x6e, 0x73, 0x3d, 0x22, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x77, 0x33, 0x2e, 0x6f, 0x72, 0x67, 0x2f, 0x32, 0x30, 0x30, 0x30, 0x2f, 0x73, 0x76, 0x67, 0x22, 0x20, 0x77, 0x69, 0x64, 0x74, 0x68, 0x3d, 0x22, 0x33, 0x32, 0x22, 0x20, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x3d, 0x22, 0x33, 0x32, 0x22, 0x3e, 0x3c, 0x70, 0x61, 0x74, 0x68, 0x20, 0x64, 0x3d, 0x22, 0x4d, 0x37, 0x20, 0x33, 0x30, 0x20, 0x4c, 0x37, 0x20, 0x38, 0x20, 0x51, 0x37, 0x20, 0x32, 0x20, 0x31, 0x33, 0x20, 0x32, 0x20, 0x4c, 0x31, 0x39, 0x20, 0x32, 0x20, 0x51, 0x32, 0x35, 0x20, 0x32, 0x20, 0x32, 0x35, 0x20, 0x38, 0x20, 0x4c, 0x32, 0x35, 0x20, 0x33, 0x30, 0x20, 0x4c, 0x31, 0x36, 0x20, 0x32, 0x33, 0x20, 0x5a, 0x22, 0x20, 0x66, 0x69, 0x6c, 0x6c, 0x3d, 0x22, 0x23, 0x66, 0x66, 0x66, 0x66, 0x36, 0x36, 0x22, 0x20, 0x2f, 0x3e, 0x3c, 0x2f, 0x73, 0x76, 0x67, 0x3e]);
-		//replace color part
-		for (let i = 134; i < 140; i++) {
-			svgSource[i] = 0x65;
-		}
-		let svgUri = Uri.joinPath(svgDir, "test.svg");
-		try {
-			await vscode.workspace.fs.writeFile(svgUri, svgSource);
-			vscode.window.showInformationMessage(svgUri.path + " written");
-		} catch (e) {
-			vscode.window.showInformationMessage("dir " + svgDir.path + " exception");
-		}
-		try {
-			let stat = await vscode.workspace.fs.stat(svgUri);
-			vscode.window.showInformationMessage("Stat size: " + stat.size + " mtime: " + stat.mtime + " type: " + stat.type);
-		} catch (e) {
-			vscode.window.showInformationMessage("stat exception");
-		}
+		// let svgSource = new Uint8Array([0x3c, 0x73, 0x76, 0x67, 0x20, 0x78, 0x6d, 0x6c, 0x6e, 0x73, 0x3d, 0x22, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x77, 0x33, 0x2e, 0x6f, 0x72, 0x67, 0x2f, 0x32, 0x30, 0x30, 0x30, 0x2f, 0x73, 0x76, 0x67, 0x22, 0x20, 0x77, 0x69, 0x64, 0x74, 0x68, 0x3d, 0x22, 0x33, 0x32, 0x22, 0x20, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x3d, 0x22, 0x33, 0x32, 0x22, 0x3e, 0x3c, 0x70, 0x61, 0x74, 0x68, 0x20, 0x64, 0x3d, 0x22, 0x4d, 0x37, 0x20, 0x33, 0x30, 0x20, 0x4c, 0x37, 0x20, 0x38, 0x20, 0x51, 0x37, 0x20, 0x32, 0x20, 0x31, 0x33, 0x20, 0x32, 0x20, 0x4c, 0x31, 0x39, 0x20, 0x32, 0x20, 0x51, 0x32, 0x35, 0x20, 0x32, 0x20, 0x32, 0x35, 0x20, 0x38, 0x20, 0x4c, 0x32, 0x35, 0x20, 0x33, 0x30, 0x20, 0x4c, 0x31, 0x36, 0x20, 0x32, 0x33, 0x20, 0x5a, 0x22, 0x20, 0x66, 0x69, 0x6c, 0x6c, 0x3d, 0x22, 0x23, 0x66, 0x66, 0x66, 0x66, 0x36, 0x36, 0x36, 0x36, 0x22, 0x20, 0x2f, 0x3e, 0x3c, 0x2f, 0x73, 0x76, 0x67, 0x3e]);
+		// //replace color part (and alpha)
+		// for (let i = 134; i < 142; i++) {
+		// 	svgSource[i] = 0x62;
+		// }
+		// let svgUri = Uri.joinPath(svgDir, "test.svg");
+		// try {
+		// 	await vscode.workspace.fs.writeFile(svgUri, svgSource);
+		// 	vscode.window.showInformationMessage(svgUri.path + " written");
+		// } catch (e) {
+		// 	vscode.window.showInformationMessage("dir " + svgDir.path + " exception");
+		// }
+		// try {
+		// 	let stat = await vscode.workspace.fs.stat(svgUri);
+		// 	vscode.window.showInformationMessage("Stat size: " + stat.size + " mtime: " + stat.mtime + " type: " + stat.type);
+		// } catch (e) {
+		// 	vscode.window.showInformationMessage("stat exception");
+		// }
 
-		// use the new icon for gutter decoration
-		let deco = vscode.window.createTextEditorDecorationType(
-			{
-				gutterIconPath: svgUri,
-				gutterIconSize: 'contain',
-			}
-		);
-		let range1 = new vscode.Range(1, 0, 1, 0);
-		let range2 = new vscode.Range(2, 0, 3, 0);
-		let editor = vscode.window.activeTextEditor;
-		editor?.setDecorations(deco, [range1, range2]);
+		// // use the new icon for gutter decoration
+		// let deco = vscode.window.createTextEditorDecorationType(
+		// 	{
+		// 		gutterIconPath: svgUri,
+		// 		gutterIconSize: 'contain',
+		// 	}
+		// );
+		// let range1 = new vscode.Range(1, 0, 1, 0);
+		// let range2 = new vscode.Range(2, 0, 3, 0);
+		// let editor = vscode.window.activeTextEditor;
+		// editor?.setDecorations(deco, [range1, range2]);
+
+		let statusBarWorkspaceLabel = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
+		statusBarWorkspaceLabel.text = '$(bookmark) group: temp';
+		statusBarWorkspaceLabel.tooltip = 'tooltip';
+		statusBarWorkspaceLabel.show();
+
+		statusBarWorkspaceLabel.text = '$(bookmark) group: another';
 
 		context.subscriptions.push(disposable);
 	});
