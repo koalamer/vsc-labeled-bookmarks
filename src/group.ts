@@ -11,13 +11,18 @@ export class Group {
     files: Array<File>;
     decoration?: TextEditorDecorationType;
 
-    constructor(label: string, color: string, modifiedAt: Date) {
+    private constructor(label: string, color: string, modifiedAt: Date) {
         this.label = label;
         this.color = color;
         this.ensureUsableColor();
         this.modifiedAt = modifiedAt;
         this.files = [];
-        this.initDecoration();
+    }
+
+    public async new(label: string, color: string, modifiedAt: Date): Promise<Group> {
+        let result = new Group(label, color, modifiedAt);
+        await result.initDecoration();
+        return result;
     }
 
     private ensureUsableColor() {
@@ -41,12 +46,12 @@ export class Group {
         }
     }
 
-    private initDecoration() {
+    private async initDecoration() {
         let svgUri = Uri.joinPath(Group.svgDir, "bm_" + this.color + ".svg");
 
         let stat = await vscode.workspace.fs.stat(svgUri);
         if (stat.size < 1) {
-            this.createSvg(svgUri, this.color);
+            await this.createSvg(svgUri, this.color);
         }
 
         this.decoration = vscode.window.createTextEditorDecorationType(
@@ -57,7 +62,7 @@ export class Group {
         );
     }
 
-    private createSvg(svgUri: Uri, color: string) {
+    private async createSvg(svgUri: Uri, color: string) {
         let svgSource = new Uint8Array([0x3c, 0x73, 0x76, 0x67, 0x20, 0x78, 0x6d, 0x6c, 0x6e, 0x73, 0x3d, 0x22, 0x68,
             0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x77, 0x33, 0x2e, 0x6f, 0x72, 0x67, 0x2f, 0x32,
             0x30, 0x30, 0x30, 0x2f, 0x73, 0x76, 0x67, 0x22, 0x20, 0x77, 0x69, 0x64, 0x74, 0x68, 0x3d, 0x22, 0x33, 0x32,
@@ -75,3 +80,4 @@ export class Group {
 
         await vscode.workspace.fs.writeFile(svgUri, svgSource);
     }
+}
