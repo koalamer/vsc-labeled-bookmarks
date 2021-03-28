@@ -16,19 +16,14 @@ export class Group {
     decoration?: TextEditorDecorationType;
     inactiveDecoration?: TextEditorDecorationType;
 
-    private constructor(label: string, color: string, modifiedAt: Date) {
+    constructor(label: string, color: string, modifiedAt: Date) {
         this.label = label;
         this.color = color;
         this.ensureUsableColor();
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.modifiedAt = modifiedAt;
         this.bookmarks = new Map<string, Bookmark>();
-    }
-
-    public static factory(label: string, color: string, modifiedAt: Date): Group {
-        let result = new Group(label, color, modifiedAt);
-        result.initDecorations();
-        return result;
+        this.initDecorations();
     }
 
     public getColor(): string {
@@ -71,30 +66,48 @@ export class Group {
             });
     }
 
-    public toggleBookmark(uri: Uri, lineNumber: number) {
-        let existingLabel = this.getLabelByPosition(uri, lineNumber);
+    public toggleBookmark(fsPath: string, lineNumber: number) {
+        let existingLabel = this.getLabelByPosition(fsPath, lineNumber);
         if (typeof existingLabel !== "undefined") {
             this.bookmarks.delete(existingLabel);
             return;
         }
 
-        let newLabel = "line " + lineNumber + " of " + uri.fsPath;
-        this.bookmarks.set(newLabel, new Bookmark(uri, uri.fsPath, lineNumber));
+        let newLabel = "line " + lineNumber + " of " + fsPath;
+        this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber));
     }
 
-    public getBookmarksOfUri(uri: Uri): Array<Bookmark> {
+    public getBookmarksOfFsPath(fsPath: string): Array<Bookmark> {
         let result: Array<Bookmark> = [];
         for (let [_, bookmark] of this.bookmarks) {
-            if (bookmark.uri === uri) {
+            if (bookmark.fsPath === fsPath) {
                 result.push(bookmark);
             }
         }
         return result;
     }
 
-    private getLabelByPosition(uri: Uri, lineNumber: number): string | undefined {
+    // public toObject(): any {
+    //     let result = { [k: string]: any } = {};
+    //     result.label = this.label;
+    //     result.set("color", this.color);
+    //     result.set("inactiveColor", this.inactiveColor);
+    //     result.set("modifiedAt", this.modifiedAt);
+    //     let bookmarks = {};
+
+    //     result.set("bookmarks", bookmarks);
+    //     return result;
+    // }
+
+    // public static fromObject(o: Object): Group {
+
+    // }
+
+    private getLabelByPosition(fsPath: string, lineNumber: number): string | undefined {
         for (let [label, bookmark] of this.bookmarks) {
-            if (bookmark.uri === uri && bookmark.line === lineNumber) {
+            vscode.window.showInformationMessage("test line " + lineNumber + " vs " + bookmark.line);
+            vscode.window.showInformationMessage("test file " + fsPath + " vs " + bookmark.fsPath);
+            if (bookmark.fsPath === fsPath && bookmark.line === lineNumber) {
                 return label;
             }
         }

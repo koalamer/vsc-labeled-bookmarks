@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { ExtensionContext, Range, TextEditor, TextEditorDecorationType, Uri } from 'vscode';
+import { Bookmark } from './bookmark';
 import { Group } from "./group";
+import { SerializableGroupMap } from './serializable_group_map';
 
 let ctx: ExtensionContext;
 let savedGroupsKey = "vscLabeledBookmarks.groups";
@@ -49,17 +51,7 @@ export function activate(context: ExtensionContext) {
 	vscode.workspace.fs.createDirectory(svgDir).then(() => {
 		Group.svgDir = svgDir;
 
-		// groups = ctx.workspaceState.get(savedGroupsKey) ?? new Map<string, Group>();
-
-		groups = new Map<string, Group>();
-		activeGroup = ctx.workspaceState.get(savedActiveGroupKey) ?? defaultGroupLabel;
-		activateGroup(activeGroup);
-
-		// vscode.window.showInformationMessage("initializing group decorations");
-		// for (let [_, group] of groups) {
-		// 	group.initDecorations();
-		// 	vscode.window.showInformationMessage("one done");
-		// }
+		restoreSettings();
 
 		let disposable = vscode.commands.registerTextEditorCommand('vsc-labeled-bookmarks.toggleBookmark', (textEditor) => {
 			if (textEditor.selections.length === 0) {
@@ -67,15 +59,16 @@ export function activate(context: ExtensionContext) {
 			}
 
 			let lineNumber = textEditor.selection.start.line;
-			let documentUri = textEditor.document.uri;
+			let documentFsPath = textEditor.document.uri.fsPath;
 
 			let group = groups.get(activeGroup);
 			if (typeof group === "undefined") {
 				return;
 			}
 
-			group.toggleBookmark(documentUri, lineNumber);
+			group.toggleBookmark(documentFsPath, lineNumber);
 
+			saveSettings();
 			updateDecorations(textEditor);
 
 			// show quick pick
@@ -129,9 +122,36 @@ export function deactivate() {
 }
 
 function saveSettings() {
-	ctx.workspaceState.update(savedGroupsKey, JSON.stringify(groups.entries()));
+	let serializedGroupMap = SerializableGroupMap.fromGroupMap(groups);
+	ctx.workspaceState.update(savedGroupsKey, serializedGroupMap);
 	ctx.workspaceState.update(savedActiveGroupKey, activeGroup);
+}
 
+function restoreSettings() {
+	activeGroup = ctx.workspaceState.get(savedActiveGroupKey) ?? defaultGroupLabel;
+	let serializedGroupMap: SerializableGroupMap | undefined = ctx.workspaceState.get(savedGroupsKey);
+
+	groups = new Map<string, Group>();
+	if (typeof serializedGroupMap !== "undefined") {
+		try {
+			// groups = serializedGroupMap.toGroupMap();
+			groups = new Map<string, Group>();
+			for (let i in serializedGroupMap.keys) {
+				let sGroup = serializedGroupMap.values[i];
+
+				let group = new Group(sGroup.label, sGroup.color, new Date(sGroup.modifiedAt));
+				for (let i in sGroup.bookmarkKeys) {
+					let bookmarkKey = sGroup.bookmarkKeys[i];
+					let sBookmark = sGroup.bookmarkValues[i];
+					group.bookmarks.set(bookmarkKey, new Bookmark(sBookmark.fsPath, sBookmark.label, sBookmark.line));
+				}
+				groups.set(serializedGroupMap.keys[i], group);
+			}
+		} catch (e) {
+			vscode.window.showErrorMessage("Restoring bookmarks failed (" + e + ")");
+		}
+	}
+	activateGroup(activeGroup);
 }
 
 function ensureGroup(label: string) {
@@ -139,7 +159,7 @@ function ensureGroup(label: string) {
 		return;
 	}
 
-	let group = Group.factory(label, getLeastUsedColor(), new Date());
+	let group = new Group(label, getLeastUsedColor(), new Date());
 	groups.set(label, group);
 }
 
@@ -182,7 +202,7 @@ function getLeastUsedColor(): string {
 }
 
 function updateDecorations(textEditor: TextEditor) {
-	let documentUri = textEditor.document.uri;
+	let documentFsPath = textEditor.document.uri.fsPath;
 	let decoration: TextEditorDecorationType | undefined;
 	for (let [label, group] of groups) {
 		if (label === activeGroup) {
@@ -197,7 +217,7 @@ function updateDecorations(textEditor: TextEditor) {
 		}
 
 		let ranges: Array<Range> = [];
-		for (let bookmark of group.getBookmarksOfUri(documentUri)) {
+		for (let bookmark of group.getBookmarksOfFsPath(documentFsPath)) {
 			ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
 		}
 		textEditor.setDecorations(decoration, ranges);

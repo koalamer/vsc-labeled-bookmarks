@@ -1,12 +1,10 @@
-import { Uri } from 'vscode';
-
 export class Bookmark {
-    uri: Uri;
+    fsPath: string;
     line: number;
     label: string;
 
-    constructor(uri: Uri, label: string, line: number) {
-        this.uri = uri;
+    constructor(fsPath: string, label: string, line: number) {
+        this.fsPath = fsPath;
         this.label = label;
         this.line = line;
     }
