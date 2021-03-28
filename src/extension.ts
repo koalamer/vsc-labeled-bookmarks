@@ -50,6 +50,7 @@ export function activate(context: ExtensionContext) {
 		Group.svgDir = svgDir;
 
 		// groups = ctx.workspaceState.get(savedGroupsKey) ?? new Map<string, Group>();
+
 		groups = new Map<string, Group>();
 		activeGroup = ctx.workspaceState.get(savedActiveGroupKey) ?? defaultGroupLabel;
 		activateGroup(activeGroup);
@@ -59,9 +60,6 @@ export function activate(context: ExtensionContext) {
 		// 	group.initDecorations();
 		// 	vscode.window.showInformationMessage("one done");
 		// }
-
-		vscode.window.showInformationMessage("active group: " + activeGroup + " of " + groups.size);
-		vscode.window.showInformationMessage("would save: " + JSON.stringify(groups));
 
 		let disposable = vscode.commands.registerTextEditorCommand('vsc-labeled-bookmarks.toggleBookmark', (textEditor) => {
 			if (textEditor.selections.length === 0) {
@@ -76,25 +74,9 @@ export function activate(context: ExtensionContext) {
 				return;
 			}
 
-			vscode.window.showInformationMessage("toggleBookmark " + lineNumber + " " + documentUri.fsPath);
 			group.toggleBookmark(documentUri, lineNumber);
 
-			vscode.window.showInformationMessage("start updateDecorations");
 			updateDecorations(textEditor);
-			vscode.window.showInformationMessage("end updateDecorations");
-
-			// set a decoration on some line
-			// let deco = vscode.window.createTextEditorDecorationType(
-			// 	{
-			// 		gutterIconPath: path.join(__dirname, '..', 'resources', 'bmffff66.svg'),
-			// 		gutterIconSize: 'contain',
-			// 	}
-			// );
-			// let range1 = new vscode.Range(1, 0, 1, 0);
-			// let range2 = new vscode.Range(2, 0, 3, 0);
-			// let editor = vscode.window.activeTextEditor;
-			// editor?.setDecorations(deco, [range1, range2]);
-			// Available values are 'auto', 'contain', 'cover' and any percentage
 
 			// show quick pick
 			// let selected = vscode.window.showQuickPick([
@@ -117,17 +99,6 @@ export function activate(context: ExtensionContext) {
 			// show quick input
 			// let input = vscode.window.showInputBox({ placeHolder: "pholder", prompt: "prompt\nmultiline" });
 
-			// show location
-			// let editor = vscode.window.activeTextEditor;
-			// if (typeof editor !== 'undefined') {
-			// 	if (editor.selections.length === 0) {
-			// 		vscode.window.showInformationMessage('Nope!');
-			// 	} else {
-			// 		let selection = editor.selection;
-			// 		vscode.window.showInformationMessage('Selection: char ' + selection.start.character + ' line ' + selection.start.line + ', file ' + editor.document.fileName);
-			// 	}
-			// }
-
 			// open a file
 			// let doc = await vscode.workspace.openTextDocument('C:/Users/Balu/vimfiles/syntax/go.vim'); // calls back into the provider
 			// await vscode.window.showTextDocument(doc, { preview: false });
@@ -139,18 +110,6 @@ export function activate(context: ExtensionContext) {
 			// 	editor2.selection = new vscode.Selection(range.start, range.start);
 			// 	editor2.revealRange(range);
 			// }
-
-			// // use the new icon for gutter decoration
-			// let deco = vscode.window.createTextEditorDecorationType(
-			// 	{
-			// 		gutterIconPath: svgUri,
-			// 		gutterIconSize: 'contain',
-			// 	}
-			// );
-			// let range1 = new vscode.Range(1, 0, 1, 0);
-			// let range2 = new vscode.Range(2, 0, 3, 0);
-			// let editor = vscode.window.activeTextEditor;
-			// editor?.setDecorations(deco, [range1, range2]);
 
 			// status bar item
 			// let statusBarWorkspaceLabel = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
@@ -170,31 +129,23 @@ export function deactivate() {
 }
 
 function saveSettings() {
-	ctx.workspaceState.update(savedGroupsKey, JSON.stringify(groups));
+	ctx.workspaceState.update(savedGroupsKey, JSON.stringify(groups.entries()));
 	ctx.workspaceState.update(savedActiveGroupKey, activeGroup);
+
 }
 
 function ensureGroup(label: string) {
-	try {
-		if (groups.has(label)) {
-			vscode.window.showInformationMessage("group exists");
-			return;
-		}
-
-		vscode.window.showInformationMessage("group being created");
-		let group = Group.factory(label, getLeastUsedColor(), new Date());
-		groups.set(label, group);
-	} catch (e) {
-		vscode.window.showInformationMessage("error ensuring group " + label + " (" + JSON.stringify(groups) + "): " + e);
+	if (groups.has(label)) {
+		return;
 	}
+
+	let group = Group.factory(label, getLeastUsedColor(), new Date());
+	groups.set(label, group);
 }
 
 function activateGroup(label: string) {
-	vscode.window.showInformationMessage("ensure group " + label);
 	ensureGroup(label);
-	vscode.window.showInformationMessage("setting " + label + " as the active group");
 	activeGroup = label;
-	vscode.window.showInformationMessage("saving settings");
 	saveSettings();
 	//todo update statusbar
 }
@@ -241,7 +192,7 @@ function updateDecorations(textEditor: TextEditor) {
 		}
 
 		if (typeof decoration === "undefined") {
-			vscode.window.showInformationMessage("missing decoration in " + label);
+			vscode.window.showErrorMessage("missing decoration in bookmark group '" + label + "'");
 			continue;
 		}
 
@@ -250,7 +201,5 @@ function updateDecorations(textEditor: TextEditor) {
 			ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
 		}
 		textEditor.setDecorations(decoration, ranges);
-		vscode.window.showInformationMessage("using " + ranges.length + " bookmarks of " + group.bookmarks.size);
 	}
-
 }

@@ -1,4 +1,3 @@
-import { group } from 'node:console';
 import * as vscode from 'vscode';
 import { TextEditorDecorationType, Uri } from 'vscode';
 import { Bookmark } from "./bookmark";
@@ -38,8 +37,6 @@ export class Group {
 
     public async initDecorations() {
         let svgUri1 = Uri.joinPath(Group.svgDir, "bm_" + this.color + ".svg");
-        vscode.window.showInformationMessage(svgUri1.fsPath);
-
         this.decoration = vscode.window.createTextEditorDecorationType(
             {
                 gutterIconPath: svgUri1,
@@ -48,7 +45,6 @@ export class Group {
         );
 
         let svgUri2 = Uri.joinPath(Group.svgDir, "bm_" + this.inactiveColor + ".svg");
-        vscode.window.showInformationMessage(svgUri2.fsPath);
         this.inactiveDecoration = vscode.window.createTextEditorDecorationType(
             {
                 gutterIconPath: svgUri2,
@@ -73,8 +69,6 @@ export class Group {
             () => {
                 this.createSvg(svgUri2, this.inactiveColor);
             });
-
-        vscode.window.showInformationMessage("group " + this.label + "'s decorations initialized");
     }
 
     public toggleBookmark(uri: Uri, lineNumber: number) {
@@ -127,7 +121,6 @@ export class Group {
                     this.color = this.color.substring(0, 8);
                 }
         }
-        vscode.window.showInformationMessage("corrected color " + this.color);
     }
 
     private async createSvg(svgUri: Uri, color: string) {
