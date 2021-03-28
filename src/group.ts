@@ -1,28 +1,110 @@
+import { group } from 'node:console';
 import * as vscode from 'vscode';
 import { TextEditorDecorationType, Uri } from 'vscode';
-import { File } from "./file";
+import { Bookmark } from "./bookmark";
 
 export class Group {
     static svgDir: Uri;
 
+    static readonly normalTransparency: string = "ff";
+    static readonly inactiveTransparency: string = "cc";
+
     label: string;
     color: string;
+    inactiveColor: string;
     modifiedAt: Date;
-    files: Array<File>;
+    bookmarks: Map<string, Bookmark>;
     decoration?: TextEditorDecorationType;
+    inactiveDecoration?: TextEditorDecorationType;
 
     private constructor(label: string, color: string, modifiedAt: Date) {
         this.label = label;
         this.color = color;
         this.ensureUsableColor();
+        this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.modifiedAt = modifiedAt;
-        this.files = [];
+        this.bookmarks = new Map<string, Bookmark>();
     }
 
-    public async new(label: string, color: string, modifiedAt: Date): Promise<Group> {
+    public static factory(label: string, color: string, modifiedAt: Date): Group {
         let result = new Group(label, color, modifiedAt);
-        await result.initDecoration();
+        result.initDecorations();
         return result;
+    }
+
+    public getColor(): string {
+        return this.color;
+    }
+
+    public async initDecorations() {
+        let svgUri1 = Uri.joinPath(Group.svgDir, "bm_" + this.color + ".svg");
+        vscode.window.showInformationMessage(svgUri1.fsPath);
+
+        this.decoration = vscode.window.createTextEditorDecorationType(
+            {
+                gutterIconPath: svgUri1,
+                gutterIconSize: 'contain',
+            }
+        );
+
+        let svgUri2 = Uri.joinPath(Group.svgDir, "bm_" + this.inactiveColor + ".svg");
+        vscode.window.showInformationMessage(svgUri2.fsPath);
+        this.inactiveDecoration = vscode.window.createTextEditorDecorationType(
+            {
+                gutterIconPath: svgUri2,
+                gutterIconSize: 'contain',
+            }
+        );
+
+        vscode.workspace.fs.stat(svgUri1).then(stat => {
+            if (stat.size < 1) {
+                this.createSvg(svgUri1, this.color);
+            }
+        },
+            () => {
+                this.createSvg(svgUri1, this.color);
+            });
+
+        vscode.workspace.fs.stat(svgUri2).then(stat => {
+            if (stat.size < 1) {
+                this.createSvg(svgUri2, this.inactiveColor);
+            }
+        },
+            () => {
+                this.createSvg(svgUri2, this.inactiveColor);
+            });
+
+        vscode.window.showInformationMessage("group " + this.label + "'s decorations initialized");
+    }
+
+    public toggleBookmark(uri: Uri, lineNumber: number) {
+        let existingLabel = this.getLabelByPosition(uri, lineNumber);
+        if (typeof existingLabel !== "undefined") {
+            this.bookmarks.delete(existingLabel);
+            return;
+        }
+
+        let newLabel = "line " + lineNumber + " of " + uri.fsPath;
+        this.bookmarks.set(newLabel, new Bookmark(uri, uri.fsPath, lineNumber));
+    }
+
+    public getBookmarksOfUri(uri: Uri): Array<Bookmark> {
+        let result: Array<Bookmark> = [];
+        for (let [_, bookmark] of this.bookmarks) {
+            if (bookmark.uri === uri) {
+                result.push(bookmark);
+            }
+        }
+        return result;
+    }
+
+    private getLabelByPosition(uri: Uri, lineNumber: number): string | undefined {
+        for (let [label, bookmark] of this.bookmarks) {
+            if (bookmark.uri === uri && bookmark.line === lineNumber) {
+                return label;
+            }
+        }
+        return undefined;
     }
 
     private ensureUsableColor() {
@@ -33,33 +115,19 @@ export class Group {
         this.color = this.color.toLowerCase();
         switch (this.color.length) {
             case 3:
-                this.color = this.color.charAt(0) + "0" + this.color.charAt(1) + "0" + this.color.charAt(2) + "0ff";
+                this.color = this.color.charAt(0) + "0" + this.color.charAt(1) + "0" + this.color.charAt(2) + "0" + Group.normalTransparency;
                 break;
             case 8:
+                this.color = this.color.substring(0, 6) + Group.normalTransparency;
                 break;
             default:
                 if (this.color.length < 8) {
-                    this.color.padEnd(8, "f");
+                    this.color = this.color.padEnd(8, "f");
                 } else {
-                    this.color = this.color.substr(0, 8);
+                    this.color = this.color.substring(0, 8);
                 }
         }
-    }
-
-    private async initDecoration() {
-        let svgUri = Uri.joinPath(Group.svgDir, "bm_" + this.color + ".svg");
-
-        let stat = await vscode.workspace.fs.stat(svgUri);
-        if (stat.size < 1) {
-            await this.createSvg(svgUri, this.color);
-        }
-
-        this.decoration = vscode.window.createTextEditorDecorationType(
-            {
-                gutterIconPath: svgUri,
-                gutterIconSize: 'contain',
-            }
-        );
+        vscode.window.showInformationMessage("corrected color " + this.color);
     }
 
     private async createSvg(svgUri: Uri, color: string) {

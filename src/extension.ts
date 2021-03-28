@@ -1,11 +1,17 @@
 import * as vscode from 'vscode';
-import { ExtensionContext, Uri } from 'vscode';
-
+import { ExtensionContext, Range, TextEditor, TextEditorDecorationType, Uri } from 'vscode';
 import { Group } from "./group";
 
-let groups: Array<Group>;
-let currentGroup: number;
-let initReady: boolean;
+let ctx: ExtensionContext;
+let savedGroupsKey = "vscLabeledBookmarks.groups";
+let savedActiveGroupKey = "vscLabeledBookmarks.activeGroup";
+
+let groups: Map<string, Group>;
+let activeGroup: string;
+let defaultGroupLabel: string;
+let fallbackColor: string;
+
+let colors: Array<string>;
 
 // class PickItem implements QuickPickItem {
 //	import { QuickPickItem } from 'vscode';
@@ -20,20 +26,62 @@ let initReady: boolean;
 // }
 
 export function activate(context: ExtensionContext) {
-	let svgDir = Uri.joinPath(context.globalStorageUri, "svg");
+	ctx = context;
+	groups = new Map<string, Group>();
+	defaultGroupLabel = "default";
+	activeGroup = defaultGroupLabel;
+	fallbackColor = "ff6666";
+
+	colors = [
+		"ffee66",
+		"ee66ff",
+		"66ffee",
+		"77ff66",
+		"ff6677",
+		"6677ff"
+	];
+
+	if (colors.length < 1) {
+		colors.push(fallbackColor);
+	}
+
+	let svgDir = Uri.joinPath(ctx.globalStorageUri, "svg");
 	vscode.workspace.fs.createDirectory(svgDir).then(() => {
 		Group.svgDir = svgDir;
 
-		groups = [];
-		currentGroup = 0;
-		initReady = false;
+		// groups = ctx.workspaceState.get(savedGroupsKey) ?? new Map<string, Group>();
+		groups = new Map<string, Group>();
+		activeGroup = ctx.workspaceState.get(savedActiveGroupKey) ?? defaultGroupLabel;
+		activateGroup(activeGroup);
 
-		let disposable = vscode.commands.registerCommand('vsc-labeled-bookmarks.toggleBookmark', () => {
-			// Display a message box to the user
-			// vscode.window.showInformationMessage('Hello World from vsc-labeled-bookmarks!');
+		// vscode.window.showInformationMessage("initializing group decorations");
+		// for (let [_, group] of groups) {
+		// 	group.initDecorations();
+		// 	vscode.window.showInformationMessage("one done");
+		// }
 
-			// make a relative filename
-			// vscode.window.showInformationMessage(path.join(__dirname, '..', 'resources', 'light', 'asd.svg'));
+		vscode.window.showInformationMessage("active group: " + activeGroup + " of " + groups.size);
+		vscode.window.showInformationMessage("would save: " + JSON.stringify(groups));
+
+		let disposable = vscode.commands.registerTextEditorCommand('vsc-labeled-bookmarks.toggleBookmark', (textEditor) => {
+			if (textEditor.selections.length === 0) {
+				return;
+			}
+
+			let lineNumber = textEditor.selection.start.line;
+			let documentUri = textEditor.document.uri;
+
+			let group = groups.get(activeGroup);
+			if (typeof group === "undefined") {
+				return;
+			}
+
+			vscode.window.showInformationMessage("toggleBookmark " + lineNumber + " " + documentUri.fsPath);
+			group.toggleBookmark(documentUri, lineNumber);
+
+			vscode.window.showInformationMessage("start updateDecorations");
+			updateDecorations(textEditor);
+			vscode.window.showInformationMessage("end updateDecorations");
 
 			// set a decoration on some line
 			// let deco = vscode.window.createTextEditorDecorationType(
@@ -92,45 +140,6 @@ export function activate(context: ExtensionContext) {
 			// 	editor2.revealRange(range);
 			// }
 
-			// stat non existing / not existing file
-			// import { fstat } from 'node:fs';
-			// try {
-			// 	let stat = await vscode.workspace.fs.stat(Uri.file(path.join(__dirname, '..', 'resources', 'bmffff66.svg')));
-			// 	vscode.window.showInformationMessage("Stat 1 size: " + stat.size + " mtime: " + stat.mtime + " type: " + stat.type);
-			// 	let stat2 = await vscode.workspace.fs.stat(Uri.file(path.join(__dirname, '..', 'resources', 'bm.svg')));
-			// 	vscode.window.showInformationMessage("Stat 2 size: " + stat2.size + " mtime: " + stat2.mtime + " type: " + stat2.type);
-			// } catch (e) {
-			// 	vscode.window.showInformationMessage("stat exception");
-			// }
-
-			// writing an svg
-			// let svgDir = Uri.joinPath(context.globalStorageUri, "svg");
-			// try {
-			// 	await vscode.workspace.fs.createDirectory(svgDir);
-			// 	vscode.window.showInformationMessage(svgDir.path + " created");
-			// } catch (e) {
-			// 	vscode.window.showInformationMessage("dir " + svgDir.path + " exception");
-			// }
-
-			// let svgSource = new Uint8Array([0x3c, 0x73, 0x76, 0x67, 0x20, 0x78, 0x6d, 0x6c, 0x6e, 0x73, 0x3d, 0x22, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x77, 0x33, 0x2e, 0x6f, 0x72, 0x67, 0x2f, 0x32, 0x30, 0x30, 0x30, 0x2f, 0x73, 0x76, 0x67, 0x22, 0x20, 0x77, 0x69, 0x64, 0x74, 0x68, 0x3d, 0x22, 0x33, 0x32, 0x22, 0x20, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x3d, 0x22, 0x33, 0x32, 0x22, 0x3e, 0x3c, 0x70, 0x61, 0x74, 0x68, 0x20, 0x64, 0x3d, 0x22, 0x4d, 0x37, 0x20, 0x33, 0x30, 0x20, 0x4c, 0x37, 0x20, 0x38, 0x20, 0x51, 0x37, 0x20, 0x32, 0x20, 0x31, 0x33, 0x20, 0x32, 0x20, 0x4c, 0x31, 0x39, 0x20, 0x32, 0x20, 0x51, 0x32, 0x35, 0x20, 0x32, 0x20, 0x32, 0x35, 0x20, 0x38, 0x20, 0x4c, 0x32, 0x35, 0x20, 0x33, 0x30, 0x20, 0x4c, 0x31, 0x36, 0x20, 0x32, 0x33, 0x20, 0x5a, 0x22, 0x20, 0x66, 0x69, 0x6c, 0x6c, 0x3d, 0x22, 0x23, 0x66, 0x66, 0x66, 0x66, 0x36, 0x36, 0x36, 0x36, 0x22, 0x20, 0x2f, 0x3e, 0x3c, 0x2f, 0x73, 0x76, 0x67, 0x3e]);
-			// //replace color part (and alpha)
-			// for (let i = 134; i < 142; i++) {
-			// 	svgSource[i] = 0x62;
-			// }
-			// let svgUri = Uri.joinPath(svgDir, "test.svg");
-			// try {
-			// 	await vscode.workspace.fs.writeFile(svgUri, svgSource);
-			// 	vscode.window.showInformationMessage(svgUri.path + " written");
-			// } catch (e) {
-			// 	vscode.window.showInformationMessage("dir " + svgDir.path + " exception");
-			// }
-			// try {
-			// 	let stat = await vscode.workspace.fs.stat(svgUri);
-			// 	vscode.window.showInformationMessage("Stat size: " + stat.size + " mtime: " + stat.mtime + " type: " + stat.type);
-			// } catch (e) {
-			// 	vscode.window.showInformationMessage("stat exception");
-			// }
-
 			// // use the new icon for gutter decoration
 			// let deco = vscode.window.createTextEditorDecorationType(
 			// 	{
@@ -143,19 +152,105 @@ export function activate(context: ExtensionContext) {
 			// let editor = vscode.window.activeTextEditor;
 			// editor?.setDecorations(deco, [range1, range2]);
 
-			let statusBarWorkspaceLabel = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
-			statusBarWorkspaceLabel.text = '$(bookmark) group: temp';
-			statusBarWorkspaceLabel.tooltip = 'tooltip';
-			statusBarWorkspaceLabel.show();
+			// status bar item
+			// let statusBarWorkspaceLabel = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
+			// statusBarWorkspaceLabel.text = '$(bookmark) group: temp';
+			// statusBarWorkspaceLabel.tooltip = 'tooltip';
+			// statusBarWorkspaceLabel.show();
+			// statusBarWorkspaceLabel.text = '$(bookmark) group: another';
 
-			statusBarWorkspaceLabel.text = '$(bookmark) group: another';
-
-			context.subscriptions.push(disposable);
+			ctx.subscriptions.push(disposable);
 		});
 	});
 }
 
 // this method is called when your extension is deactivated
 export function deactivate() {
+	saveSettings();
+}
+
+function saveSettings() {
+	ctx.workspaceState.update(savedGroupsKey, JSON.stringify(groups));
+	ctx.workspaceState.update(savedActiveGroupKey, activeGroup);
+}
+
+function ensureGroup(label: string) {
+	try {
+		if (groups.has(label)) {
+			vscode.window.showInformationMessage("group exists");
+			return;
+		}
+
+		vscode.window.showInformationMessage("group being created");
+		let group = Group.factory(label, getLeastUsedColor(), new Date());
+		groups.set(label, group);
+	} catch (e) {
+		vscode.window.showInformationMessage("error ensuring group " + label + " (" + JSON.stringify(groups) + "): " + e);
+	}
+}
+
+function activateGroup(label: string) {
+	vscode.window.showInformationMessage("ensure group " + label);
+	ensureGroup(label);
+	vscode.window.showInformationMessage("setting " + label + " as the active group");
+	activeGroup = label;
+	vscode.window.showInformationMessage("saving settings");
+	saveSettings();
+	//todo update statusbar
+}
+
+function getLeastUsedColor(): string {
+	if (colors.length < 1) {
+		return fallbackColor;
+	}
+
+	let usages = new Map<string, number>();
+
+	for (let color of colors) {
+		usages.set(color, 0);
+	}
+
+	for (let [_, group] of groups) {
+		let groupColor = group.getColor();
+		if (usages.has(groupColor)) {
+			usages.set(groupColor, (usages.get(groupColor) ?? 0) + 1);
+		}
+	}
+
+	let minUsage = Number.MAX_SAFE_INTEGER;
+	let leastUsedColor = "";
+
+	for (let [key, value] of usages) {
+		if (minUsage > value) {
+			minUsage = value;
+			leastUsedColor = key;
+		}
+	}
+
+	return leastUsedColor;
+}
+
+function updateDecorations(textEditor: TextEditor) {
+	let documentUri = textEditor.document.uri;
+	let decoration: TextEditorDecorationType | undefined;
+	for (let [label, group] of groups) {
+		if (label === activeGroup) {
+			decoration = group.decoration;
+		} else {
+			decoration = group.inactiveDecoration;
+		}
+
+		if (typeof decoration === "undefined") {
+			vscode.window.showInformationMessage("missing decoration in " + label);
+			continue;
+		}
+
+		let ranges: Array<Range> = [];
+		for (let bookmark of group.getBookmarksOfUri(documentUri)) {
+			ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
+		}
+		textEditor.setDecorations(decoration, ranges);
+		vscode.window.showInformationMessage("using " + ranges.length + " bookmarks of " + group.bookmarks.size);
+	}
 
 }
