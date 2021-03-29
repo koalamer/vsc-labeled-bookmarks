@@ -22,14 +22,10 @@ export class SerializableGroupMap {
     }
 
     public static toGroupMap(sgm: SerializableGroupMap): Map<string, Group> {
-        vscode.window.showInformationMessage("loop map deser 1");
         let result = new Map<string, Group>();
-        vscode.window.showInformationMessage("loop map deser 2");
         for (let i in sgm.keys) {
-            vscode.window.showInformationMessage("index " + i + " key " + sgm.keys[i]);
             result.set(sgm.keys[i], SerializableGroup.toGroup(sgm.values[i]));
         }
-        vscode.window.showInformationMessage("loop map done");
         return result;
     }
 }

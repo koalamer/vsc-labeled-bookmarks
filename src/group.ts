@@ -87,26 +87,8 @@ export class Group {
         return result;
     }
 
-    // public toObject(): any {
-    //     let result = { [k: string]: any } = {};
-    //     result.label = this.label;
-    //     result.set("color", this.color);
-    //     result.set("inactiveColor", this.inactiveColor);
-    //     result.set("modifiedAt", this.modifiedAt);
-    //     let bookmarks = {};
-
-    //     result.set("bookmarks", bookmarks);
-    //     return result;
-    // }
-
-    // public static fromObject(o: Object): Group {
-
-    // }
-
     private getLabelByPosition(fsPath: string, lineNumber: number): string | undefined {
         for (let [label, bookmark] of this.bookmarks) {
-            vscode.window.showInformationMessage("test line " + lineNumber + " vs " + bookmark.line);
-            vscode.window.showInformationMessage("test file " + fsPath + " vs " + bookmark.fsPath);
             if (bookmark.fsPath === fsPath && bookmark.line === lineNumber) {
                 return label;
             }

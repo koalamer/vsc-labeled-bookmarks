@@ -23,7 +23,7 @@
     "keybindings": [
       {
         "command": "vsc-labeled-bookmarks.toggleBookmark",
-        "key": "alt+shift+m",
+        "key": "ctrl+alt+m",
         "when": "editorTextFocus"
       }
     ]
