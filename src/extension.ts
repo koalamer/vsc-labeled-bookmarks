@@ -134,19 +134,7 @@ function restoreSettings() {
 	groups = new Map<string, Group>();
 	if (typeof serializedGroupMap !== "undefined") {
 		try {
-			// groups = serializedGroupMap.toGroupMap();
-			groups = new Map<string, Group>();
-			for (let i in serializedGroupMap.keys) {
-				let sGroup = serializedGroupMap.values[i];
-
-				let group = new Group(sGroup.label, sGroup.color, new Date(sGroup.modifiedAt));
-				for (let i in sGroup.bookmarkKeys) {
-					let bookmarkKey = sGroup.bookmarkKeys[i];
-					let sBookmark = sGroup.bookmarkValues[i];
-					group.bookmarks.set(bookmarkKey, new Bookmark(sBookmark.fsPath, sBookmark.label, sBookmark.line));
-				}
-				groups.set(serializedGroupMap.keys[i], group);
-			}
+			groups = SerializableGroupMap.toGroupMap(serializedGroupMap);
 		} catch (e) {
 			vscode.window.showErrorMessage("Restoring bookmarks failed (" + e + ")");
 		}

@@ -32,11 +32,11 @@ export class SerializableGroup {
         );
     }
 
-    // public toGroup(): Group {
-    //     let result = new Group(this.label, this.color, new Date(this.modifiedAt));
-    //     for (let i in this.bookmarkKeys) {
-    //         result.bookmarks.set(this.bookmarkKeys[i], this.bookmarkValues[i]);
-    //     }
-    //     return result;
-    // }
+    public static toGroup(sg: SerializableGroup): Group {
+        let result = new Group(sg.label, sg.color, new Date(sg.modifiedAt));
+        for (let i in sg.bookmarkKeys) {
+            result.bookmarks.set(sg.bookmarkKeys[i], sg.bookmarkValues[i]);
+        }
+        return result;
+    }
 }
