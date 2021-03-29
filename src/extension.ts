@@ -55,10 +55,13 @@ export function activate(context: ExtensionContext) {
 
 		registerToggleBookmark();
 
-		// init after setting up is done
-		if (typeof vscode.window.activeTextEditor !== "undefined") {
-			updateDecorations(vscode.window.activeTextEditor);
-		}
+
+		// init current editor after setting up is done
+		vscode.window.onDidChangeActiveTextEditor(textEditor => {
+			updateDecorations(textEditor);
+		});
+
+		updateDecorations(vscode.window.activeTextEditor);
 
 		// show quick pick
 		// let selected = vscode.window.showQuickPick([
@@ -175,7 +178,11 @@ function getLeastUsedColor(): string {
 	return leastUsedColor;
 }
 
-function updateDecorations(textEditor: TextEditor) {
+function updateDecorations(textEditor: TextEditor | undefined) {
+	if (typeof textEditor === "undefined") {
+		return;
+	}
+
 	let documentFsPath = textEditor.document.uri.fsPath;
 	let decoration: TextEditorDecorationType | undefined;
 	for (let [label, group] of groups) {
