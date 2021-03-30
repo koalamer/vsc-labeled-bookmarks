@@ -36,6 +36,12 @@ export class Main {
             "#6677ff"
         ];
 
+        let iconWarmupGroups: Array<Group> = [];
+        iconWarmupGroups.push(new Group('warmup', this.fallbackColor, new Date()));
+        for (let color of this.colors) {
+            iconWarmupGroups.push(new Group('warmup', color, new Date()));
+        }
+
         if (this.colors.length < 1) {
             this.colors.push(this.fallbackColor);
         }
