@@ -32,37 +32,35 @@ export class Group {
 
     public async initDecorations() {
         let svgUri1 = Uri.joinPath(Group.svgDir, "bm_" + this.color + ".svg");
-        this.decoration = vscode.window.createTextEditorDecorationType(
-            {
-                gutterIconPath: svgUri1,
-                gutterIconSize: 'contain',
-            }
-        );
+        this.setDecoration(svgUri1);
 
         let svgUri2 = Uri.joinPath(Group.svgDir, "bm_" + this.inactiveColor + ".svg");
-        this.inactiveDecoration = vscode.window.createTextEditorDecorationType(
-            {
-                gutterIconPath: svgUri2,
-                gutterIconSize: 'contain',
-            }
-        );
+        this.setInactiveDecoration(svgUri2);
 
         vscode.workspace.fs.stat(svgUri1).then(stat => {
             if (stat.size < 1) {
-                this.createSvg(svgUri1, this.color);
+                this.createSvg(svgUri1, this.color).then(() => {
+                    this.setDecoration(svgUri1);
+                });
             }
         },
             () => {
-                this.createSvg(svgUri1, this.color);
+                this.createSvg(svgUri1, this.color).then(() => {
+                    this.setDecoration(svgUri1);
+                });
             });
 
         vscode.workspace.fs.stat(svgUri2).then(stat => {
             if (stat.size < 1) {
-                this.createSvg(svgUri2, this.inactiveColor);
+                this.createSvg(svgUri2, this.inactiveColor).then(() => {
+                    this.setInactiveDecoration(svgUri2);
+                });
             }
         },
             () => {
-                this.createSvg(svgUri2, this.inactiveColor);
+                this.createSvg(svgUri2, this.inactiveColor).then(() => {
+                    this.setInactiveDecoration(svgUri2);
+                });
             });
     }
 
@@ -87,6 +85,24 @@ export class Group {
         return result;
     }
 
+    private setDecoration(svgUri1: Uri) {
+        this.decoration = vscode.window.createTextEditorDecorationType(
+            {
+                gutterIconPath: svgUri1,
+                gutterIconSize: 'contain',
+            }
+        );
+    }
+
+    private setInactiveDecoration(svgUri2: Uri) {
+        this.inactiveDecoration = vscode.window.createTextEditorDecorationType(
+            {
+                gutterIconPath: svgUri2,
+                gutterIconSize: 'contain',
+            }
+        );
+    }
+
     private getLabelByPosition(fsPath: string, lineNumber: number): string | undefined {
         for (let [label, bookmark] of this.bookmarks) {
             if (bookmark.fsPath === fsPath && bookmark.line === lineNumber) {
@@ -97,8 +113,12 @@ export class Group {
     }
 
     private ensureUsableColor() {
-        if (this.color.match(/^[0-9a-f]+$/i) === null) {
+        if (this.color.match(/^#?[0-9a-f]+$/i) === null) {
             throw new Error("Illegal color definition: " + this.color);
+        }
+
+        if (this.color.charAt(0) === "#") {
+            this.color = this.color.substr(1, 8);
         }
 
         this.color = this.color.toLowerCase();
