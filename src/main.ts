@@ -8,15 +8,20 @@ export class Main {
     public ctx: ExtensionContext;
     public readonly savedGroupsKey = "vscLabeledBookmarks.groups";
     public readonly savedActiveGroupKey = "vscLabeledBookmarks.activeGroup";
+    public readonly savedDisplayActiveGroupOnlyKey = "vscLabeledBookmarks.displayActiveGroupOnly";
+    public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
 
     public groups: Map<string, Group>;
-    public activeGroup: string;
+    public activeGroupLabel: string;
     public readonly defaultGroupLabel: string;
     public fallbackColor: string;
 
     public colors: Array<string>;
 
-    public displayMode: number = 2; // 0: hide bookmarks, 1: display active group only, 2:display all groups
+    public displayActiveGroupOnly: boolean;
+    public hideAll: boolean;
+
+    private cache: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
 
     constructor(ctx: ExtensionContext) {
         this.ctx = ctx;
@@ -24,7 +29,7 @@ export class Main {
 
         this.groups = new Map<string, Group>();
         this.defaultGroupLabel = "default";
-        this.activeGroup = this.defaultGroupLabel;
+        this.activeGroupLabel = this.defaultGroupLabel;
         this.fallbackColor = "ffee66";
 
         this.colors = [
@@ -46,13 +51,22 @@ export class Main {
             this.colors.push(this.fallbackColor);
         }
 
+        this.displayActiveGroupOnly = true;
+        this.hideAll = false;
+
+        this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
+
         this.restoreSettings();
+
+        this.activateGroup(this.activeGroupLabel);
     }
 
     public saveSettings() {
         let serializedGroupMap = SerializableGroupMap.fromGroupMap(this.groups);
         this.ctx.workspaceState.update(this.savedGroupsKey, serializedGroupMap);
-        this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroup);
+        this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroupLabel);
+        this.ctx.workspaceState.update(this.savedDisplayActiveGroupOnlyKey, this.displayActiveGroupOnly);
+        this.ctx.workspaceState.update(this.savedHideAllKey, this.hideAll);
     }
 
     public updateDecorations(textEditor: TextEditor | undefined) {
@@ -61,23 +75,10 @@ export class Main {
         }
 
         let documentFsPath = textEditor.document.uri.fsPath;
-        let decoration: TextEditorDecorationType | undefined;
-        for (let [label, group] of this.groups) {
-            if (label === this.activeGroup) {
-                decoration = group.decoration;
-            } else {
-                decoration = group.inactiveDecoration;
-            }
 
-            if (typeof decoration === "undefined") {
-                vscode.window.showErrorMessage("missing decoration in bookmark group '" + label + "'");
-                continue;
-            }
-
-            let ranges: Array<Range> = [];
-            for (let bookmark of group.getBookmarksOfFsPath(documentFsPath)) {
-                ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
-            }
+        let decorationsLists: Map<TextEditorDecorationType, Range[]>;
+        decorationsLists = this.getCachedDecorations(documentFsPath);
+        for (let [decoration, ranges] of decorationsLists) {
             textEditor.setDecorations(decoration, ranges);
         }
     }
@@ -93,21 +94,26 @@ export class Main {
                 let lineNumber = textEditor.selection.start.line;
                 let documentFsPath = textEditor.document.uri.fsPath;
 
-                let group = this.groups.get(this.activeGroup);
+                let group = this.groups.get(this.activeGroupLabel);
                 if (typeof group === "undefined") {
                     return;
                 }
 
                 group.toggleBookmark(documentFsPath, lineNumber);
-
-                this.saveSettings();
+                this.cacheResetForFile(documentFsPath);
                 this.updateDecorations(textEditor);
+                this.saveSettings();
             });
         this.ctx.subscriptions.push(disposable);
     }
 
     private restoreSettings() {
-        this.activeGroup = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupLabel;
+        this.displayActiveGroupOnly =
+            this.ctx.workspaceState.get(this.savedDisplayActiveGroupOnlyKey) ?? this.displayActiveGroupOnly;
+
+        this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
+
+        this.activeGroupLabel = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupLabel;
         let serializedGroupMap: SerializableGroupMap | undefined = this.ctx.workspaceState.get(this.savedGroupsKey);
 
         this.groups = new Map<string, Group>();
@@ -118,13 +124,11 @@ export class Main {
                 vscode.window.showErrorMessage("Restoring bookmarks failed (" + e + ")");
             }
         }
-
-        this.activateGroup(this.activeGroup);
     }
 
     private activateGroup(label: string) {
         this.ensureGroup(label);
-        this.activeGroup = label;
+        this.activeGroupLabel = label;
         this.saveSettings();
         //todo update statusbar if there is one
     }
@@ -169,4 +173,85 @@ export class Main {
         return leastUsedColor;
     }
 
+    public setDisplayActiveGroupOnly(displayActiveGroupOnly: boolean) {
+        if (this.displayActiveGroupOnly !== displayActiveGroupOnly) {
+            this.cacheReset();
+        }
+        this.displayActiveGroupOnly = displayActiveGroupOnly;
+    }
+
+    private cacheReset() {
+        this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
+    }
+
+    private cacheResetForFile(fsPath: string) {
+        this.cache.delete(fsPath);
+    }
+
+    public getCachedDecorations(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
+        if (this.hideAll) {
+            return new Map<TextEditorDecorationType, Array<Range>>();
+        }
+
+        let cached = this.cache.get(fsPath);
+        if (typeof cached !== "undefined") {
+            return cached;
+        }
+
+        let result = new Map<TextEditorDecorationType, Array<Range>>();
+
+        let linesTaken = new Map<Number, boolean>();
+        let theActiveGroup = this.groups.get(this.activeGroupLabel);
+
+        if (typeof theActiveGroup !== "undefined") {
+            let bookmarks = theActiveGroup.getBookmarksOfFsPath(fsPath);
+            if (bookmarks.length > 0) {
+                let ranges: Array<Range> = [];
+                for (let bookmark of bookmarks) {
+                    linesTaken.set(bookmark.line, true);
+                    ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
+                }
+
+                let decoration = theActiveGroup.decoration;
+                if (typeof decoration !== "undefined") {
+                    result.set(decoration, ranges);
+                }
+            }
+        }
+
+        if (!this.displayActiveGroupOnly) {
+            for (let [label, group] of this.groups) {
+                if (label === this.activeGroupLabel) {
+                    continue;
+                }
+
+                let bookmarks = group.getBookmarksOfFsPath(fsPath);
+                if (bookmarks.length === 0) {
+                    continue;
+                }
+
+                let ranges: Array<Range> = [];
+                for (let bookmark of bookmarks) {
+                    if (linesTaken.has(bookmark.line)) {
+                        continue;
+                    }
+
+                    linesTaken.set(bookmark.line, true);
+                    ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
+                }
+
+                if (ranges.length === 0) {
+                    continue;
+                }
+
+                let decoration = group.inactiveDecoration;
+                if (typeof decoration !== "undefined") {
+                    result.set(decoration, ranges);
+                }
+            }
+        }
+
+        this.cache.set(fsPath, result);
+        return result;
+    }
 }
