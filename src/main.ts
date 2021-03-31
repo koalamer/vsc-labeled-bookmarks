@@ -111,7 +111,7 @@ export class Main {
                 }
 
                 group.toggleBookmark(documentFsPath, lineNumber);
-                this.cacheResetForFile(documentFsPath);
+                this.cacheReset();
                 this.updateDecorations(textEditor);
                 this.saveSettings();
             });
@@ -137,7 +137,7 @@ export class Main {
                 let existingLabel = activeGroup.getLabelByPosition(documentFsPath, lineNumber);
                 if (typeof existingLabel !== "undefined") {
                     activeGroup.deleteLabel(existingLabel);
-                    this.cacheResetForFile(documentFsPath);
+                    this.cacheReset();
                     this.updateDecorations(textEditor);
                     this.saveSettings();
                     return;
@@ -175,7 +175,7 @@ export class Main {
                         vscode.window.showErrorMessage(
                             "Choose a maximum " +
                             this.maxGroupLabelLength +
-                            " long group name."
+                            " character long group name."
                         );
                         return;
                     }
@@ -191,7 +191,7 @@ export class Main {
                         }
                     }
 
-                    this.cacheResetForFile(documentFsPath);
+                    this.cacheReset();
                     this.updateDecorations(textEditor);
                     this.saveSettings();
                 });
@@ -280,10 +280,6 @@ export class Main {
 
     private cacheReset() {
         this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
-    }
-
-    private cacheResetForFile(fsPath: string) {
-        this.cache.delete(fsPath);
     }
 
     public getCachedDecorations(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
