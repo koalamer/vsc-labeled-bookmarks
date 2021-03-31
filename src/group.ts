@@ -8,13 +8,20 @@ export class Group {
     static readonly normalTransparency: string = "ff";
     static readonly inactiveTransparency: string = "44";
 
+    public static readonly fallbackDecoration = vscode.window.createTextEditorDecorationType(
+        {
+            gutterIconPath: __dirname + "../resources/gutter_icon_bm.svg",
+            gutterIconSize: 'contain',
+        }
+    );
+
     label: string;
     color: string;
     inactiveColor: string;
     modifiedAt: Date;
     bookmarks: Map<string, Bookmark>;
-    decoration?: TextEditorDecorationType;
-    inactiveDecoration?: TextEditorDecorationType;
+    decoration: TextEditorDecorationType;
+    inactiveDecoration: TextEditorDecorationType;
 
     constructor(label: string, color: string, modifiedAt: Date) {
         this.label = label;
@@ -22,6 +29,8 @@ export class Group {
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.modifiedAt = modifiedAt;
         this.bookmarks = new Map<string, Bookmark>();
+        this.decoration = Group.fallbackDecoration;
+        this.inactiveDecoration = Group.fallbackDecoration;
         this.initDecorations();
     }
 

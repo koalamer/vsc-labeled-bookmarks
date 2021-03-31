@@ -18,12 +18,6 @@ export class Main {
     public activeGroupLabel: string;
     public readonly defaultGroupLabel: string;
     public fallbackColor: string;
-    public readonly fallbackDecoration = vscode.window.createTextEditorDecorationType(
-        {
-            gutterIconPath: __dirname + "../resources/gutter_icon_bm.svg",
-            gutterIconSize: 'contain',
-        }
-    );
 
     public colors: Array<string>;
 
@@ -309,11 +303,11 @@ export class Main {
             let decorationHidden: TextEditorDecorationType;
 
             if (label === this.activeGroupLabel) {
-                decorationShown = group.decoration ?? this.fallbackDecoration;
-                decorationHidden = group.inactiveDecoration ?? this.fallbackDecoration;
+                decorationShown = group.decoration;
+                decorationHidden = group.inactiveDecoration;
             } else {
-                decorationShown = group.inactiveDecoration ?? this.fallbackDecoration;
-                decorationHidden = group.decoration ?? this.fallbackDecoration;
+                decorationShown = group.inactiveDecoration;
+                decorationHidden = group.decoration;
             }
 
             result.set(decorationHidden, []);
