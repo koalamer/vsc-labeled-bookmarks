@@ -6,7 +6,7 @@ export class Group {
     static svgDir: Uri;
 
     static readonly normalTransparency: string = "ff";
-    static readonly inactiveTransparency: string = "cc";
+    static readonly inactiveTransparency: string = "44";
 
     label: string;
     color: string;
@@ -18,8 +18,7 @@ export class Group {
 
     constructor(label: string, color: string, modifiedAt: Date) {
         this.label = label;
-        this.color = color;
-        this.ensureUsableColor();
+        this.color = Group.normalizeColorFormat(color);
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.modifiedAt = modifiedAt;
         this.bookmarks = new Map<string, Bookmark>();
@@ -65,6 +64,8 @@ export class Group {
     }
 
     public toggleBookmark(fsPath: string, lineNumber: number) {
+        this.modifiedAt = new Date();
+
         let existingLabel = this.getLabelByPosition(fsPath, lineNumber);
         if (typeof existingLabel !== "undefined") {
             this.bookmarks.delete(existingLabel);
@@ -73,6 +74,14 @@ export class Group {
 
         let newLabel = "line " + lineNumber + " of " + fsPath;
         this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber));
+    }
+
+    public addLabel(label: string, fsPath: string, lineNumber: number) {
+        this.bookmarks.set(label, new Bookmark(fsPath, label, lineNumber));
+    }
+
+    public deleteLabel(label: string) {
+        this.bookmarks.delete(label);
     }
 
     public getBookmarksOfFsPath(fsPath: string): Array<Bookmark> {
@@ -103,7 +112,7 @@ export class Group {
         );
     }
 
-    private getLabelByPosition(fsPath: string, lineNumber: number): string | undefined {
+    public getLabelByPosition(fsPath: string, lineNumber: number): string | undefined {
         for (let [label, bookmark] of this.bookmarks) {
             if (bookmark.fsPath === fsPath && bookmark.line === lineNumber) {
                 return label;
@@ -112,30 +121,34 @@ export class Group {
         return undefined;
     }
 
-    private ensureUsableColor() {
-        if (this.color.match(/^#?[0-9a-f]+$/i) === null) {
-            throw new Error("Illegal color definition: " + this.color);
+    public static normalizeColorFormat(color: string): string {
+        if (color.match(/^#?[0-9a-f]+$/i) === null) {
+            return "bbbbbbbb";
         }
 
-        if (this.color.charAt(0) === "#") {
-            this.color = this.color.substr(1, 8);
+        if (color.charAt(0) === "#") {
+            color = color.substr(1, 8);
         }
 
-        this.color = this.color.toLowerCase();
-        switch (this.color.length) {
+        color = color.toLowerCase();
+        switch (color.length) {
             case 3:
-                this.color = this.color.charAt(0) + "0" + this.color.charAt(1) + "0" + this.color.charAt(2) + "0" + Group.normalTransparency;
+                color = color.charAt(0) + "0" +
+                    color.charAt(1) + "0" +
+                    color.charAt(2) + "0" +
+                    Group.normalTransparency;
                 break;
             case 8:
-                this.color = this.color.substring(0, 6) + Group.normalTransparency;
+                color = color.substring(0, 6) + Group.normalTransparency;
                 break;
             default:
-                if (this.color.length < 8) {
-                    this.color = this.color.padEnd(8, "f");
+                if (color.length < 8) {
+                    color = color.padEnd(8, "f");
                 } else {
-                    this.color = this.color.substring(0, 8);
+                    color = color.substring(0, 8);
                 }
         }
+        return color;
     }
 
     private async createSvg(svgUri: Uri, color: string) {

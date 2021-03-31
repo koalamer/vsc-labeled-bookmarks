@@ -18,12 +18,21 @@
       {
         "command": "vsc-labeled-bookmarks.toggleBookmark",
         "title": "Bookmarks: toggle bookmark"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.toggleLabeledBookmark",
+        "title": "Bookmarks: toggle labeled bookmark"
       }
     ],
     "keybindings": [
       {
         "command": "vsc-labeled-bookmarks.toggleBookmark",
         "key": "ctrl+alt+m",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.toggleLabeledBookmark",
+        "key": "ctrl+alt+l",
         "when": "editorTextFocus"
       }
     ]

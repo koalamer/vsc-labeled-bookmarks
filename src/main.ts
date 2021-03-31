@@ -11,10 +11,19 @@ export class Main {
     public readonly savedDisplayActiveGroupOnlyKey = "vscLabeledBookmarks.displayActiveGroupOnly";
     public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
 
+    public readonly groupSeparator = "@";
+    public readonly maxGroupLabelLength = 40;
+
     public groups: Map<string, Group>;
     public activeGroupLabel: string;
     public readonly defaultGroupLabel: string;
     public fallbackColor: string;
+    public readonly fallbackDecoration = vscode.window.createTextEditorDecorationType(
+        {
+            gutterIconPath: __dirname + "../resources/gutter_icon_bm.svg",
+            gutterIconSize: 'contain',
+        }
+    );
 
     public colors: Array<string>;
 
@@ -30,7 +39,7 @@ export class Main {
         this.groups = new Map<string, Group>();
         this.defaultGroupLabel = "default";
         this.activeGroupLabel = this.defaultGroupLabel;
-        this.fallbackColor = "ffee66";
+        this.fallbackColor = "ffee66ff";
 
         this.colors = [
             "#ffee66",
@@ -51,14 +60,16 @@ export class Main {
             this.colors.push(this.fallbackColor);
         }
 
-        this.displayActiveGroupOnly = true;
+        this.displayActiveGroupOnly = false;
         this.hideAll = false;
 
         this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
 
         this.restoreSettings();
-
+        // this.displayActiveGroupOnly = false;
+        // this.groups = new Map<string, Group>();
         this.activateGroup(this.activeGroupLabel);
+        this.saveSettings();
     }
 
     public saveSettings() {
@@ -107,9 +118,90 @@ export class Main {
         this.ctx.subscriptions.push(disposable);
     }
 
+    public registerToggleLabeledBookmark() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.toggleLabeledBookmark',
+            (textEditor) => {
+                if (textEditor.selections.length === 0) {
+                    return;
+                }
+
+                let lineNumber = textEditor.selection.start.line;
+                let documentFsPath = textEditor.document.uri.fsPath;
+
+                let activeGroup = this.groups.get(this.activeGroupLabel);
+                if (typeof activeGroup === "undefined") {
+                    return;
+                }
+
+                let existingLabel = activeGroup.getLabelByPosition(documentFsPath, lineNumber);
+                if (typeof existingLabel !== "undefined") {
+                    activeGroup.deleteLabel(existingLabel);
+                    this.cacheResetForFile(documentFsPath);
+                    this.updateDecorations(textEditor);
+                    this.saveSettings();
+                    return;
+                }
+
+                vscode.window.showInputBox({
+                    placeHolder: "label or label@group or @group",
+                    prompt: "Enter label and/or group to be created"
+                }).then(input => {
+                    if (typeof input === "undefined") {
+                        return;
+                    }
+
+                    input = input.trim();
+                    if (input === "") {
+                        return;
+                    }
+
+                    let label = "";
+                    let groupLabel = "";
+
+                    let separatorPos = input.indexOf(this.groupSeparator);
+                    if (separatorPos >= 0) {
+                        label = input.substring(0, separatorPos).trim();
+                        groupLabel = input.substring(separatorPos + 1).trim();
+                    } else {
+                        label = input;
+                    }
+
+                    if (label === "" && groupLabel === "") {
+                        return;
+                    }
+
+                    if (groupLabel.length > this.maxGroupLabelLength) {
+                        vscode.window.showErrorMessage(
+                            "Choose a maximum " +
+                            this.maxGroupLabelLength +
+                            " long group name."
+                        );
+                        return;
+                    }
+
+                    if (groupLabel !== "") {
+                        this.activateGroup(groupLabel);
+                    }
+
+                    if (label !== "") {
+                        let activeGroup = this.groups.get(this.activeGroupLabel);
+                        if (typeof activeGroup !== "undefined") {
+                            activeGroup.addLabel(label, documentFsPath, lineNumber);
+                        }
+                    }
+
+                    this.cacheResetForFile(documentFsPath);
+                    this.updateDecorations(textEditor);
+                    this.saveSettings();
+                });
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
     private restoreSettings() {
         this.displayActiveGroupOnly =
-            this.ctx.workspaceState.get(this.savedDisplayActiveGroupOnlyKey) ?? this.displayActiveGroupOnly;
+            this.ctx.workspaceState.get(this.savedDisplayActiveGroupOnlyKey) ?? false;
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
 
@@ -128,8 +220,12 @@ export class Main {
 
     private activateGroup(label: string) {
         this.ensureGroup(label);
+        if (this.activeGroupLabel !== label) {
+            this.cacheReset();
+        }
         this.activeGroupLabel = label;
-        this.saveSettings();
+
+        vscode.window.showInformationMessage("group " + label + " activated");
         //todo update statusbar if there is one
     }
 
@@ -140,6 +236,7 @@ export class Main {
 
         let group = new Group(label, this.getLeastUsedColor(), new Date());
         this.groups.set(label, group);
+        vscode.window.showInformationMessage("group " + label + " created");
     }
 
     private getLeastUsedColor(): string {
@@ -150,7 +247,7 @@ export class Main {
         let usages = new Map<string, number>();
 
         for (let color of this.colors) {
-            usages.set(color, 0);
+            usages.set(Group.normalizeColorFormat(color), 0);
         }
 
         for (let [_, group] of this.groups) {
@@ -170,6 +267,7 @@ export class Main {
             }
         }
 
+        vscode.window.showInformationMessage("color " + leastUsedColor);
         return leastUsedColor;
     }
 
@@ -205,50 +303,37 @@ export class Main {
 
         if (typeof theActiveGroup !== "undefined") {
             let bookmarks = theActiveGroup.getBookmarksOfFsPath(fsPath);
-            if (bookmarks.length > 0) {
-                let ranges: Array<Range> = [];
-                for (let bookmark of bookmarks) {
-                    linesTaken.set(bookmark.line, true);
-                    ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
-                }
-
-                let decoration = theActiveGroup.decoration;
-                if (typeof decoration !== "undefined") {
-                    result.set(decoration, ranges);
-                }
+            for (let bookmark of bookmarks) {
+                linesTaken.set(bookmark.line, true);
             }
         }
 
-        if (!this.displayActiveGroupOnly) {
-            for (let [label, group] of this.groups) {
-                if (label === this.activeGroupLabel) {
-                    continue;
-                }
+        for (let [label, group] of this.groups) {
+            let decorationShown: TextEditorDecorationType;
+            let decorationHidden: TextEditorDecorationType;
 
-                let bookmarks = group.getBookmarksOfFsPath(fsPath);
-                if (bookmarks.length === 0) {
-                    continue;
-                }
-
-                let ranges: Array<Range> = [];
-                for (let bookmark of bookmarks) {
-                    if (linesTaken.has(bookmark.line)) {
-                        continue;
-                    }
-
-                    linesTaken.set(bookmark.line, true);
-                    ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
-                }
-
-                if (ranges.length === 0) {
-                    continue;
-                }
-
-                let decoration = group.inactiveDecoration;
-                if (typeof decoration !== "undefined") {
-                    result.set(decoration, ranges);
-                }
+            if (label === this.activeGroupLabel) {
+                decorationShown = group.decoration ?? this.fallbackDecoration;
+                decorationHidden = group.inactiveDecoration ?? this.fallbackDecoration;
+            } else {
+                decorationShown = group.inactiveDecoration ?? this.fallbackDecoration;
+                decorationHidden = group.decoration ?? this.fallbackDecoration;
             }
+
+            result.set(decorationHidden, []);
+
+            let ranges: Array<Range> = [];
+            let bookmarks = group.getBookmarksOfFsPath(fsPath);
+            for (let bookmark of bookmarks) {
+                if (label !== this.activeGroupLabel && linesTaken.has(bookmark.line)) {
+                    continue;
+                }
+
+                linesTaken.set(bookmark.line, true);
+                ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
+            }
+
+            result.set(decorationShown, ranges);
         }
 
         this.cache.set(fsPath, result);
