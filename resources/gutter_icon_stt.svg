@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+    <mask id="x">
+        <rect width="32" height="32" fill="white" x="0" y="0" />
+        <text x="16" y="21" text-anchor="middle" fill="black"
+            style="font-size: 14; font-family: sans-serif; alignment-baseline:bottom; font-weight:bold;">Q</text>
+    </mask>
+    <path mask="url(#x)" fill="#888888ff"
+        d="M16 2 L20.70 9.52 L29.31 11.67 L23.60 18.47 L24.22 27.32 L16 24 L7.77 27.32 L8.39 18.47 L2.68 11.67 L11.29 9.52 Z" />
+</svg>

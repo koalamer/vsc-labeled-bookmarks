@@ -53,9 +53,6 @@ export function deactivate() {
 // 	canPickMany: true
 // });
 
-// show quick input
-// let input = vscode.window.showInputBox({ placeHolder: "pholder", prompt: "prompt\nmultiline" });
-
 // open a file
 // let doc = await vscode.workspace.openTextDocument('C:/Users/Balu/vimfiles/syntax/go.vim'); // calls back into the provider
 // await vscode.window.showTextDocument(doc, { preview: false });

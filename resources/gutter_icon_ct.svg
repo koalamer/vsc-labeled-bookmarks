@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+    <mask id="x">
+        <rect width="32" height="32" fill="white" x="0" y="0" />
+        <text x="16" y="21.5" text-anchor="middle" fill="black"
+            style="font-size: 16; font-family: sans-serif; alignment-baseline: bottom; font-weight:bold;">Q</text>
+    </mask>
+    <circle mask="url(#x)" cx="16" cy="16" r="12" fill="#888888ff" />
+</svg>
