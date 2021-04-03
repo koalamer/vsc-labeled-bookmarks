@@ -3,6 +3,7 @@ import { Bookmark } from './bookmark';
 import { Group } from "./group";
 import { SerializableGroupMap } from './serializable_group_map';
 import { ExtensionContext, Range, TextEditor, TextEditorDecorationType } from 'vscode';
+import { DecorationFactory } from './decoration_factory';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -20,6 +21,7 @@ export class Main {
     public fallbackColor: string;
 
     public colors: Array<string>;
+    public defaultShape = "star";
 
     public displayActiveGroupOnly: boolean;
     public hideAll: boolean;
@@ -29,6 +31,7 @@ export class Main {
     constructor(ctx: ExtensionContext) {
         this.ctx = ctx;
         Group.svgDir = this.ctx.globalStorageUri;
+        DecorationFactory.svgDir = this.ctx.globalStorageUri;
 
         this.groups = new Map<string, Group>();
         this.defaultGroupLabel = "default";
@@ -44,10 +47,12 @@ export class Main {
             "#6677ff"
         ];
 
+        this.colors = this.colors.map(c => DecorationFactory.normalizeColorFormat(c));
+
         let iconWarmupGroups: Array<Group> = [];
-        iconWarmupGroups.push(new Group('warmup', this.fallbackColor, new Date()));
+        iconWarmupGroups.push(new Group('warmup', this.fallbackColor, this.defaultShape));
         for (let color of this.colors) {
-            iconWarmupGroups.push(new Group('warmup', color, new Date()));
+            iconWarmupGroups.push(new Group('warmup', color, this.defaultShape));
         }
 
         if (this.colors.length < 1) {
@@ -219,7 +224,6 @@ export class Main {
         }
         this.activeGroupLabel = label;
 
-        vscode.window.showInformationMessage("group " + label + " activated");
         //todo update statusbar if there is one
     }
 
@@ -228,9 +232,8 @@ export class Main {
             return;
         }
 
-        let group = new Group(label, this.getLeastUsedColor(), new Date());
+        let group = new Group(label, this.getLeastUsedColor(), this.defaultShape);
         this.groups.set(label, group);
-        vscode.window.showInformationMessage("group " + label + " created");
     }
 
     private getLeastUsedColor(): string {
@@ -241,7 +244,7 @@ export class Main {
         let usages = new Map<string, number>();
 
         for (let color of this.colors) {
-            usages.set(Group.normalizeColorFormat(color), 0);
+            usages.set(color, 0);
         }
 
         for (let [_, group] of this.groups) {
@@ -261,7 +264,6 @@ export class Main {
             }
         }
 
-        vscode.window.showInformationMessage("color " + leastUsedColor);
         return leastUsedColor;
     }
 

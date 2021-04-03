@@ -4,14 +4,14 @@ import { Group } from "./group";
 export class SerializableGroup {
     label: string;
     color: string;
-    modifiedAt: string;
+    shape: string;
     bookmarkKeys: Array<string>;
     bookmarkValues: Array<Bookmark>;
 
-    constructor(label: string, color: string, modifiedAt: string, bookmarkKeys: Array<string>, bookmarkValues: Array<Bookmark>) {
+    constructor(label: string, color: string, shape: string, bookmarkKeys: Array<string>, bookmarkValues: Array<Bookmark>) {
         this.label = label;
         this.color = color;
-        this.modifiedAt = modifiedAt;
+        this.shape = shape;
         this.bookmarkKeys = bookmarkKeys;
         this.bookmarkValues = bookmarkValues;
     }
@@ -26,14 +26,14 @@ export class SerializableGroup {
         return new SerializableGroup(
             group.label,
             group.color,
-            group.modifiedAt.toISOString(),
+            group.shape,
             bookmarkKeys,
             bookmarkValues
         );
     }
 
     public static toGroup(sg: SerializableGroup): Group {
-        let result = new Group(sg.label, sg.color, new Date(sg.modifiedAt));
+        let result = new Group(sg.label, sg.color, sg.shape);
         for (let i in sg.bookmarkKeys) {
             result.bookmarks.set(sg.bookmarkKeys[i], sg.bookmarkValues[i]);
         }
