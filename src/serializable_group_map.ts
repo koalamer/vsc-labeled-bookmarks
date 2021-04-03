@@ -24,7 +24,11 @@ export class SerializableGroupMap {
     public static toGroupMap(sgm: SerializableGroupMap): Map<string, Group> {
         let result = new Map<string, Group>();
         for (let i in sgm.keys) {
-            result.set(sgm.keys[i], SerializableGroup.toGroup(sgm.values[i]));
+            let group = SerializableGroup.toGroup(sgm.values[i]);
+            if (group.bookmarks.size === 0) {
+                continue;
+            }
+            result.set(sgm.keys[i], group);
         }
         return result;
     }

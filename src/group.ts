@@ -48,7 +48,7 @@ export class Group {
     }
 
     public toggleBookmark(fsPath: string, lineNumber: number) {
-        let existingLabel = this.getLabelByPosition(fsPath, lineNumber);
+        let existingLabel = this.getBookmarkByPosition(fsPath, lineNumber);
         if (typeof existingLabel !== "undefined") {
             this.bookmarks.delete(existingLabel);
             return;
@@ -58,11 +58,11 @@ export class Group {
         this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber));
     }
 
-    public addLabel(label: string, fsPath: string, lineNumber: number) {
+    public addLabeledBookmark(label: string, fsPath: string, lineNumber: number) {
         this.bookmarks.set(label, new Bookmark(fsPath, label, lineNumber));
     }
 
-    public deleteLabel(label: string) {
+    public deleteLabeledBookmark(label: string) {
         this.bookmarks.delete(label);
     }
 
@@ -76,7 +76,7 @@ export class Group {
         return result;
     }
 
-    public getLabelByPosition(fsPath: string, lineNumber: number): string | undefined {
+    public getBookmarkByPosition(fsPath: string, lineNumber: number): string | undefined {
         for (let [label, bookmark] of this.bookmarks) {
             if (bookmark.fsPath === fsPath && bookmark.line === lineNumber) {
                 return label;

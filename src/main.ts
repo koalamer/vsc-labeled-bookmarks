@@ -133,9 +133,9 @@ export class Main {
                     return;
                 }
 
-                let existingLabel = activeGroup.getLabelByPosition(documentFsPath, lineNumber);
+                let existingLabel = activeGroup.getBookmarkByPosition(documentFsPath, lineNumber);
                 if (typeof existingLabel !== "undefined") {
-                    activeGroup.deleteLabel(existingLabel);
+                    activeGroup.deleteLabeledBookmark(existingLabel);
                     this.cacheReset();
                     this.updateDecorations(textEditor);
                     this.saveSettings();
@@ -186,7 +186,7 @@ export class Main {
                     if (label !== "") {
                         let activeGroup = this.groups.get(this.activeGroupLabel);
                         if (typeof activeGroup !== "undefined") {
-                            activeGroup.addLabel(label, documentFsPath, lineNumber);
+                            activeGroup.addLabeledBookmark(label, documentFsPath, lineNumber);
                         }
                     }
 
