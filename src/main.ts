@@ -63,8 +63,6 @@ export class Main {
         this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
 
         this.restoreSettings();
-        // this.displayActiveGroupOnly = false;
-        // this.groups = new Map<string, Group>();
         this.activateGroup(this.activeGroupName);
         this.saveSettings();
     }
@@ -95,19 +93,21 @@ export class Main {
         let disposable = vscode.commands.registerTextEditorCommand(
             'vsc-labeled-bookmarks.toggleBookmark',
             (textEditor) => {
-                if (textEditor.selections.length === 0) {
-                    return;
-                }
-
-                let lineNumber = textEditor.selection.start.line;
-                let documentFsPath = textEditor.document.uri.fsPath;
-
                 let group = this.groups.get(this.activeGroupName);
                 if (typeof group === "undefined") {
                     return;
                 }
 
-                group.toggleBookmark(documentFsPath, lineNumber);
+                if (textEditor.selections.length === 0) {
+                    return;
+                }
+
+                let documentFsPath = textEditor.document.uri.fsPath;
+                for (let selection of textEditor.selections) {
+                    let lineNumber = selection.start.line;
+                    group.toggleBookmark(documentFsPath, lineNumber);
+                }
+
                 this.cacheReset();
                 this.updateDecorations(textEditor);
                 this.saveSettings();
@@ -216,13 +216,21 @@ export class Main {
     }
 
     private activateGroup(name: string) {
-        this.ensureGroup(name);
         if (this.activeGroupName !== name) {
-            this.cacheReset();
+            let activeGroup = this.groups.get(this.activeGroupName);
+            if (typeof activeGroup !== "undefined") {
+                activeGroup.setIsActive(false);
+            }
+        }
+
+        this.ensureGroup(name);
+        let newActiveGroup = this.groups.get(name);
+        if (typeof newActiveGroup !== "undefined") {
+            newActiveGroup.setIsActive(true);
         }
         this.activeGroupName = name;
 
-        //todo update statusbar if there is one
+        this.cacheReset();
     }
 
     private ensureGroup(name: string) {
@@ -302,7 +310,7 @@ export class Main {
             let decorationShown: TextEditorDecorationType;
             let decorationHidden: TextEditorDecorationType;
 
-            if (name === this.activeGroupName) {
+            if (group.isActive) {
                 decorationShown = group.decoration;
                 decorationHidden = group.inactiveDecoration;
             } else {

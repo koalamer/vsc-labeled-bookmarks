@@ -22,6 +22,7 @@ export class Group {
     shape: string;
     iconText: string;
     inactiveColor: string;
+    isActive: boolean;
     bookmarks: Map<string, Bookmark>;
     decoration: TextEditorDecorationType;
     inactiveDecoration: TextEditorDecorationType;
@@ -33,6 +34,7 @@ export class Group {
         this.shape = shape;
         this.iconText = text;
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
+        this.isActive = false;
         this.bookmarks = new Map<string, Bookmark>();
         this.decoration = Group.fallbackDecoration;
         this.inactiveDecoration = Group.fallbackDecoration;
@@ -88,5 +90,9 @@ export class Group {
             }
         }
         return undefined;
+    }
+
+    public setIsActive(isActive: boolean) {
+        this.isActive = isActive;
     }
 }

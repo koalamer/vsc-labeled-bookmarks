@@ -25,9 +25,6 @@ export class SerializableGroupMap {
         let result = new Map<string, Group>();
         for (let i in sgm.keys) {
             let group = SerializableGroup.toGroup(renderer, sgm.values[i]);
-            if (group.bookmarks.size === 0) {
-                continue;
-            }
             result.set(sgm.keys[i], group);
         }
         return result;
