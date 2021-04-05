@@ -22,6 +22,10 @@
       {
         "command": "vsc-labeled-bookmarks.toggleLabeledBookmark",
         "title": "Bookmarks: toggle labeled bookmark"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.selectGroup",
+        "title": "Bookmarks: select group"
       }
     ],
     "keybindings": [
@@ -34,6 +38,10 @@
         "command": "vsc-labeled-bookmarks.toggleLabeledBookmark",
         "key": "ctrl+alt+l",
         "when": "editorTextFocus"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.selectGroup",
+        "key": "ctrl+alt+b g"
       }
     ]
   },

@@ -3,6 +3,7 @@ import { Group } from "./group";
 import { SerializableGroupMap } from './serializable_group_map';
 import { ExtensionContext, Range, TextEditor, TextEditorDecorationType } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
+import { GroupPickItem } from './group_pick_item';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -185,6 +186,51 @@ export class Main {
         this.ctx.subscriptions.push(disposable);
     }
 
+    public registerSelectGroup() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.selectGroup',
+            () => {
+                let pickItems = new Array<GroupPickItem>();
+                for (let [name, group] of this.groups) {
+                    pickItems.push(GroupPickItem.fromGroup(group));
+                }
+
+                vscode.window.showQuickPick(
+                    pickItems,
+                    {
+                        canPickMany: false,
+                        matchOnDescription: false,
+                        placeHolder: "select group"
+                    }
+                ).then(selected => {
+                    if (typeof selected !== "undefined") {
+                        this.activateGroup((selected as GroupPickItem).group.name);
+                    }
+                });
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
+    public fileChanged(fsPath: string) {
+        this.cache.delete(fsPath);
+
+        for (let editor of vscode.window.visibleTextEditors) {
+            if (editor.document.uri.fsPath === fsPath) {
+                this.updateDecorations(editor);
+            }
+        }
+    }
+
+    public groupChanged(group: Group) {
+        for (let [label, bookmark] of group.bookmarks) {
+            this.cache.delete(bookmark.fsPath);
+        }
+
+        for (let editor of vscode.window.visibleTextEditors) {
+            this.updateDecorations(editor);
+        }
+    }
+
     private restoreSettings() {
         this.displayActiveGroupOnly =
             this.ctx.workspaceState.get(this.savedDisplayActiveGroupOnlyKey) ?? false;
@@ -260,7 +306,7 @@ export class Main {
         return leastUsedColor;
     }
 
-    public setDisplayActiveGroupOnly(displayActiveGroupOnly: boolean) {
+    private setDisplayActiveGroupOnly(displayActiveGroupOnly: boolean) {
         if (this.displayActiveGroupOnly !== displayActiveGroupOnly) {
             this.cacheReset();
         }
@@ -271,7 +317,7 @@ export class Main {
         this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
     }
 
-    public getCachedDecorations(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
+    private getCachedDecorations(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
         if (this.hideAll) {
             return new Map<TextEditorDecorationType, Array<Range>>();
         }
@@ -323,25 +369,5 @@ export class Main {
 
         this.cache.set(fsPath, result);
         return result;
-    }
-
-    public fileChanged(fsPath: string) {
-        this.cache.delete(fsPath);
-
-        for (let editor of vscode.window.visibleTextEditors) {
-            if (editor.document.uri.fsPath === fsPath) {
-                this.updateDecorations(editor);
-            }
-        }
-    }
-
-    public groupChanged(group: Group) {
-        for (let [label, bookmark] of group.bookmarks) {
-            this.cache.delete(bookmark.fsPath);
-        }
-
-        for (let editor of vscode.window.visibleTextEditors) {
-            this.updateDecorations(editor);
-        }
     }
 }

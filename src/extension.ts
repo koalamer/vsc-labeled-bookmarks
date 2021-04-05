@@ -9,6 +9,7 @@ export function activate(context: ExtensionContext) {
 
 	main.registerToggleBookmark();
 	main.registerToggleLabeledBookmark();
+	main.registerSelectGroup();
 
 	vscode.window.onDidChangeActiveTextEditor(textEditor => {
 		main.updateDecorations(textEditor);
