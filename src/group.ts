@@ -8,7 +8,7 @@ import { Main } from './main';
 export class Group {
     static svgDir: Uri;
 
-    static readonly inactiveTransparency: string = "44";
+    static readonly inactiveTransparency: string = "33";
 
     main: Main;
     name: string;

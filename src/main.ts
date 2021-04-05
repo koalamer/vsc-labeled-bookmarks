@@ -200,7 +200,7 @@ export class Main {
                     {
                         canPickMany: false,
                         matchOnDescription: false,
-                        placeHolder: "select group"
+                        placeHolder: "select bookmark group"
                     }
                 ).then(selected => {
                     if (typeof selected !== "undefined") {
@@ -226,7 +226,7 @@ export class Main {
                     {
                         canPickMany: true,
                         matchOnDescription: false,
-                        placeHolder: "select groups to be deleted"
+                        placeHolder: "select bookmark groups to be deleted"
                     }
                 ).then(selecteds => {
                     if (typeof selecteds !== "undefined") {
@@ -383,6 +383,13 @@ export class Main {
         for (let [name, group] of this.groups) {
             let decorationShown: TextEditorDecorationType;
             let decorationHidden: TextEditorDecorationType;
+
+            if (
+                group.decoration === DecorationFactory.fallbackDecoration
+                || group.inactiveDecoration === DecorationFactory.fallbackDecoration
+            ) {
+                continue;
+            }
 
             if (group.isActive) {
                 decorationShown = group.decoration;
