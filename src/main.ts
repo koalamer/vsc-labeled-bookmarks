@@ -13,11 +13,11 @@ export class Main {
     public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
 
     public readonly groupSeparator = "@";
-    public readonly maxGroupLabelLength = 40;
+    public readonly maxGroupNameLength = 40;
 
     public groups: Map<string, Group>;
-    public activeGroupLabel: string;
-    public readonly defaultGroupLabel: string;
+    public activeGroupName: string;
+    public readonly defaultGroupName: string;
     public fallbackColor: string;
 
     public colors: Array<string>;
@@ -34,8 +34,8 @@ export class Main {
         DecorationFactory.svgDir = this.ctx.globalStorageUri;
 
         this.groups = new Map<string, Group>();
-        this.defaultGroupLabel = "default";
-        this.activeGroupLabel = this.defaultGroupLabel;
+        this.defaultGroupName = "default";
+        this.activeGroupName = this.defaultGroupName;
         this.fallbackColor = "ffee66ff";
 
         this.colors = [
@@ -49,12 +49,6 @@ export class Main {
 
         this.colors = this.colors.map(c => DecorationFactory.normalizeColorFormat(c));
 
-        let iconWarmupGroups: Array<Group> = [];
-        iconWarmupGroups.push(new Group('warmup', this.fallbackColor, this.defaultShape));
-        for (let color of this.colors) {
-            iconWarmupGroups.push(new Group('warmup', color, this.defaultShape));
-        }
-
         if (this.colors.length < 1) {
             this.colors.push(this.fallbackColor);
         }
@@ -67,14 +61,14 @@ export class Main {
         this.restoreSettings();
         // this.displayActiveGroupOnly = false;
         // this.groups = new Map<string, Group>();
-        this.activateGroup(this.activeGroupLabel);
+        this.activateGroup(this.activeGroupName);
         this.saveSettings();
     }
 
     public saveSettings() {
         let serializedGroupMap = SerializableGroupMap.fromGroupMap(this.groups);
         this.ctx.workspaceState.update(this.savedGroupsKey, serializedGroupMap);
-        this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroupLabel);
+        this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroupName);
         this.ctx.workspaceState.update(this.savedDisplayActiveGroupOnlyKey, this.displayActiveGroupOnly);
         this.ctx.workspaceState.update(this.savedHideAllKey, this.hideAll);
     }
@@ -104,7 +98,7 @@ export class Main {
                 let lineNumber = textEditor.selection.start.line;
                 let documentFsPath = textEditor.document.uri.fsPath;
 
-                let group = this.groups.get(this.activeGroupLabel);
+                let group = this.groups.get(this.activeGroupName);
                 if (typeof group === "undefined") {
                     return;
                 }
@@ -128,7 +122,7 @@ export class Main {
                 let lineNumber = textEditor.selection.start.line;
                 let documentFsPath = textEditor.document.uri.fsPath;
 
-                let activeGroup = this.groups.get(this.activeGroupLabel);
+                let activeGroup = this.groups.get(this.activeGroupName);
                 if (typeof activeGroup === "undefined") {
                     return;
                 }
@@ -156,35 +150,35 @@ export class Main {
                     }
 
                     let label = "";
-                    let groupLabel = "";
+                    let groupName = "";
 
                     let separatorPos = input.indexOf(this.groupSeparator);
                     if (separatorPos >= 0) {
                         label = input.substring(0, separatorPos).trim();
-                        groupLabel = input.substring(separatorPos + 1).trim();
+                        groupName = input.substring(separatorPos + 1).trim();
                     } else {
                         label = input;
                     }
 
-                    if (label === "" && groupLabel === "") {
+                    if (label === "" && groupName === "") {
                         return;
                     }
 
-                    if (groupLabel.length > this.maxGroupLabelLength) {
+                    if (groupName.length > this.maxGroupNameLength) {
                         vscode.window.showErrorMessage(
                             "Choose a maximum " +
-                            this.maxGroupLabelLength +
+                            this.maxGroupNameLength +
                             " character long group name."
                         );
                         return;
                     }
 
-                    if (groupLabel !== "") {
-                        this.activateGroup(groupLabel);
+                    if (groupName !== "") {
+                        this.activateGroup(groupName);
                     }
 
                     if (label !== "") {
-                        let activeGroup = this.groups.get(this.activeGroupLabel);
+                        let activeGroup = this.groups.get(this.activeGroupName);
                         if (typeof activeGroup !== "undefined") {
                             activeGroup.addLabeledBookmark(label, documentFsPath, lineNumber);
                         }
@@ -204,7 +198,7 @@ export class Main {
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
 
-        this.activeGroupLabel = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupLabel;
+        this.activeGroupName = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
         let serializedGroupMap: SerializableGroupMap | undefined = this.ctx.workspaceState.get(this.savedGroupsKey);
 
         this.groups = new Map<string, Group>();
@@ -217,23 +211,23 @@ export class Main {
         }
     }
 
-    private activateGroup(label: string) {
-        this.ensureGroup(label);
-        if (this.activeGroupLabel !== label) {
+    private activateGroup(name: string) {
+        this.ensureGroup(name);
+        if (this.activeGroupName !== name) {
             this.cacheReset();
         }
-        this.activeGroupLabel = label;
+        this.activeGroupName = name;
 
         //todo update statusbar if there is one
     }
 
-    private ensureGroup(label: string) {
-        if (this.groups.has(label)) {
+    private ensureGroup(name: string) {
+        if (this.groups.has(name)) {
             return;
         }
 
-        let group = new Group(label, this.getLeastUsedColor(), this.defaultShape);
-        this.groups.set(label, group);
+        let group = new Group(name, this.getLeastUsedColor(), this.defaultShape, name);
+        this.groups.set(name, group);
     }
 
     private getLeastUsedColor(): string {
@@ -291,7 +285,7 @@ export class Main {
         let result = new Map<TextEditorDecorationType, Array<Range>>();
 
         let linesTaken = new Map<Number, boolean>();
-        let theActiveGroup = this.groups.get(this.activeGroupLabel);
+        let theActiveGroup = this.groups.get(this.activeGroupName);
 
         if (typeof theActiveGroup !== "undefined") {
             let bookmarks = theActiveGroup.getBookmarksOfFsPath(fsPath);
@@ -300,11 +294,11 @@ export class Main {
             }
         }
 
-        for (let [label, group] of this.groups) {
+        for (let [name, group] of this.groups) {
             let decorationShown: TextEditorDecorationType;
             let decorationHidden: TextEditorDecorationType;
 
-            if (label === this.activeGroupLabel) {
+            if (name === this.activeGroupName) {
                 decorationShown = group.decoration;
                 decorationHidden = group.inactiveDecoration;
             } else {
@@ -317,7 +311,7 @@ export class Main {
             let ranges: Array<Range> = [];
             let bookmarks = group.getBookmarksOfFsPath(fsPath);
             for (let bookmark of bookmarks) {
-                if (label !== this.activeGroupLabel && linesTaken.has(bookmark.line)) {
+                if (name !== this.activeGroupName && linesTaken.has(bookmark.line)) {
                     continue;
                 }
 

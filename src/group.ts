@@ -15,18 +15,20 @@ export class Group {
         }
     );
 
-    label: string;
+    name: string;
     color: string;
     shape: string;
+    iconText: string;
     inactiveColor: string;
     bookmarks: Map<string, Bookmark>;
     decoration: TextEditorDecorationType;
     inactiveDecoration: TextEditorDecorationType;
 
-    constructor(label: string, color: string, shape: string) {
-        this.label = label;
+    constructor(name: string, color: string, shape: string, text: string) {
+        this.name = name;
         this.color = DecorationFactory.normalizeColorFormat(color);
         this.shape = shape;
+        this.iconText = text;
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.bookmarks = new Map<string, Bookmark>();
         this.decoration = Group.fallbackDecoration;
@@ -39,10 +41,10 @@ export class Group {
     }
 
     public initDecorations() {
-        DecorationFactory.create(this.shape, this.color, this.label).then(newDecoration => {
+        DecorationFactory.create(this.shape, this.color, this.iconText).then(newDecoration => {
             this.decoration = newDecoration;
         });
-        DecorationFactory.create(this.shape, this.inactiveColor, this.label).then(newInactiveDecoration => {
+        DecorationFactory.create(this.shape, this.inactiveColor, this.iconText).then(newInactiveDecoration => {
             this.inactiveDecoration = newInactiveDecoration;
         });
     }

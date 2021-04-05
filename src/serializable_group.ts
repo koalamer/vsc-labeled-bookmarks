@@ -2,16 +2,18 @@ import { Bookmark } from "./bookmark";
 import { Group } from "./group";
 
 export class SerializableGroup {
-    label: string;
+    name: string;
     color: string;
     shape: string;
+    iconText: string;
     bookmarkKeys: Array<string>;
     bookmarkValues: Array<Bookmark>;
 
-    constructor(label: string, color: string, shape: string, bookmarkKeys: Array<string>, bookmarkValues: Array<Bookmark>) {
-        this.label = label;
+    constructor(name: string, color: string, shape: string, iconText: string, bookmarkKeys: Array<string>, bookmarkValues: Array<Bookmark>) {
+        this.name = name;
         this.color = color;
         this.shape = shape;
+        this.iconText = iconText;
         this.bookmarkKeys = bookmarkKeys;
         this.bookmarkValues = bookmarkValues;
     }
@@ -24,16 +26,17 @@ export class SerializableGroup {
             bookmarkValues.push(value);
         }
         return new SerializableGroup(
-            group.label,
+            group.name,
             group.color,
             group.shape,
+            group.iconText,
             bookmarkKeys,
             bookmarkValues
         );
     }
 
     public static toGroup(sg: SerializableGroup): Group {
-        let result = new Group(sg.label, sg.color, sg.shape);
+        let result = new Group(sg.name, sg.color, sg.shape, sg.iconText);
         for (let i in sg.bookmarkKeys) {
             result.bookmarks.set(sg.bookmarkKeys[i], sg.bookmarkValues[i]);
         }

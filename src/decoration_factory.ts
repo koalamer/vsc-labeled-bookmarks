@@ -33,7 +33,7 @@ const svgHeart = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
     d="M16 8 C16 8 16 4 21 4 C24 4 28 5 28 10 C28 18 17 27 16 28 C15 27 4 18 4 10C4 5 8 4 11 4 C16 4  16 8 16 8" />
 </svg>`;
 
-const svgHearWithText = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+const svgHeartWithText = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
 <mask id="x">
     <rect width="32" height="32" fill="white" x="0" y="0" />
     <text x="16" y="20" text-anchor="middle" fill="black"
@@ -72,9 +72,13 @@ const svgStarWithText = `<svg xmlns="http://www.w3.org/2000/svg" width="32" heig
     d="M16 2 L20.70 9.52 L29.31 11.67 L23.60 18.47 L24.22 27.32 L16 24 L7.77 27.32 L8.39 18.47 L2.68 11.67 L11.29 9.52 Z" />
 </svg>`;
 
+const svgUnicodeChar = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+<text x="16" y="18" text-anchor="middle" fill="#888888ff"
+    style="font-size: 26; font-weight:bold; alignment-baseline:middle;">Q</text>
+</svg>`;
+
 export class DecorationFactory {
-    private static readonly singleCharacterLabelPatern = /^[a-zA-Z0-9!?+-=\/\$&%#<>]$/;
-    private static readonly normalTransparency = "ff";
+    private static readonly singleCharacterLabelPatern = /^[a-zA-Z0-9!?+-=\/\$%#]$/;
 
     public static readonly fallbackDecoration = vscode.window.createTextEditorDecorationType(
         {
@@ -86,20 +90,27 @@ export class DecorationFactory {
     public static svgDir: Uri;
 
     static async create(shape: string, color: string, text: string): Promise<TextEditorDecorationType> {
-        if (!DecorationFactory.singleCharacterLabelPatern.test(text)) {
-            text = "";
+        text = text.normalize();
+
+        if (shape !== "unicode") {
+            if (!DecorationFactory.singleCharacterLabelPatern.test(text)) {
+                text = "";
+            } else {
+                text = text.substring(0, 1).toUpperCase();
+            }
         } else {
-            text = text.substring(0, 1).toUpperCase();
+            text = text.substring(0, 1);
         }
 
         let fileNamePostfix = '';
         let svg: string;
+
         if (text === "") {
             switch (shape) {
                 case "circle": svg = svgCircle; break;
                 case "heart": svg = svgHeart; break;
                 case "label": svg = svgLabel; break;
-                case "star": svg = svgHeart; break;
+                case "star": svg = svgStar; break;
                 default:
                     svg = svgBookmark;
                     shape = "bookmark";
@@ -107,14 +118,15 @@ export class DecorationFactory {
         } else {
             switch (shape) {
                 case "circle": svg = svgCircleWithText; break;
-                case "heart": svg = svgHearWithText; break;
+                case "heart": svg = svgHeartWithText; break;
                 case "label": svg = svgLabelWithText; break;
                 case "star": svg = svgStarWithText; break;
+                case "unicode": svg = svgUnicodeChar; break;
                 default:
                     svg = svgBookmarkWithText;
                     shape = "bookmark";
             }
-            svg = svg.replace(">Q<", ">" + text + "<");
+            svg = svg.replace(">Q<", ">&#" + text.charCodeAt(0) + ";<");
             fileNamePostfix = text.charCodeAt(0).toString();
         }
 
