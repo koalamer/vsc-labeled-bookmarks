@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { TextEditorDecorationType, Uri } from 'vscode';
 import { Bookmark } from "./bookmark";
 import { DecorationFactory } from "./decoration_factory";
+import { Renderer } from './renderer';
 
 export class Group {
     static svgDir: Uri;
@@ -15,6 +16,7 @@ export class Group {
         }
     );
 
+    renderer: Renderer;
     name: string;
     color: string;
     shape: string;
@@ -24,7 +26,8 @@ export class Group {
     decoration: TextEditorDecorationType;
     inactiveDecoration: TextEditorDecorationType;
 
-    constructor(name: string, color: string, shape: string, text: string) {
+    constructor(renderer: Renderer, name: string, color: string, shape: string, text: string) {
+        this.renderer = renderer;
         this.name = name;
         this.color = DecorationFactory.normalizeColorFormat(color);
         this.shape = shape;

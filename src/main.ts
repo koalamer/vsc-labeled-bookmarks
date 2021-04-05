@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { Bookmark } from './bookmark';
 import { Group } from "./group";
 import { SerializableGroupMap } from './serializable_group_map';
 import { ExtensionContext, Range, TextEditor, TextEditorDecorationType } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
+import { Renderer } from "./renderer";
 
 export class Main {
     public ctx: ExtensionContext;
@@ -14,6 +14,8 @@ export class Main {
 
     public readonly groupSeparator = "@";
     public readonly maxGroupNameLength = 40;
+
+    private renderer: Renderer;
 
     public groups: Map<string, Group>;
     public activeGroupName: string;
@@ -32,6 +34,8 @@ export class Main {
         this.ctx = ctx;
         Group.svgDir = this.ctx.globalStorageUri;
         DecorationFactory.svgDir = this.ctx.globalStorageUri;
+
+        this.renderer = new Renderer(this.ctx);
 
         this.groups = new Map<string, Group>();
         this.defaultGroupName = "default";
@@ -204,7 +208,7 @@ export class Main {
         this.groups = new Map<string, Group>();
         if (typeof serializedGroupMap !== "undefined") {
             try {
-                this.groups = SerializableGroupMap.toGroupMap(serializedGroupMap);
+                this.groups = SerializableGroupMap.toGroupMap(this.renderer, serializedGroupMap);
             } catch (e) {
                 vscode.window.showErrorMessage("Restoring bookmarks failed (" + e + ")");
             }
@@ -226,7 +230,7 @@ export class Main {
             return;
         }
 
-        let group = new Group(name, this.getLeastUsedColor(), this.defaultShape, name);
+        let group = new Group(this.renderer, name, this.getLeastUsedColor(), this.defaultShape, name);
         this.groups.set(name, group);
     }
 

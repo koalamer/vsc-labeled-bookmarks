@@ -1,6 +1,6 @@
-import * as vscode from 'vscode';
 import { SerializableGroup } from "./serializable_group";
 import { Group } from "./group";
+import { Renderer } from "./renderer";
 
 export class SerializableGroupMap {
     keys: Array<string>;
@@ -21,10 +21,10 @@ export class SerializableGroupMap {
         return new SerializableGroupMap(groupKeys, groupValues);
     }
 
-    public static toGroupMap(sgm: SerializableGroupMap): Map<string, Group> {
+    public static toGroupMap(renderer: Renderer, sgm: SerializableGroupMap): Map<string, Group> {
         let result = new Map<string, Group>();
         for (let i in sgm.keys) {
-            let group = SerializableGroup.toGroup(sgm.values[i]);
+            let group = SerializableGroup.toGroup(renderer, sgm.values[i]);
             if (group.bookmarks.size === 0) {
                 continue;
             }
