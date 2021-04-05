@@ -9,13 +9,6 @@ export class Group {
 
     static readonly inactiveTransparency: string = "44";
 
-    public static readonly fallbackDecoration = vscode.window.createTextEditorDecorationType(
-        {
-            gutterIconPath: __dirname + "../resources/gutter_icon_bm.svg",
-            gutterIconSize: 'contain',
-        }
-    );
-
     renderer: Renderer;
     name: string;
     color: string;
@@ -36,8 +29,8 @@ export class Group {
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.isActive = false;
         this.bookmarks = new Map<string, Bookmark>();
-        this.decoration = Group.fallbackDecoration;
-        this.inactiveDecoration = Group.fallbackDecoration;
+        this.decoration = DecorationFactory.fallbackDecoration;
+        this.inactiveDecoration = DecorationFactory.fallbackDecoration;
         this.initDecorations();
     }
 

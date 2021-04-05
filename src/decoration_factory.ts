@@ -1,3 +1,5 @@
+import { pathToFileURL } from 'node:url';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { Uri } from "vscode";
 import { TextEditorDecorationType } from "vscode";
@@ -82,7 +84,7 @@ export class DecorationFactory {
 
     public static readonly fallbackDecoration = vscode.window.createTextEditorDecorationType(
         {
-            gutterIconPath: __dirname + "../resources/gutter_icon_bm.svg",
+            gutterIconPath: path.join(__dirname, "..", "resources", "gutter_icon_bm.svg"),
             gutterIconSize: 'contain',
         }
     );
