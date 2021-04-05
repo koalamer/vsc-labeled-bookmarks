@@ -10,6 +10,7 @@ export function activate(context: ExtensionContext) {
 	main.registerToggleBookmark();
 	main.registerToggleLabeledBookmark();
 	main.registerSelectGroup();
+	main.registerDeleteGroup();
 
 	vscode.window.onDidChangeActiveTextEditor(textEditor => {
 		main.updateDecorations(textEditor);
@@ -23,36 +24,6 @@ export function deactivate() {
 }
 
 // snippets
-
-// class PickItem implements QuickPickItem {
-//	import { QuickPickItem } from 'vscode';
-// 	label: string;
-// 	description: string;
-// 	detail: string;
-// 	constructor(label: string, description: string, detail: string) {
-// 		this.label = label;
-// 		this.description = description;
-// 		this.detail = detail;
-// 	}
-// }
-
-// show quick pick
-// let selected = vscode.window.showQuickPick([
-// 	"alma - korte/zebra.php 123",
-// 	"korte - zebra/alma.php 4",
-// 	"zebra - alma/korte.php 2",
-// 	"a1 - somefile 1"
-// ], {
-// 	canPickMany: true
-// });
-
-// let a = new PickItem('lab', 'desc', 'det');
-
-// let selected = vscode.window.showQuickPick([
-// 	a
-// ], {
-// 	canPickMany: true
-// });
 
 // open a file
 // let doc = await vscode.workspace.openTextDocument('C:/Users/Balu/vimfiles/syntax/go.vim'); // calls back into the provider

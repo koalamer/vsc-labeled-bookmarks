@@ -206,6 +206,47 @@ export class Main {
                     if (typeof selected !== "undefined") {
                         this.activateGroup((selected as GroupPickItem).group.name);
                     }
+                    this.saveSettings();
+                });
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
+    public registerDeleteGroup() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.deleteGroup',
+            () => {
+                let pickItems = new Array<GroupPickItem>();
+                for (let [name, group] of this.groups) {
+                    pickItems.push(GroupPickItem.fromGroup(group));
+                }
+
+                vscode.window.showQuickPick(
+                    pickItems,
+                    {
+                        canPickMany: true,
+                        matchOnDescription: false,
+                        placeHolder: "select groups to be deleted"
+                    }
+                ).then(selecteds => {
+                    if (typeof selecteds !== "undefined") {
+                        for (let selected of selecteds) {
+                            let group = (selected as GroupPickItem).group;
+                            group.truncateBookmarks();
+                            this.groups.delete(group.name);
+                        }
+
+                        if (!this.groups.has(this.activeGroupName)) {
+                            for (let [name, group] of this.groups) {
+                                this.activateGroup(name);
+                                this.saveSettings();
+                                return;
+                            }
+                        }
+
+                        this.activateGroup(this.defaultGroupName);
+                        this.saveSettings();
+                    }
                 });
             });
         this.ctx.subscriptions.push(disposable);

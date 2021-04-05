@@ -26,6 +26,10 @@
       {
         "command": "vsc-labeled-bookmarks.selectGroup",
         "title": "Bookmarks: select group"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.deleteGroup",
+        "title": "Bookmarks: select group"
       }
     ],
     "keybindings": [
@@ -42,6 +46,10 @@
       {
         "command": "vsc-labeled-bookmarks.selectGroup",
         "key": "ctrl+alt+b g"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.deleteGroup",
+        "key": "ctrl+alt+b shift+g"
       }
     ]
   },

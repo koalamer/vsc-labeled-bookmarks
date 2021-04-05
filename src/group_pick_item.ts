@@ -19,6 +19,11 @@ export class GroupPickItem implements QuickPickItem {
     }
 
     public static fromGroup(group: Group): GroupPickItem {
-        return new GroupPickItem(group, group.name, undefined, undefined, group.isActive, false);
+        let label = group.name;
+        label = (group.isActive ? "● " : "◌ ") + label;
+
+        let description = " $(bookmark) " + group.getBookmarkCount();
+        let detail = "";
+        return new GroupPickItem(group, label, description, detail);
     }
 }

@@ -99,4 +99,21 @@ export class Group {
         this.isActive = isActive;
         this.main.groupChanged(this);
     }
+
+    public truncateBookmarks() {
+        let affectedFiles = new Map<string, boolean>();
+        for (let [label, bookmark] of this.bookmarks) {
+            affectedFiles.set(bookmark.fsPath, true);
+        }
+
+        this.bookmarks.clear();
+
+        for (let [fsPath, flag] of affectedFiles) {
+            this.main.fileChanged(fsPath);
+        }
+    }
+
+    public getBookmarkCount(): number {
+        return this.bookmarks.size;
+    }
 }
