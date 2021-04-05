@@ -2,14 +2,15 @@ import * as vscode from 'vscode';
 import { TextEditorDecorationType, Uri } from 'vscode';
 import { Bookmark } from "./bookmark";
 import { DecorationFactory } from "./decoration_factory";
-import { Renderer } from './renderer';
+import { activate } from './extension';
+import { Main } from './main';
 
 export class Group {
     static svgDir: Uri;
 
     static readonly inactiveTransparency: string = "44";
 
-    renderer: Renderer;
+    main: Main;
     name: string;
     color: string;
     shape: string;
@@ -20,8 +21,8 @@ export class Group {
     decoration: TextEditorDecorationType;
     inactiveDecoration: TextEditorDecorationType;
 
-    constructor(renderer: Renderer, name: string, color: string, shape: string, text: string) {
-        this.renderer = renderer;
+    constructor(main: Main, name: string, color: string, shape: string, text: string) {
+        this.main = main;
         this.name = name;
         this.color = DecorationFactory.normalizeColorFormat(color);
         this.shape = shape;
@@ -41,9 +42,11 @@ export class Group {
     public initDecorations() {
         DecorationFactory.create(this.shape, this.color, this.iconText).then(newDecoration => {
             this.decoration = newDecoration;
+            this.main.groupChanged(this);
         });
         DecorationFactory.create(this.shape, this.inactiveColor, this.iconText).then(newInactiveDecoration => {
             this.inactiveDecoration = newInactiveDecoration;
+            this.main.groupChanged(this);
         });
     }
 
@@ -51,19 +54,26 @@ export class Group {
         let existingLabel = this.getBookmarkByPosition(fsPath, lineNumber);
         if (typeof existingLabel !== "undefined") {
             this.bookmarks.delete(existingLabel);
+            this.main.fileChanged(fsPath);
             return;
         }
 
         let newLabel = "line " + lineNumber + " of " + fsPath;
         this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber));
+        this.main.groupChanged(this);
     }
 
     public addLabeledBookmark(label: string, fsPath: string, lineNumber: number) {
         this.bookmarks.set(label, new Bookmark(fsPath, label, lineNumber));
+        this.main.fileChanged(fsPath);
     }
 
     public deleteLabeledBookmark(label: string) {
+        let bookmark = this.bookmarks.get(label);
         this.bookmarks.delete(label);
+        if (typeof bookmark !== "undefined") {
+            this.main.fileChanged(bookmark.fsPath);
+        }
     }
 
     public getBookmarksOfFsPath(fsPath: string): Array<Bookmark> {
@@ -87,5 +97,6 @@ export class Group {
 
     public setIsActive(isActive: boolean) {
         this.isActive = isActive;
+        this.main.groupChanged(this);
     }
 }

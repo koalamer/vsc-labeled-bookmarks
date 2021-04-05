@@ -3,7 +3,6 @@ import { Group } from "./group";
 import { SerializableGroupMap } from './serializable_group_map';
 import { ExtensionContext, Range, TextEditor, TextEditorDecorationType } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
-import { Renderer } from "./renderer";
 
 export class Main {
     public ctx: ExtensionContext;
@@ -14,8 +13,6 @@ export class Main {
 
     public readonly groupSeparator = "@";
     public readonly maxGroupNameLength = 40;
-
-    private renderer: Renderer;
 
     public groups: Map<string, Group>;
     public activeGroupName: string;
@@ -34,8 +31,6 @@ export class Main {
         this.ctx = ctx;
         Group.svgDir = this.ctx.globalStorageUri;
         DecorationFactory.svgDir = this.ctx.globalStorageUri;
-
-        this.renderer = new Renderer(this.ctx);
 
         this.groups = new Map<string, Group>();
         this.defaultGroupName = "default";
@@ -108,8 +103,6 @@ export class Main {
                     group.toggleBookmark(documentFsPath, lineNumber);
                 }
 
-                this.cacheReset();
-                this.updateDecorations(textEditor);
                 this.saveSettings();
             });
         this.ctx.subscriptions.push(disposable);
@@ -134,8 +127,6 @@ export class Main {
                 let existingLabel = activeGroup.getBookmarkByPosition(documentFsPath, lineNumber);
                 if (typeof existingLabel !== "undefined") {
                     activeGroup.deleteLabeledBookmark(existingLabel);
-                    this.cacheReset();
-                    this.updateDecorations(textEditor);
                     this.saveSettings();
                     return;
                 }
@@ -188,8 +179,6 @@ export class Main {
                         }
                     }
 
-                    this.cacheReset();
-                    this.updateDecorations(textEditor);
                     this.saveSettings();
                 });
             });
@@ -208,7 +197,7 @@ export class Main {
         this.groups = new Map<string, Group>();
         if (typeof serializedGroupMap !== "undefined") {
             try {
-                this.groups = SerializableGroupMap.toGroupMap(this.renderer, serializedGroupMap);
+                this.groups = SerializableGroupMap.toGroupMap(this, serializedGroupMap);
             } catch (e) {
                 vscode.window.showErrorMessage("Restoring bookmarks failed (" + e + ")");
             }
@@ -216,11 +205,9 @@ export class Main {
     }
 
     private activateGroup(name: string) {
-        if (this.activeGroupName !== name) {
-            let activeGroup = this.groups.get(this.activeGroupName);
-            if (typeof activeGroup !== "undefined") {
-                activeGroup.setIsActive(false);
-            }
+        let activeGroup = this.groups.get(this.activeGroupName);
+        if (typeof activeGroup !== "undefined") {
+            activeGroup.setIsActive(false);
         }
 
         this.ensureGroup(name);
@@ -238,7 +225,7 @@ export class Main {
             return;
         }
 
-        let group = new Group(this.renderer, name, this.getLeastUsedColor(), this.defaultShape, name);
+        let group = new Group(this, name, this.getLeastUsedColor(), this.defaultShape, name);
         this.groups.set(name, group);
     }
 
@@ -336,5 +323,25 @@ export class Main {
 
         this.cache.set(fsPath, result);
         return result;
+    }
+
+    public fileChanged(fsPath: string) {
+        this.cache.delete(fsPath);
+
+        for (let editor of vscode.window.visibleTextEditors) {
+            if (editor.document.uri.fsPath === fsPath) {
+                this.updateDecorations(editor);
+            }
+        }
+    }
+
+    public groupChanged(group: Group) {
+        for (let [label, bookmark] of group.bookmarks) {
+            this.cache.delete(bookmark.fsPath);
+        }
+
+        for (let editor of vscode.window.visibleTextEditors) {
+            this.updateDecorations(editor);
+        }
     }
 }

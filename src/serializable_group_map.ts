@@ -1,6 +1,6 @@
 import { SerializableGroup } from "./serializable_group";
 import { Group } from "./group";
-import { Renderer } from "./renderer";
+import { Main } from "./main";
 
 export class SerializableGroupMap {
     keys: Array<string>;
@@ -21,10 +21,10 @@ export class SerializableGroupMap {
         return new SerializableGroupMap(groupKeys, groupValues);
     }
 
-    public static toGroupMap(renderer: Renderer, sgm: SerializableGroupMap): Map<string, Group> {
+    public static toGroupMap(main: Main, sgm: SerializableGroupMap): Map<string, Group> {
         let result = new Map<string, Group>();
         for (let i in sgm.keys) {
-            let group = SerializableGroup.toGroup(renderer, sgm.values[i]);
+            let group = SerializableGroup.toGroup(main, sgm.values[i]);
             result.set(sgm.keys[i], group);
         }
         return result;

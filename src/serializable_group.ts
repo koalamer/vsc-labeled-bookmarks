@@ -1,6 +1,6 @@
 import { Bookmark } from "./bookmark";
 import { Group } from "./group";
-import { Renderer } from "./renderer";
+import { Main } from "./main";
 
 export class SerializableGroup {
     name: string;
@@ -36,8 +36,8 @@ export class SerializableGroup {
         );
     }
 
-    public static toGroup(renderer: Renderer, sg: SerializableGroup): Group {
-        let result = new Group(renderer, sg.name, sg.color, sg.shape, sg.iconText);
+    public static toGroup(main: Main, sg: SerializableGroup): Group {
+        let result = new Group(main, sg.name, sg.color, sg.shape, sg.iconText);
         for (let i in sg.bookmarkKeys) {
             result.bookmarks.set(sg.bookmarkKeys[i], sg.bookmarkValues[i]);
         }
