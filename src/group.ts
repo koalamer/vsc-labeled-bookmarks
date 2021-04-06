@@ -58,7 +58,7 @@ export class Group {
             return;
         }
 
-        let newLabel = "line " + lineNumber + " of " + fsPath;
+        let newLabel = "line " + lineNumber + " of " + vscode.workspace.asRelativePath(fsPath);
         this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber));
         this.main.groupChanged(this);
     }

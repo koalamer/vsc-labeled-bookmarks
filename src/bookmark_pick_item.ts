@@ -1,4 +1,4 @@
-import { QuickPickItem } from 'vscode';
+import { QuickPickItem, workspace } from 'vscode';
 import { Bookmark } from "./bookmark";
 
 export class BookmarkPickItem implements QuickPickItem {
@@ -20,8 +20,8 @@ export class BookmarkPickItem implements QuickPickItem {
 
     public static fromBookmark(bookmark: Bookmark): BookmarkPickItem {
         let label = bookmark.label;
-        let description = "line " + (bookmark.line + 1) + " " + bookmark.fsPath;
-        let detail = "";
+        let description = "";
+        let detail = bookmark.fsPath + " line " + (bookmark.line + 1);
         return new BookmarkPickItem(bookmark, label, description, detail);
     }
 }
