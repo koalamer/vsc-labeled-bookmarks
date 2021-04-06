@@ -12,6 +12,7 @@ export function activate(context: ExtensionContext) {
 	main.registerNavigateToBookmark();
 	main.registerSelectGroup();
 	main.registerDeleteGroup();
+	main.registerSetGroupIconShape();
 
 	vscode.window.onDidChangeActiveTextEditor(textEditor => {
 		main.updateDecorations(textEditor);

@@ -5,6 +5,7 @@ import { ExtensionContext, Range, TextEditor, TextEditorDecorationType } from 'v
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
 import { BookmarkPickItem } from './bookmark_pick_item';
+import { ShapePickItem } from './shape_pick_item';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -225,6 +226,40 @@ export class Main {
         this.ctx.subscriptions.push(disposable);
     }
 
+    public registerSetGroupIconShape() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.setGroupIconShape',
+            () => {
+                let shapePickItems = new Array<ShapePickItem>();
+                shapePickItems.push(new ShapePickItem("bookmark", "bookmark", "built in", ""));
+                shapePickItems.push(new ShapePickItem("circle", "circle", "built in", ""));
+                shapePickItems.push(new ShapePickItem("heart", "heart", "built in", ""));
+                shapePickItems.push(new ShapePickItem("label", "label", "built in", ""));
+                shapePickItems.push(new ShapePickItem("star", "star", "built in", ""));
+
+                vscode.window.showQuickPick(
+                    shapePickItems,
+                    {
+                        canPickMany: false,
+                        matchOnDescription: false,
+                        placeHolder: "select group icon shape"
+                    }
+                ).then(selected => {
+                    if (typeof selected !== "undefined") {
+                        let activeGroup = this.groups.get(this.activeGroupName);
+
+                        if (typeof activeGroup === "undefined") {
+                            return;
+                        }
+                        let shape = (selected as ShapePickItem).shape;
+                        activeGroup.setShape(shape);
+                        this.saveSettings();
+                    }
+                });
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
     public registerSelectGroup() {
         let disposable = vscode.commands.registerTextEditorCommand(
             'vsc-labeled-bookmarks.selectGroup',
@@ -244,8 +279,8 @@ export class Main {
                 ).then(selected => {
                     if (typeof selected !== "undefined") {
                         this.activateGroup((selected as GroupPickItem).group.name);
+                        this.saveSettings();
                     }
-                    this.saveSettings();
                 });
             });
         this.ctx.subscriptions.push(disposable);
@@ -308,6 +343,12 @@ export class Main {
 
         for (let editor of vscode.window.visibleTextEditors) {
             this.updateDecorations(editor);
+        }
+    }
+
+    public decorationDropped(decoration: TextEditorDecorationType) {
+        for (let editor of vscode.window.visibleTextEditors) {
+            editor.setDecorations(decoration, []);
         }
     }
 

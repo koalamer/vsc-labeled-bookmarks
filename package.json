@@ -1,8 +1,13 @@
 {
-  "name": "vsc-labeled-bookmarks",
-  "displayName": "vsc-labeled-bookmarks",
-  "description": "Bookmarks with labels for quick access",
-  "version": "0.0.1",
+  "name": "labeled-bookmarks",
+  "displayName": "Labeled Bookmarks",
+  "description": "Bookmarks with labels for quick access, organized into switchable groups",
+  "version": "0.5.0",
+  "publisher": "koalamer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/koalamer/vsc-labeled-bookmarks.git"
+  },
   "engines": {
     "vscode": "^1.54.0"
   },
@@ -34,6 +39,10 @@
       {
         "command": "vsc-labeled-bookmarks.deleteGroup",
         "title": "Bookmarks: select group"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.setGroupIconShape",
+        "title": "Bookmarks: set group icon shape"
       }
     ],
     "keybindings": [
@@ -58,6 +67,10 @@
       {
         "command": "vsc-labeled-bookmarks.deleteGroup",
         "key": "ctrl+alt+b shift+g"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.setGroupIconShape",
+        "key": "ctrl+alt+b s"
       }
     ]
   },

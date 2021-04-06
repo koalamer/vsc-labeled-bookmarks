@@ -40,6 +40,9 @@ export class Group {
     }
 
     public initDecorations() {
+        this.decoration = DecorationFactory.fallbackDecoration;
+        this.inactiveDecoration = DecorationFactory.fallbackDecoration;
+
         DecorationFactory.create(this.shape, this.color, this.iconText).then(newDecoration => {
             this.decoration = newDecoration;
             this.main.groupChanged(this);
@@ -98,6 +101,17 @@ export class Group {
     public setIsActive(isActive: boolean) {
         this.isActive = isActive;
         this.main.groupChanged(this);
+    }
+
+    public setShape(shape: string) {
+        if (this.shape === shape) {
+            return;
+        }
+
+        this.shape = shape;
+        this.main.decorationDropped(this.decoration);
+        this.main.decorationDropped(this.inactiveDecoration);
+        this.initDecorations();
     }
 
     public truncateBookmarks() {
