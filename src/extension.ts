@@ -9,6 +9,7 @@ export function activate(context: ExtensionContext) {
 
 	main.registerToggleBookmark();
 	main.registerToggleLabeledBookmark();
+	main.registerNavigateToBookmark();
 	main.registerSelectGroup();
 	main.registerDeleteGroup();
 
@@ -24,18 +25,6 @@ export function deactivate() {
 }
 
 // snippets
-
-// open a file
-// let doc = await vscode.workspace.openTextDocument('C:/Users/Balu/vimfiles/syntax/go.vim'); // calls back into the provider
-// await vscode.window.showTextDocument(doc, { preview: false });
-
-// go to line
-// let editor2 = vscode.window.activeTextEditor;
-// if (typeof editor2 !== 'undefined') {
-// 	let range = editor2.document.lineAt(4).range;
-// 	editor2.selection = new vscode.Selection(range.start, range.start);
-// 	editor2.revealRange(range);
-// }
 
 // status bar item
 // let statusBarWorkspaceLabel = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);

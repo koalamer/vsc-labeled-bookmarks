@@ -4,6 +4,7 @@ import { SerializableGroupMap } from './serializable_group_map';
 import { ExtensionContext, Range, TextEditor, TextEditorDecorationType } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
+import { BookmarkPickItem } from './bookmark_pick_item';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -180,6 +181,44 @@ export class Main {
                         }
                     }
 
+                    this.saveSettings();
+                });
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
+    public registerNavigateToBookmark() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.navigateToBookmark',
+            () => {
+                let pickItems = new Array<BookmarkPickItem>();
+                let activeGroup = this.groups.get(this.activeGroupName);
+
+                if (typeof activeGroup === "undefined") {
+                    return;
+                }
+
+                for (let [label, bookmark] of activeGroup.bookmarks) {
+                    pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
+                }
+
+                vscode.window.showQuickPick(
+                    pickItems,
+                    {
+                        canPickMany: false,
+                        matchOnDescription: true,
+                        placeHolder: "navigate to bookmark"
+                    }
+                ).then(selected => {
+                    if (typeof selected !== "undefined") {
+                        vscode.workspace.openTextDocument(selected.bookmark.fsPath).then(document => {
+                            vscode.window.showTextDocument(document, { preview: false }).then(textEditor => {
+                                let range = textEditor.document.lineAt(selected.bookmark.line).range;
+                                textEditor.selection = new vscode.Selection(range.start, range.start);
+                                textEditor.revealRange(range);
+                            });
+                        });
+                    }
                     this.saveSettings();
                 });
             });
