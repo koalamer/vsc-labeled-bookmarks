@@ -76,7 +76,7 @@ const svgStarWithText = `<svg xmlns="http://www.w3.org/2000/svg" width="32" heig
 
 const svgUnicodeChar = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
 <text x="16" y="18" text-anchor="middle" fill="#888888ff"
-    style="font-size: 26; font-weight:bold; alignment-baseline:middle;">Q</text>
+    style="font-size: 26; alignment-baseline:middle;">Q</text>
 </svg>`;
 
 export class DecorationFactory {
@@ -100,8 +100,6 @@ export class DecorationFactory {
             } else {
                 text = text.substring(0, 1).toUpperCase();
             }
-        } else {
-            text = text.substring(0, 1);
         }
 
         let fileNamePostfix = '';
@@ -128,8 +126,9 @@ export class DecorationFactory {
                     svg = svgBookmarkWithText;
                     shape = "bookmark";
             }
-            svg = svg.replace(">Q<", ">&#" + text.charCodeAt(0) + ";<");
-            fileNamePostfix = text.charCodeAt(0).toString();
+            let codePoint = (text.codePointAt(0) ?? 0).toString(10);
+            svg = svg.replace(">Q<", ">&#" + codePoint + ";<");
+            fileNamePostfix = codePoint;
         }
 
         color = DecorationFactory.normalizeColorFormat(color);

@@ -24,6 +24,7 @@ export class Main {
     public fallbackColor: string;
 
     public colors: Map<string, string>;
+    public readonly shapes: Map<string, string>;
     public unicodeMarkers: Map<string, string>;
     public defaultShape = "bookmark";
 
@@ -49,6 +50,14 @@ export class Main {
             ["green", "#77ff66"],
             ["red", "#ff6677"],
             ["blue", "#6677ff"]
+        ]);
+
+        this.shapes = new Map<string, string>([
+            ["bookmark", "bookmark"],
+            ["circle", "circle"],
+            ["heart", "heart"],
+            ["label", "label"],
+            ["star", "star"]
         ]);
 
         this.unicodeMarkers = new Map<string, string>([
@@ -247,12 +256,24 @@ export class Main {
         let disposable = vscode.commands.registerTextEditorCommand(
             'vsc-labeled-bookmarks.setGroupIconShape',
             () => {
+                let activeGroup = this.groups.get(this.activeGroupName);
+
+                if (typeof activeGroup === "undefined") {
+                    return;
+                }
+                let iconText = activeGroup.iconText;
+
                 let shapePickItems = new Array<ShapePickItem>();
-                shapePickItems.push(new ShapePickItem("bookmark", "bookmark", "built in", ""));
-                shapePickItems.push(new ShapePickItem("circle", "circle", "built in", ""));
-                shapePickItems.push(new ShapePickItem("heart", "heart", "built in", ""));
-                shapePickItems.push(new ShapePickItem("label", "label", "built in", ""));
-                shapePickItems.push(new ShapePickItem("star", "star", "built in", ""));
+                for (let [label, id] of this.shapes) {
+                    label = (activeGroup.shape === id ? "● " : "◌ ") + label;
+                    shapePickItems.push(new ShapePickItem(id, iconText, label, "built in", ""));
+                }
+
+                for (let [name, marker] of this.unicodeMarkers) {
+                    let label = (activeGroup.shape === "unicode" && activeGroup.iconText === marker ? "● " : "◌ ");
+                    label += marker + " " + name;
+                    shapePickItems.push(new ShapePickItem("unicode", marker, label, "unicode", ""));
+                }
 
                 vscode.window.showQuickPick(
                     shapePickItems,
@@ -268,8 +289,10 @@ export class Main {
                         if (typeof activeGroup === "undefined") {
                             return;
                         }
+
                         let shape = (selected as ShapePickItem).shape;
-                        activeGroup.setShape(shape);
+                        let iconText = (selected as ShapePickItem).iconText;
+                        activeGroup.setShape(shape, iconText);
                         this.saveSettings();
                     }
                 });

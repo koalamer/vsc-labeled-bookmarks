@@ -103,12 +103,13 @@ export class Group {
         this.main.groupChanged(this);
     }
 
-    public setShape(shape: string) {
-        if (this.shape === shape) {
+    public setShape(shape: string, iconText: string) {
+        if (this.shape === shape && this.iconText === iconText) {
             return;
         }
 
         this.shape = shape;
+        this.iconText = iconText;
         this.main.decorationDropped(this.decoration);
         this.main.decorationDropped(this.inactiveDecoration);
         this.initDecorations();
