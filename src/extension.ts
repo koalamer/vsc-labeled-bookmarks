@@ -13,6 +13,7 @@ export function activate(context: ExtensionContext) {
 	main.registerSelectGroup();
 	main.registerDeleteGroup();
 	main.registerSetGroupIconShape();
+	main.registerSetGroupIconColor();
 
 	vscode.window.onDidChangeActiveTextEditor(textEditor => {
 		main.updateDecorations(textEditor);

@@ -6,6 +6,7 @@ import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
 import { BookmarkPickItem } from './bookmark_pick_item';
 import { ShapePickItem } from './shape_pick_item';
+import { ColorPickItem } from './color_pick_item';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -22,8 +23,9 @@ export class Main {
     public readonly defaultGroupName: string;
     public fallbackColor: string;
 
-    public colors: Array<string>;
-    public defaultShape = "star";
+    public colors: Map<string, string>;
+    public unicodeMarkers: Map<string, string>;
+    public defaultShape = "bookmark";
 
     public displayActiveGroupOnly: boolean;
     public hideAll: boolean;
@@ -40,19 +42,34 @@ export class Main {
         this.activeGroupName = this.defaultGroupName;
         this.fallbackColor = "ffee66ff";
 
-        this.colors = [
-            "#ffee66",
-            "#ee66ff",
-            "#66ffee",
-            "#77ff66",
-            "#ff6677",
-            "#6677ff"
-        ];
+        this.colors = new Map<string, string>([
+            ["yellow", "#ffee66"],
+            ["purple", "#ee66ff"],
+            ["teal", "#66ffee"],
+            ["green", "#77ff66"],
+            ["red", "#ff6677"],
+            ["blue", "#6677ff"]
+        ]);
 
-        this.colors = this.colors.map(c => DecorationFactory.normalizeColorFormat(c));
+        this.unicodeMarkers = new Map<string, string>([
+            ["poop", "💩"],
+            ["neutral face", "😐"],
+            ["skull", "💀"],
+            ["thumbs up", "👍"],
+            ["thumbs down", "👎"],
+            ["snail", "🐌"],
+            ["bug", "🐞"],
+            ["biohazard", "☣"],
+            ["mac command", "⌘"],
+            ["yin yang", "☯"]
+        ]);
 
-        if (this.colors.length < 1) {
-            this.colors.push(this.fallbackColor);
+        for (let [name, color] of this.colors) {
+            this.colors.set(name, DecorationFactory.normalizeColorFormat(color));
+        }
+
+        if (this.colors.size < 1) {
+            this.colors.set("yellow", this.fallbackColor);
         }
 
         this.displayActiveGroupOnly = false;
@@ -260,6 +277,46 @@ export class Main {
         this.ctx.subscriptions.push(disposable);
     }
 
+    public registerSetGroupIconColor() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.setGroupIconColor',
+            () => {
+                let activeGroup = this.groups.get(this.activeGroupName);
+
+                if (typeof activeGroup === "undefined") {
+                    return;
+                }
+
+                let colorPickItems = new Array<ColorPickItem>();
+                for (let [name, color] of this.colors) {
+                    let label = (activeGroup.color === color ? "● " : "◌ ") + name;
+
+                    colorPickItems.push(new ColorPickItem(color, label, "", ""));
+                }
+
+                vscode.window.showQuickPick(
+                    colorPickItems,
+                    {
+                        canPickMany: false,
+                        matchOnDescription: false,
+                        placeHolder: "select group icon color"
+                    }
+                ).then(selected => {
+                    if (typeof selected !== "undefined") {
+                        let activeGroup = this.groups.get(this.activeGroupName);
+
+                        if (typeof activeGroup === "undefined") {
+                            return;
+                        }
+                        let color = (selected as ColorPickItem).color;
+                        activeGroup.setColor(color);
+                        this.saveSettings();
+                    }
+                });
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
     public registerSelectGroup() {
         let disposable = vscode.commands.registerTextEditorCommand(
             'vsc-labeled-bookmarks.selectGroup',
@@ -397,13 +454,13 @@ export class Main {
     }
 
     private getLeastUsedColor(): string {
-        if (this.colors.length < 1) {
+        if (this.colors.size < 1) {
             return this.fallbackColor;
         }
 
         let usages = new Map<string, number>();
 
-        for (let color of this.colors) {
+        for (let [index, color] of this.colors) {
             usages.set(color, 0);
         }
 

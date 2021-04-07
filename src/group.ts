@@ -114,6 +114,18 @@ export class Group {
         this.initDecorations();
     }
 
+    public setColor(color: string) {
+        if (this.color === color) {
+            return;
+        }
+
+        this.color = DecorationFactory.normalizeColorFormat(color);
+        this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
+        this.main.decorationDropped(this.decoration);
+        this.main.decorationDropped(this.inactiveDecoration);
+        this.initDecorations();
+    }
+
     public truncateBookmarks() {
         let affectedFiles = new Map<string, boolean>();
         for (let [label, bookmark] of this.bookmarks) {

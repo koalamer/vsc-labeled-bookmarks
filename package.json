@@ -43,6 +43,10 @@
       {
         "command": "vsc-labeled-bookmarks.setGroupIconShape",
         "title": "Bookmarks: set group icon shape"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.setGroupIconColor",
+        "title": "Bookmarks: set group icon color"
       }
     ],
     "keybindings": [
@@ -71,6 +75,10 @@
       {
         "command": "vsc-labeled-bookmarks.setGroupIconShape",
         "key": "ctrl+alt+b s"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.setGroupIconColor",
+        "key": "ctrl+alt+b c"
       }
     ]
   },
