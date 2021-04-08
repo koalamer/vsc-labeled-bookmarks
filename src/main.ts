@@ -5,6 +5,7 @@ import { ExtensionContext, Range, TextEditor, TextEditorDecorationType } from 'v
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
 import { BookmarkPickItem } from './bookmark_pick_item';
+import { BookmarkDeletePickItem } from './bookmark_delete_pick_item';
 import { ShapePickItem } from './shape_pick_item';
 import { ColorPickItem } from './color_pick_item';
 
@@ -433,6 +434,45 @@ export class Main {
                         }
 
                         this.activateGroup(this.defaultGroupName);
+                        this.saveSettings();
+                    }
+                });
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
+    public registerDeleteBookmark() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.deleteBookmark',
+            () => {
+                let activeGroup = this.groups.get(this.activeGroupName);
+                if (typeof activeGroup === "undefined") {
+                    return;
+                }
+
+                let pickItems = new Array<BookmarkDeletePickItem>();
+                for (let [index, bookmark] of activeGroup.bookmarks) {
+                    pickItems.push(BookmarkDeletePickItem.fromGroupEntry(index, bookmark));
+                }
+
+                vscode.window.showQuickPick(
+                    pickItems,
+                    {
+                        canPickMany: true,
+                        matchOnDescription: false,
+                        placeHolder: "select bookmarks to be deleted"
+                    }
+                ).then(selecteds => {
+                    if (typeof selecteds !== "undefined") {
+                        let activeGroup = this.groups.get(this.activeGroupName);
+                        if (typeof activeGroup === "undefined") {
+                            return;
+                        }
+
+                        for (let selected of selecteds) {
+                            let index = (selected as BookmarkDeletePickItem).index;
+                            activeGroup.deleteLabeledBookmark(index);
+                        }
                         this.saveSettings();
                     }
                 });

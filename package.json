@@ -38,11 +38,11 @@
       },
       {
         "command": "vsc-labeled-bookmarks.addGroup",
-        "title": "Bookmarks: select group"
+        "title": "Bookmarks: add group"
       },
       {
         "command": "vsc-labeled-bookmarks.deleteGroup",
-        "title": "Bookmarks: select group"
+        "title": "Bookmarks: delete group"
       },
       {
         "command": "vsc-labeled-bookmarks.setGroupIconShape",
@@ -51,6 +51,10 @@
       {
         "command": "vsc-labeled-bookmarks.setGroupIconColor",
         "title": "Bookmarks: set group icon color"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.deleteBookmark",
+        "title": "Bookmarks: delete bookmark"
       }
     ],
     "keybindings": [
@@ -87,6 +91,10 @@
       {
         "command": "vsc-labeled-bookmarks.setGroupIconColor",
         "key": "ctrl+alt+b c"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.deleteBookmark",
+        "key": "ctrl+alt+b shift+b"
       }
     ]
   },

@@ -9,8 +9,8 @@ export class BookmarkPickItem implements QuickPickItem {
     picked: boolean;
     alwaysShow: boolean;
 
-    constructor(group: Bookmark, label: string, description?: string, detail?: string, picked: boolean = false, alwaysShow: boolean = false) {
-        this.bookmark = group;
+    constructor(bookmark: Bookmark, label: string, description?: string, detail?: string, picked: boolean = false, alwaysShow: boolean = false) {
+        this.bookmark = bookmark;
         this.label = label;
         this.description = description;
         this.detail = detail;
