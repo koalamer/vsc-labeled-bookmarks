@@ -13,7 +13,7 @@ export class Main {
     public ctx: ExtensionContext;
     public readonly savedGroupsKey = "vscLabeledBookmarks.groups";
     public readonly savedActiveGroupKey = "vscLabeledBookmarks.activeGroup";
-    public readonly savedDisplayActiveGroupOnlyKey = "vscLabeledBookmarks.displayActiveGroupOnly";
+    public readonly savedHideInactiveGroupsKey = "vscLabeledBookmarks.hideInactiveGroups";
     public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
 
     public readonly groupSeparator = "@";
@@ -29,7 +29,7 @@ export class Main {
     public unicodeMarkers: Map<string, string>;
     public defaultShape = "bookmark";
 
-    public displayActiveGroupOnly: boolean;
+    public hideInactiveGroups: boolean;
     public hideAll: boolean;
 
     private cache: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
@@ -82,7 +82,7 @@ export class Main {
             this.colors.set("yellow", this.fallbackColor);
         }
 
-        this.displayActiveGroupOnly = false;
+        this.hideInactiveGroups = false;
         this.hideAll = false;
 
         this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
@@ -96,7 +96,7 @@ export class Main {
         let serializedGroupMap = SerializableGroupMap.fromGroupMap(this.groups);
         this.ctx.workspaceState.update(this.savedGroupsKey, serializedGroupMap);
         this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroupName);
-        this.ctx.workspaceState.update(this.savedDisplayActiveGroupOnlyKey, this.displayActiveGroupOnly);
+        this.ctx.workspaceState.update(this.savedHideInactiveGroupsKey, this.hideInactiveGroups);
         this.ctx.workspaceState.update(this.savedHideAllKey, this.hideAll);
     }
 
@@ -480,6 +480,26 @@ export class Main {
         this.ctx.subscriptions.push(disposable);
     }
 
+    public registerToggleHideAll() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.toggleHideAll',
+            () => {
+                this.setHideAll(!this.hideAll);
+                this.saveSettings();
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
+    public registerToggleHideInactiveGroups() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.toggleHideInactiveGroups',
+            () => {
+                this.setHideInactiveGroups(!this.hideInactiveGroups);
+                this.saveSettings();
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
     public fileChanged(fsPath: string) {
         this.cache.delete(fsPath);
 
@@ -507,8 +527,8 @@ export class Main {
     }
 
     private restoreSettings() {
-        this.displayActiveGroupOnly =
-            this.ctx.workspaceState.get(this.savedDisplayActiveGroupOnlyKey) ?? false;
+        this.hideInactiveGroups =
+            this.ctx.workspaceState.get(this.savedHideInactiveGroupsKey) ?? false;
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
 
@@ -581,22 +601,38 @@ export class Main {
         return leastUsedColor;
     }
 
-    private setDisplayActiveGroupOnly(displayActiveGroupOnly: boolean) {
-        if (this.displayActiveGroupOnly !== displayActiveGroupOnly) {
-            this.cacheReset();
+    private setHideInactiveGroups(hideInactiveGroups: boolean) {
+        if (this.hideInactiveGroups === hideInactiveGroups) {
+            return;
         }
-        this.displayActiveGroupOnly = displayActiveGroupOnly;
+
+        this.hideInactiveGroups = hideInactiveGroups;
+        this.cacheReset();
+
+        for (let editor of vscode.window.visibleTextEditors) {
+            this.updateDecorations(editor);
+        }
     }
+
+    private setHideAll(hideAll: boolean) {
+        if (this.hideAll === hideAll) {
+            return;
+        }
+
+        this.hideAll = hideAll;
+        this.cacheReset();
+
+        for (let editor of vscode.window.visibleTextEditors) {
+            this.updateDecorations(editor);
+        }
+    }
+
 
     private cacheReset() {
         this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
     }
 
     private getCachedDecorations(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
-        if (this.hideAll) {
-            return new Map<TextEditorDecorationType, Array<Range>>();
-        }
-
         let cached = this.cache.get(fsPath);
         if (typeof cached !== "undefined") {
             return cached;
@@ -634,6 +670,11 @@ export class Main {
             }
 
             result.set(decorationHidden, []);
+
+            if (this.hideAll || (this.hideInactiveGroups && !group.isActive)) {
+                result.set(decorationShown, []);
+                continue;
+            }
 
             let ranges: Array<Range> = [];
             let bookmarks = group.getBookmarksOfFsPath(fsPath);

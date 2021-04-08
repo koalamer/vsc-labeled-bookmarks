@@ -55,6 +55,14 @@
       {
         "command": "vsc-labeled-bookmarks.deleteBookmark",
         "title": "Bookmarks: delete bookmark"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.toggleHideAll",
+        "title": "Bookmarks: toggle hiding all bookmark decorations"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.toggleHideInactiveGroups",
+        "title": "Bookmarks: toggle hiding inactive group decorations"
       }
     ],
     "keybindings": [
@@ -95,6 +103,14 @@
       {
         "command": "vsc-labeled-bookmarks.deleteBookmark",
         "key": "ctrl+alt+b shift+b"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.toggleHideAll",
+        "key": "ctrl+alt+b h"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.toggleHideInactiveGroups",
+        "key": "ctrl+alt+b i"
       }
     ]
   },
