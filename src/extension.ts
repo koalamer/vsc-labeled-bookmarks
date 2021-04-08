@@ -11,6 +11,7 @@ export function activate(context: ExtensionContext) {
 	main.registerToggleLabeledBookmark();
 	main.registerNavigateToBookmark();
 	main.registerSelectGroup();
+	main.registerAddGroup();
 	main.registerDeleteGroup();
 	main.registerSetGroupIconShape();
 	main.registerSetGroupIconColor();

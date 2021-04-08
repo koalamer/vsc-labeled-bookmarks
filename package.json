@@ -37,6 +37,10 @@
         "title": "Bookmarks: select group"
       },
       {
+        "command": "vsc-labeled-bookmarks.addGroup",
+        "title": "Bookmarks: select group"
+      },
+      {
         "command": "vsc-labeled-bookmarks.deleteGroup",
         "title": "Bookmarks: select group"
       },
@@ -67,6 +71,10 @@
       {
         "command": "vsc-labeled-bookmarks.selectGroup",
         "key": "ctrl+alt+b g"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.addGroup",
+        "key": "ctrl+alt+b alt+g"
       },
       {
         "command": "vsc-labeled-bookmarks.deleteGroup",

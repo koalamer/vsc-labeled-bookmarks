@@ -366,6 +366,40 @@ export class Main {
         this.ctx.subscriptions.push(disposable);
     }
 
+    public registerAddGroup() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.addGroup',
+            () => {
+
+                vscode.window.showInputBox({
+                    placeHolder: "group name",
+                    prompt: "Enter group name to create or switch to"
+                }).then(groupName => {
+                    if (typeof groupName === "undefined") {
+                        return;
+                    }
+
+                    groupName = groupName.trim();
+                    if (groupName === "") {
+                        return;
+                    }
+
+                    if (groupName.length > this.maxGroupNameLength) {
+                        vscode.window.showErrorMessage(
+                            "Choose a maximum " +
+                            this.maxGroupNameLength +
+                            " character long group name."
+                        );
+                        return;
+                    }
+
+                    this.activateGroup(groupName);
+                    this.saveSettings();
+                });
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
     public registerDeleteGroup() {
         let disposable = vscode.commands.registerTextEditorCommand(
             'vsc-labeled-bookmarks.deleteGroup',
