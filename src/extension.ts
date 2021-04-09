@@ -23,6 +23,10 @@ export function activate(context: ExtensionContext) {
 		main.updateDecorations(textEditor);
 	});
 
+	vscode.workspace.onDidChangeTextDocument(textDocumentChangeEvent => {
+		main.updateDecorationsOnDocumentChange(textDocumentChangeEvent);
+	});
+
 	main.updateDecorations(vscode.window.activeTextEditor);
 }
 

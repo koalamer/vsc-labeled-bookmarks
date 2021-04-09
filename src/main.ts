@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
 import { Group } from "./group";
+import { Bookmark } from './bookmark';
 import { SerializableGroupMap } from './serializable_group_map';
-import { ExtensionContext, Range, TextEditor, TextEditorDecorationType } from 'vscode';
+import { ExtensionContext, Range, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
 import { BookmarkPickItem } from './bookmark_pick_item';
 import { BookmarkDeletePickItem } from './bookmark_delete_pick_item';
 import { ShapePickItem } from './shape_pick_item';
 import { ColorPickItem } from './color_pick_item';
+import { FileBookmarkListItem } from './file_bookmark_list_item';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -32,7 +34,8 @@ export class Main {
     public hideInactiveGroups: boolean;
     public hideAll: boolean;
 
-    private cache: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
+    private decorationCache: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
+    private fileBookmarkCache: Map<string, Array<FileBookmarkListItem>>;
 
     constructor(ctx: ExtensionContext) {
         this.ctx = ctx;
@@ -85,7 +88,8 @@ export class Main {
         this.hideInactiveGroups = false;
         this.hideAll = false;
 
-        this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
+        this.decorationCache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
+        this.fileBookmarkCache = new Map<string, Array<FileBookmarkListItem>>();
 
         this.restoreSettings();
         this.activateGroup(this.activeGroupName);
@@ -111,6 +115,72 @@ export class Main {
         decorationsLists = this.getCachedDecorations(documentFsPath);
         for (let [decoration, ranges] of decorationsLists) {
             textEditor.setDecorations(decoration, ranges);
+        }
+    }
+
+    public updateDecorationsOnDocumentChange(event: TextDocumentChangeEvent) {
+        let fsPath = event.document.uri.fsPath;
+
+        let fileBookmarkList = this.getCachedFileBookmarks(fsPath);
+        if (fileBookmarkList.length === 0) {
+            return;
+        }
+
+        for (let change of event.contentChanges) {
+            let newLines = this.getNlCount(change.text);
+            let oldLines = change.range.end.line - change.range.start.line;
+
+            if (newLines === oldLines) {
+                continue;
+            }
+
+            let firstLine = change.range.start.line;
+
+            if (newLines > oldLines) {
+                let shiftBelowLine = firstLine + oldLines;
+                let shiftDownBy = newLines - oldLines;
+
+                let visualsChanged = false;
+                for (let item of fileBookmarkList) {
+                    if (item.bookmark.line > shiftBelowLine) {
+                        item.bookmark.line += shiftDownBy;
+                        visualsChanged = true;
+                    }
+                }
+                if (visualsChanged) {
+                    this.fileChanged(fsPath, false);
+                    this.saveSettings();
+                }
+                continue;
+            }
+
+            if (newLines < oldLines) {
+                let deleteBelowLine = firstLine + newLines;
+                let shiftBelowLine = firstLine + oldLines;
+                let shiftUpBy = oldLines - newLines;
+
+                let visualsChanged = false;
+                let clearFileBookmarkCache = false;
+                for (let item of fileBookmarkList) {
+                    if (item.bookmark.line > shiftBelowLine) {
+                        item.bookmark.line -= shiftUpBy;
+                        visualsChanged = true;
+                        continue;
+                    }
+                    if (item.bookmark.line > deleteBelowLine) {
+                        this.groups.get(item.groupName)?.deleteLabeledBookmark(item.bookmarkLabel);
+                        visualsChanged = true;
+                        clearFileBookmarkCache = true;
+                    }
+                }
+
+                if (visualsChanged) {
+                    this.fileChanged(fsPath, clearFileBookmarkCache);
+                    this.saveSettings();
+                }
+
+                continue;
+            }
         }
     }
 
@@ -500,8 +570,11 @@ export class Main {
         this.ctx.subscriptions.push(disposable);
     }
 
-    public fileChanged(fsPath: string) {
-        this.cache.delete(fsPath);
+    public fileChanged(fsPath: string, clearFileBookmarkCache: boolean = true) {
+        this.decorationCache.delete(fsPath);
+        if (clearFileBookmarkCache) {
+            this.fileBookmarkCache.delete(fsPath);
+        }
 
         for (let editor of vscode.window.visibleTextEditors) {
             if (editor.document.uri.fsPath === fsPath) {
@@ -512,7 +585,8 @@ export class Main {
 
     public groupChanged(group: Group) {
         for (let [label, bookmark] of group.bookmarks) {
-            this.cache.delete(bookmark.fsPath);
+            this.decorationCache.delete(bookmark.fsPath);
+            this.fileBookmarkCache.delete(bookmark.fsPath);
         }
 
         for (let editor of vscode.window.visibleTextEditors) {
@@ -629,11 +703,11 @@ export class Main {
 
 
     private cacheReset() {
-        this.cache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
+        this.decorationCache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
     }
 
     private getCachedDecorations(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
-        let cached = this.cache.get(fsPath);
+        let cached = this.decorationCache.get(fsPath);
         if (typeof cached !== "undefined") {
             return cached;
         }
@@ -690,7 +764,35 @@ export class Main {
             result.set(decorationShown, ranges);
         }
 
-        this.cache.set(fsPath, result);
+        this.decorationCache.set(fsPath, result);
         return result;
+    }
+
+    private getCachedFileBookmarks(fsPath: string): Array<FileBookmarkListItem> {
+        let cached = this.fileBookmarkCache.get(fsPath);
+        if (typeof cached !== "undefined") {
+            return cached;
+        }
+
+        let result = new Array<FileBookmarkListItem>();
+
+        for (let [name, group] of this.groups) {
+            for (let [label, bookmark] of group.bookmarks) {
+                if (bookmark.fsPath === fsPath) {
+                    result.push(new FileBookmarkListItem(name, label, bookmark));
+                }
+            }
+        }
+
+        this.fileBookmarkCache.set(fsPath, result);
+        return result;
+    }
+
+    private getNlCount(text: string) {
+        let nlCount: number = 0;
+        for (let c of text) {
+            nlCount += (c === "\n") ? 1 : 0;
+        }
+        return nlCount;
     }
 }
