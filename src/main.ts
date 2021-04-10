@@ -498,6 +498,12 @@ export class Main {
                             this.groups.delete(group.name);
                         }
 
+                        if (this.groups.size === 0) {
+                            this.activateGroup(this.defaultGroupName);
+                            this.saveSettings();
+                            return;
+                        }
+
                         if (!this.groups.has(this.activeGroupName)) {
                             for (let [name, group] of this.groups) {
                                 this.activateGroup(name);
@@ -506,7 +512,6 @@ export class Main {
                             }
                         }
 
-                        this.activateGroup(this.defaultGroupName);
                         this.saveSettings();
                     }
                 });
