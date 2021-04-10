@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { TextEditorDecorationType, Uri } from 'vscode';
 import { Bookmark } from "./bookmark";
 import { DecorationFactory } from "./decoration_factory";
-import { activate } from './extension';
 import { Main } from './main';
 
 export class Group {
@@ -30,8 +29,8 @@ export class Group {
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.isActive = false;
         this.bookmarks = new Map<string, Bookmark>();
-        this.decoration = DecorationFactory.fallbackDecoration;
-        this.inactiveDecoration = DecorationFactory.fallbackDecoration;
+        this.decoration = DecorationFactory.placeholderDecoration;
+        this.inactiveDecoration = DecorationFactory.placeholderDecoration;
         this.initDecorations();
     }
 
@@ -40,8 +39,8 @@ export class Group {
     }
 
     public initDecorations() {
-        this.decoration = DecorationFactory.fallbackDecoration;
-        this.inactiveDecoration = DecorationFactory.fallbackDecoration;
+        this.decoration = DecorationFactory.placeholderDecoration;
+        this.inactiveDecoration = DecorationFactory.placeholderDecoration;
 
         DecorationFactory.create(this.shape, this.color, this.iconText).then(newDecoration => {
             this.decoration = newDecoration;
@@ -51,6 +50,11 @@ export class Group {
             this.inactiveDecoration = newInactiveDecoration;
             this.main.groupChanged(this);
         });
+    }
+
+    public isDecorationReady(): boolean {
+        return this.decoration !== DecorationFactory.placeholderDecoration
+            && this.inactiveDecoration !== DecorationFactory.placeholderDecoration;
     }
 
     public toggleBookmark(fsPath: string, lineNumber: number) {

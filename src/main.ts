@@ -26,9 +26,12 @@ export class Main {
     public readonly defaultGroupName: string;
     public fallbackColor: string;
 
+    // "labeledBookmarks.colors": [[name, colorCode], ...]
     public colors: Map<string, string>;
     public readonly shapes: Map<string, string>;
+    // "labeledBookmarks.unicodeMarkers": [[name, character]...]
     public unicodeMarkers: Map<string, string>;
+    // "labeledBookmarks.defaultShape": one of this.shapes
     public defaultShape = "bookmark";
 
     public hideInactiveGroups: boolean;
@@ -337,7 +340,7 @@ export class Main {
                 let shapePickItems = new Array<ShapePickItem>();
                 for (let [label, id] of this.shapes) {
                     label = (activeGroup.shape === id ? "● " : "◌ ") + label;
-                    shapePickItems.push(new ShapePickItem(id, iconText, label, "built in", ""));
+                    shapePickItems.push(new ShapePickItem(id, iconText, label, "vector", ""));
                 }
 
                 for (let [name, marker] of this.unicodeMarkers) {
@@ -728,10 +731,7 @@ export class Main {
             let decorationShown: TextEditorDecorationType;
             let decorationHidden: TextEditorDecorationType;
 
-            if (
-                group.decoration === DecorationFactory.fallbackDecoration
-                || group.inactiveDecoration === DecorationFactory.fallbackDecoration
-            ) {
+            if (!group.isDecorationReady()) {
                 continue;
             }
 

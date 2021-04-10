@@ -1,4 +1,3 @@
-import { pathToFileURL } from 'node:url';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { Uri } from "vscode";
@@ -82,7 +81,7 @@ const svgUnicodeChar = `<svg xmlns="http://www.w3.org/2000/svg" width="32" heigh
 export class DecorationFactory {
     private static readonly singleCharacterLabelPatern = /^[a-zA-Z0-9!?+-=\/\$%#]$/;
 
-    public static readonly fallbackDecoration = vscode.window.createTextEditorDecorationType(
+    public static readonly placeholderDecoration = vscode.window.createTextEditorDecorationType(
         {
             gutterIconPath: path.join(__dirname, "..", "resources", "gutter_icon_bm.svg"),
             gutterIconSize: 'contain',
