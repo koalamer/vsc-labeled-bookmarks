@@ -67,6 +67,14 @@
       {
         "command": "vsc-labeled-bookmarks.toggleHideInactiveGroups",
         "title": "Bookmarks: toggle hiding inactive group decorations"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.navigateToNextBookmark",
+        "title": "Bookmarks: navigate to next bookmark"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.navigateToPreviousBookmark",
+        "title": "Bookmarks: navigate to previous bookmark"
       }
     ],
     "keybindings": [
@@ -78,6 +86,16 @@
       {
         "command": "vsc-labeled-bookmarks.toggleLabeledBookmark",
         "key": "ctrl+alt+l",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.navigateToNextBookmark",
+        "key": "ctrl+alt+k",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.navigateToPreviousBookmark",
+        "key": "ctrl+alt+j",
         "when": "editorTextFocus"
       },
       {
@@ -110,7 +128,7 @@
       },
       {
         "command": "vsc-labeled-bookmarks.deleteBookmark",
-        "key": "ctrl+alt+b shift+b"
+        "key": "ctrl+alt+b d"
       },
       {
         "command": "vsc-labeled-bookmarks.toggleHideAll",

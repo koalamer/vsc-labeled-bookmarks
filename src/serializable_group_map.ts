@@ -24,7 +24,7 @@ export class SerializableGroupMap {
     public static toGroupMap(main: Main, sgm: SerializableGroupMap): Map<string, Group> {
         let result = new Map<string, Group>();
         for (let i in sgm.keys) {
-            let group = SerializableGroup.toGroup(main, sgm.values[i]);
+            let group = Group.fromSerializableGroup(main, sgm.values[i]);
             result.set(sgm.keys[i], group);
         }
         return result;

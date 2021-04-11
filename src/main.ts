@@ -9,6 +9,7 @@ import { BookmarkDeletePickItem } from './bookmark_delete_pick_item';
 import { ShapePickItem } from './shape_pick_item';
 import { ColorPickItem } from './color_pick_item';
 import { FileBookmarkListItem } from './file_bookmark_list_item';
+import { Bookmark } from "./bookmark";
 
 export class Main {
     public ctx: ExtensionContext;
@@ -269,6 +270,58 @@ export class Main {
         this.ctx.subscriptions.push(disposable);
     }
 
+    public registerNavigateToNextBookmark() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.navigateToNextBookmark',
+            (textEditor) => {
+                if (textEditor.selections.length === 0) {
+                    return;
+                }
+
+                let documentFsPath = textEditor.document.uri.fsPath;
+                let lineNumber = textEditor.selection.start.line;
+
+                let activeGroup = this.groups.get(this.activeGroupName);
+                if (typeof activeGroup === "undefined") {
+                    return;
+                }
+
+                let nextBookmark = activeGroup.nextBookmark(documentFsPath, lineNumber);
+                if (typeof nextBookmark === "undefined") {
+                    return;
+                }
+
+                this.jumpToBookmark(nextBookmark);
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
+    public registerNavigateToPreviousBookmark() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.navigateToPreviousBookmark',
+            (textEditor) => {
+                if (textEditor.selections.length === 0) {
+                    return;
+                }
+
+                let documentFsPath = textEditor.document.uri.fsPath;
+                let lineNumber = textEditor.selection.start.line;
+
+                let activeGroup = this.groups.get(this.activeGroupName);
+                if (typeof activeGroup === "undefined") {
+                    return;
+                }
+
+                let previousBookmark = activeGroup.previousBookmark(documentFsPath, lineNumber);
+                if (typeof previousBookmark === "undefined") {
+                    return;
+                }
+
+                this.jumpToBookmark(previousBookmark);
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
     public registerNavigateToBookmark() {
         let disposable = vscode.commands.registerTextEditorCommand(
             'vsc-labeled-bookmarks.navigateToBookmark',
@@ -294,13 +347,7 @@ export class Main {
                     }
                 ).then(selected => {
                     if (typeof selected !== "undefined") {
-                        vscode.workspace.openTextDocument(selected.bookmark.fsPath).then(document => {
-                            vscode.window.showTextDocument(document, { preview: false }).then(textEditor => {
-                                let range = textEditor.document.lineAt(selected.bookmark.line).range;
-                                textEditor.selection = new vscode.Selection(range.start, range.start);
-                                textEditor.revealRange(range);
-                            });
-                        });
+                        this.jumpToBookmark(selected.bookmark);
                     }
                     this.saveSettings();
                 });
@@ -330,13 +377,7 @@ export class Main {
                     }
                 ).then(selected => {
                     if (typeof selected !== "undefined") {
-                        vscode.workspace.openTextDocument(selected.bookmark.fsPath).then(document => {
-                            vscode.window.showTextDocument(document, { preview: false }).then(textEditor => {
-                                let range = textEditor.document.lineAt(selected.bookmark.line).range;
-                                textEditor.selection = new vscode.Selection(range.start, range.start);
-                                textEditor.revealRange(range);
-                            });
-                        });
+                        this.jumpToBookmark(selected.bookmark);
                     }
                     this.saveSettings();
                 });
@@ -892,5 +933,15 @@ export class Main {
             nlCount += (c === "\n") ? 1 : 0;
         }
         return nlCount;
+    }
+
+    private jumpToBookmark(bookmark: Bookmark) {
+        vscode.workspace.openTextDocument(bookmark.fsPath).then(document => {
+            vscode.window.showTextDocument(document, { preview: false }).then(textEditor => {
+                let range = textEditor.document.lineAt(bookmark.line).range;
+                textEditor.selection = new vscode.Selection(range.start, range.start);
+                textEditor.revealRange(range);
+            });
+        });
     }
 }

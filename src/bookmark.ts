@@ -8,4 +8,8 @@ export class Bookmark {
         this.label = label;
         this.line = line;
     }
+
+    public static sortByLocation(a: Bookmark, b: Bookmark): number {
+        return a.fsPath.localeCompare(b.fsPath) || (a.line - b.line);
+    }
 }

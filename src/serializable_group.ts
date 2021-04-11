@@ -36,11 +36,4 @@ export class SerializableGroup {
         );
     }
 
-    public static toGroup(main: Main, sg: SerializableGroup): Group {
-        let result = new Group(main, sg.name, sg.color, sg.shape, sg.iconText);
-        for (let i in sg.bookmarkKeys) {
-            result.bookmarks.set(sg.bookmarkKeys[i], sg.bookmarkValues[i]);
-        }
-        return result;
-    }
 }

@@ -9,6 +9,8 @@ export function activate(context: ExtensionContext) {
 
 	main.registerToggleBookmark();
 	main.registerToggleLabeledBookmark();
+	main.registerNavigateToNextBookmark();
+	main.registerNavigateToPreviousBookmark();
 	main.registerNavigateToBookmark();
 	main.registerNavigateToBookmarkOfAnyGroup();
 	main.registerSelectGroup();
