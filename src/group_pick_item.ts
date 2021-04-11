@@ -1,4 +1,4 @@
-import { QuickPickItem } from 'vscode';
+import { QuickPickItem, window } from 'vscode';
 import { Group } from "./group";
 
 export class GroupPickItem implements QuickPickItem {
@@ -25,5 +25,9 @@ export class GroupPickItem implements QuickPickItem {
         let description = " $(bookmark) " + group.getBookmarkCount();
         let detail = "";
         return new GroupPickItem(group, label, description, detail);
+    }
+
+    public static sort(a: GroupPickItem, b: GroupPickItem): number {
+        return a.group.name.localeCompare(b.group.name);
     }
 }

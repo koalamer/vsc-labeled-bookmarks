@@ -403,6 +403,7 @@ export class Main {
                 for (let [name, group] of this.groups) {
                     pickItems.push(GroupPickItem.fromGroup(group));
                 }
+                pickItems.sort(GroupPickItem.sort);
 
                 vscode.window.showQuickPick(
                     pickItems,
@@ -463,6 +464,7 @@ export class Main {
                 for (let [name, group] of this.groups) {
                     pickItems.push(GroupPickItem.fromGroup(group));
                 }
+                pickItems.sort(GroupPickItem.sort);
 
                 vscode.window.showQuickPick(
                     pickItems,
@@ -513,6 +515,7 @@ export class Main {
                 for (let [index, bookmark] of activeGroup.bookmarks) {
                     pickItems.push(BookmarkDeletePickItem.fromGroupEntry(index, bookmark));
                 }
+                pickItems.sort(BookmarkDeletePickItem.sort);
 
                 vscode.window.showQuickPick(
                     pickItems,

@@ -1,7 +1,9 @@
+import * as vscode from "vscode";
 import { QuickPickItem } from 'vscode';
 import { Bookmark } from "./bookmark";
 
 export class BookmarkDeletePickItem implements QuickPickItem {
+    bookmark: Bookmark;
     index: string;
     label: string;
     description?: string;
@@ -9,7 +11,8 @@ export class BookmarkDeletePickItem implements QuickPickItem {
     picked: boolean;
     alwaysShow: boolean;
 
-    constructor(index: string, label: string, description?: string, detail?: string) {
+    constructor(bookmark: Bookmark, index: string, label: string, description?: string, detail?: string) {
+        this.bookmark = bookmark;
         this.index = index;
         this.label = label;
         this.description = description;
@@ -22,6 +25,11 @@ export class BookmarkDeletePickItem implements QuickPickItem {
         let label = bookmark.label;
         let description = "";
         let detail = bookmark.fsPath + " line " + (bookmark.line + 1);
-        return new BookmarkDeletePickItem(index, label, description, detail);
+        return new BookmarkDeletePickItem(bookmark, index, label, description, detail);
+    }
+
+    public static sort(a: BookmarkDeletePickItem, b: BookmarkDeletePickItem): number {
+        return a.bookmark.fsPath.localeCompare(b.bookmark.fsPath)
+            || (a.bookmark.line - b.bookmark.line);
     }
 }
