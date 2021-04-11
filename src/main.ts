@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { Group } from "./group";
-import { Bookmark } from './bookmark';
 import { SerializableGroupMap } from './serializable_group_map';
 import { ExtensionContext, Range, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
@@ -18,20 +17,23 @@ export class Main {
     public readonly savedHideInactiveGroupsKey = "vscLabeledBookmarks.hideInactiveGroups";
     public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
 
+    public readonly configRoot = "labeledBookmarks";
+    public readonly configKeyColors = "colors";
+    public readonly configKeyUnicodeMarkers = "unicodeMarkers";
+    public readonly configKeyDefaultShape = "defaultShape";
+
     public readonly groupSeparator = "@";
     public readonly maxGroupNameLength = 40;
 
+    public readonly defaultGroupName: string;
+
     public groups: Map<string, Group>;
     public activeGroupName: string;
-    public readonly defaultGroupName: string;
     public fallbackColor: string;
 
-    // "labeledBookmarks.colors": [[name, colorCode], ...]
     public colors: Map<string, string>;
-    public readonly shapes: Map<string, string>;
-    // "labeledBookmarks.unicodeMarkers": [[name, character]...]
     public unicodeMarkers: Map<string, string>;
-    // "labeledBookmarks.defaultShape": one of this.shapes
+    public readonly shapes: Map<string, string>;
     public defaultShape = "bookmark";
 
     public hideInactiveGroups: boolean;
@@ -50,15 +52,8 @@ export class Main {
         this.activeGroupName = this.defaultGroupName;
         this.fallbackColor = "ffee66ff";
 
-        this.colors = new Map<string, string>([
-            ["yellow", "#ffee66"],
-            ["purple", "#ee66ff"],
-            ["teal", "#66ffee"],
-            ["green", "#77ff66"],
-            ["red", "#ff6677"],
-            ["blue", "#6677ff"]
-        ]);
-
+        this.colors = new Map<string, string>();
+        this.unicodeMarkers = new Map<string, string>();
         this.shapes = new Map<string, string>([
             ["bookmark", "bookmark"],
             ["circle", "circle"],
@@ -67,25 +62,11 @@ export class Main {
             ["star", "star"]
         ]);
 
-        this.unicodeMarkers = new Map<string, string>([
-            ["poop", "💩"],
-            ["neutral face", "😐"],
-            ["skull", "💀"],
-            ["thumbs up", "👍"],
-            ["thumbs down", "👎"],
-            ["snail", "🐌"],
-            ["bug", "🐞"],
-            ["biohazard", "☣"],
-            ["mac command", "⌘"],
-            ["yin yang", "☯"]
-        ]);
+        this.readConfig();
 
-        for (let [name, color] of this.colors) {
-            this.colors.set(name, DecorationFactory.normalizeColorFormat(color));
-        }
 
         if (this.colors.size < 1) {
-            this.colors.set("yellow", this.fallbackColor);
+            this.colors.set("yellow", DecorationFactory.normalizeColorFormat(this.fallbackColor));
         }
 
         this.hideInactiveGroups = false;
@@ -605,6 +586,78 @@ export class Main {
     public decorationDropped(decoration: TextEditorDecorationType) {
         for (let editor of vscode.window.visibleTextEditors) {
             editor.setDecorations(decoration, []);
+        }
+    }
+
+    public readConfig() {
+        let defaultDefaultShape = "bookmark";
+
+        let defaultColors = new Map<string, string>([
+            ["red", "#dd0000"],
+            ["yellow", "#dddd00"],
+            ["green", "#00dd00"],
+            ["teal", "#00dddd"],
+            ["blue", "#0000dd"],
+            ["magenta", "#dd00dd"],
+        ]);
+
+        for (let [name, color] of defaultColors) {
+            defaultColors.set(name, DecorationFactory.normalizeColorFormat(color));
+        }
+
+        let defaultUnicodeMarkers = new Map<string, string>([
+            ["bug", "🐞"],
+            ["thumbs up", "👍"],
+            ["thumbs down", "👎"],
+            ["suspicious", "🤨"],
+            ["right arrow", "⮞"],
+            ["asterix", "🞴"],
+            ["diamond", "◈"],
+            ["recycle", "♻"],
+        ]);
+
+        let config = vscode.workspace.getConfiguration(this.configRoot);
+
+        if (config.has(this.configKeyColors)) {
+            try {
+                let configColors = (config.get(this.configKeyColors) as Map<string, string>);
+                this.colors = new Map<string, string>();
+                for (let [index, value] of configColors) {
+                    this.colors.set(index, DecorationFactory.normalizeColorFormat(value));
+                }
+            } catch (e) {
+                vscode.window.showWarningMessage("error reading bookmark color setting, using defaults");
+                this.colors = defaultColors;
+            }
+        } else {
+            this.colors = defaultColors;
+        }
+
+        if (config.has(this.configKeyUnicodeMarkers)) {
+            try {
+                let configMarkers = (config.get(this.configKeyUnicodeMarkers) as Map<string, string>);
+                this.unicodeMarkers = new Map<string, string>();
+                for (let [index, value] of configMarkers) {
+                    this.unicodeMarkers.set(index, value);
+                }
+            } catch (e) {
+                vscode.window.showWarningMessage("error reading bookmark unicode marker setting, using defaults");
+                this.unicodeMarkers = defaultUnicodeMarkers;
+            }
+        } else {
+            this.unicodeMarkers = defaultUnicodeMarkers;
+        }
+
+        if (config.has(this.configKeyDefaultShape)) {
+            let configDefaultShape = (config.get(this.configKeyDefaultShape) as string) ?? "";
+            if (this.shapes.has(configDefaultShape)) {
+                this.defaultShape = configDefaultShape;
+            } else {
+                vscode.window.showWarningMessage("error reading bookmark default shape setting, using default");
+                this.defaultShape = defaultDefaultShape;
+            }
+        } else {
+            this.defaultShape = defaultDefaultShape;
         }
     }
 

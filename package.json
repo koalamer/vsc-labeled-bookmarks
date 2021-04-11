@@ -112,7 +112,31 @@
         "command": "vsc-labeled-bookmarks.toggleHideInactiveGroups",
         "key": "ctrl+alt+b i"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Labeled Bookmarks",
+      "properties": {
+        "labeledBookmarks.colors": {
+          "type": "array",
+          "description": "Array of names and color codes, eg: [[\"red\": \"ff0000\"], [\"green\": \"00ff00\"]]"
+        },
+        "labeledBookmarks.unicodeMarkers": {
+          "type": "array",
+          "description": "Array of names and unicode characters, eg: [[\"look\": \"👀\"], [\"bug\",\"🐞\"]]"
+        },
+        "labeledBookmarks.defaultShape": {
+          "type": "string",
+          "default": "bookmark",
+          "enum": [
+            "bookmark",
+            "circle",
+            "heart",
+            "label",
+            "star"
+          ]
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

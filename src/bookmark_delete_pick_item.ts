@@ -1,4 +1,4 @@
-import { QuickPickItem, workspace } from 'vscode';
+import { QuickPickItem } from 'vscode';
 import { Bookmark } from "./bookmark";
 
 export class BookmarkDeletePickItem implements QuickPickItem {
@@ -18,7 +18,7 @@ export class BookmarkDeletePickItem implements QuickPickItem {
         this.alwaysShow = false;
     }
 
-    public static fromGroupEntry(index:string, bookmark: Bookmark): BookmarkDeletePickItem {
+    public static fromGroupEntry(index: string, bookmark: Bookmark): BookmarkDeletePickItem {
         let label = bookmark.label;
         let description = "";
         let detail = bookmark.fsPath + " line " + (bookmark.line + 1);
