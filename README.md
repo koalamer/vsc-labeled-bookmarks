@@ -46,8 +46,8 @@ The icon color can be chosen from a list of colors using `ctrl+alt+b c` from a l
 
 ## Extension Settings
 
-* `labeledBookmarks.unicodeMarkers`: list of unicode characters to be made available in the shape selection list. It should be in the form of: `[["look": "👀"], ["bug","🐞"]]`
-* `labeledBookmarks.colors`: list of colors to be made available when creating new bookmark groups or when setting the color of an existing one. It should be in the form of: `[["red": "ff0000"], ["green": "00ff00"]]`
+* `labeledBookmarks.unicodeMarkers`: list of unicode characters to be made available in the shape selection list. It should be in the form of: `[["astonishing", "😲"], ["bug","🐞"]]`
+* `labeledBookmarks.colors`: list of colors to be made available when creating new bookmark groups or when setting the color of an existing one. It should be in the form of: `[["red", "ff0000"], ["green", "00ff00"]]`
 * `labeledBookmarks.defaultShape`: set which vector icon should be used as the default for new groups
 
 ## Known Issues

@@ -673,60 +673,30 @@ export class Main {
     public readConfig() {
         let defaultDefaultShape = "bookmark";
 
-        let defaultColors = new Map<string, string>([
-            ["teal", "#00dddd"],
-            ["blue", "#0000dd"],
-            ["magenta", "#dd00dd"],
-            ["red", "#dd0000"],
-            ["yellow", "#dddd00"],
-            ["green", "#00dd00"],
-        ]);
-
-        for (let [name, color] of defaultColors) {
-            defaultColors.set(name, DecorationFactory.normalizeColorFormat(color));
-        }
-
-        let defaultUnicodeMarkers = new Map<string, string>([
-            ["bug", "🐞"],
-            ["thumbs up", "👍"],
-            ["thumbs down", "👎"],
-            ["suspicious", "🤨"],
-            ["right arrow", "⮞"],
-            ["asterix", "🞴"],
-            ["diamond", "◈"],
-            ["recycle", "♻"],
-        ]);
-
         let config = vscode.workspace.getConfiguration(this.configRoot);
 
         if (config.has(this.configKeyColors)) {
             try {
-                let configColors = (config.get(this.configKeyColors) as Map<string, string>);
+                let configColors = (config.get(this.configKeyColors) as Array<Array<string>>);
                 this.colors = new Map<string, string>();
                 for (let [index, value] of configColors) {
                     this.colors.set(index, DecorationFactory.normalizeColorFormat(value));
                 }
             } catch (e) {
-                vscode.window.showWarningMessage("error reading bookmark color setting, using defaults");
-                this.colors = defaultColors;
+                vscode.window.showWarningMessage("error reading bookmark color setting");
             }
-        } else {
-            this.colors = defaultColors;
         }
 
         if (config.has(this.configKeyUnicodeMarkers)) {
             try {
-                let configMarkers = (config.get(this.configKeyUnicodeMarkers) as Map<string, string>);
+                let configMarkers = (config.get(this.configKeyUnicodeMarkers) as Array<Array<string>>);
                 this.unicodeMarkers = new Map<string, string>();
                 for (let [index, value] of configMarkers) {
                     this.unicodeMarkers.set(index, value);
                 }
             } catch (e) {
-                vscode.window.showWarningMessage("error reading bookmark unicode marker setting, using defaults");
-                this.unicodeMarkers = defaultUnicodeMarkers;
+                vscode.window.showWarningMessage("error reading bookmark unicode marker setting");
             }
-        } else {
-            this.unicodeMarkers = defaultUnicodeMarkers;
         }
 
         if (config.has(this.configKeyDefaultShape)) {

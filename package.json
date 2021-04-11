@@ -145,11 +145,55 @@
       "properties": {
         "labeledBookmarks.colors": {
           "type": "array",
-          "description": "Array of names and color codes, eg: [[\"red\": \"ff0000\"], [\"green\": \"00ff00\"]]"
+          "description": "Array of names and color codes, eg: [[\"red\": \"ff0000\"], [\"green\": \"00ff00\"]]",
+          "default": [
+            [
+              "teal",
+              "#00dddd"
+            ],
+            [
+              "blue",
+              "#0000dd"
+            ],
+            [
+              "magenta",
+              "#dd00dd"
+            ],
+            [
+              "red",
+              "#dd0000"
+            ],
+            [
+              "yellow",
+              "#dddd00"
+            ],
+            [
+              "green",
+              "#00dd00"
+            ]
+          ]
         },
         "labeledBookmarks.unicodeMarkers": {
           "type": "array",
-          "description": "Array of names and unicode characters, eg: [[\"look\": \"👀\"], [\"bug\",\"🐞\"]]"
+          "description": "Array of names and unicode characters, eg: [[\"look\": \"👀\"], [\"bug\",\"🐞\"]]",
+          "default": [
+            [
+              "astonishing",
+              "😲"
+            ],
+            [
+              "bug",
+              "🐞"
+            ],
+            [
+              "asterix",
+              "🞴"
+            ],
+            [
+              "diamond",
+              "◈"
+            ]
+          ]
         },
         "labeledBookmarks.defaultShape": {
           "type": "string",
