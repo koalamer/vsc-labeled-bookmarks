@@ -4,6 +4,7 @@
   "description": "Bookmarks with labels for quick access, organized into switchable groups",
   "version": "0.5.0",
   "publisher": "koalamer",
+  "icon": "resources/vsc-labeled-bookmarks-logo.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/koalamer/vsc-labeled-bookmarks.git"

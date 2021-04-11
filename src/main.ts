@@ -674,12 +674,12 @@ export class Main {
         let defaultDefaultShape = "bookmark";
 
         let defaultColors = new Map<string, string>([
-            ["red", "#dd0000"],
-            ["yellow", "#dddd00"],
-            ["green", "#00dd00"],
             ["teal", "#00dddd"],
             ["blue", "#0000dd"],
             ["magenta", "#dd00dd"],
+            ["red", "#dd0000"],
+            ["yellow", "#dddd00"],
+            ["green", "#00dd00"],
         ]);
 
         for (let [name, color] of defaultColors) {
