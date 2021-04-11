@@ -283,6 +283,43 @@ export class Main {
                 for (let [label, bookmark] of activeGroup.bookmarks) {
                     pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
                 }
+                pickItems.sort(BookmarkPickItem.sort);
+
+                vscode.window.showQuickPick(
+                    pickItems,
+                    {
+                        canPickMany: false,
+                        matchOnDescription: true,
+                        placeHolder: "navigate to bookmark"
+                    }
+                ).then(selected => {
+                    if (typeof selected !== "undefined") {
+                        vscode.workspace.openTextDocument(selected.bookmark.fsPath).then(document => {
+                            vscode.window.showTextDocument(document, { preview: false }).then(textEditor => {
+                                let range = textEditor.document.lineAt(selected.bookmark.line).range;
+                                textEditor.selection = new vscode.Selection(range.start, range.start);
+                                textEditor.revealRange(range);
+                            });
+                        });
+                    }
+                    this.saveSettings();
+                });
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
+    public registerNavigateToBookmarkOfAnyGroup() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.navigateToBookmarkOfAnyGroup',
+            () => {
+                let pickItems = new Array<BookmarkPickItem>();
+
+                for (let [name, group] of this.groups) {
+                    for (let [label, bookmark] of group.bookmarks) {
+                        pickItems.push(BookmarkPickItem.fromBookmark(bookmark, name));
+                    }
+                }
+                pickItems.sort(BookmarkPickItem.sort);
 
                 vscode.window.showQuickPick(
                     pickItems,

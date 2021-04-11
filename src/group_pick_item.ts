@@ -1,4 +1,4 @@
-import { QuickPickItem, window } from 'vscode';
+import { QuickPickItem } from 'vscode';
 import { Group } from "./group";
 
 export class GroupPickItem implements QuickPickItem {

@@ -18,10 +18,19 @@ export class BookmarkPickItem implements QuickPickItem {
         this.alwaysShow = alwaysShow;
     }
 
-    public static fromBookmark(bookmark: Bookmark): BookmarkPickItem {
+    public static fromBookmark(bookmark: Bookmark, groupName?: string): BookmarkPickItem {
         let label = bookmark.label;
         let description = "";
+        if (typeof groupName !== "undefined") {
+            description = "@" + groupName;
+        }
         let detail = bookmark.fsPath + " line " + (bookmark.line + 1);
         return new BookmarkPickItem(bookmark, label, description, detail);
+    }
+
+    public static sort(a: BookmarkPickItem, b: BookmarkPickItem): number {
+        return a.bookmark.fsPath.localeCompare(b.bookmark.fsPath)
+            || (a.bookmark.line - b.bookmark.line)
+            || (a.bookmark.label.localeCompare(b.bookmark.label));
     }
 }

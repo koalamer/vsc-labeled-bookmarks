@@ -33,6 +33,10 @@
         "title": "Bookmarks: navigate to bookmark"
       },
       {
+        "command": "vsc-labeled-bookmarks.navigateToBookmarkOfAnyGroup",
+        "title": "Bookmarks: navigate to bookmark of any group"
+      },
+      {
         "command": "vsc-labeled-bookmarks.selectGroup",
         "title": "Bookmarks: select group"
       },
@@ -99,6 +103,10 @@
       {
         "command": "vsc-labeled-bookmarks.setGroupIconColor",
         "key": "ctrl+alt+b c"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.navigateToBookmarkOfAnyGroup",
+        "key": "ctrl+alt+b n"
       },
       {
         "command": "vsc-labeled-bookmarks.deleteBookmark",

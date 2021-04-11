@@ -10,6 +10,7 @@ export function activate(context: ExtensionContext) {
 	main.registerToggleBookmark();
 	main.registerToggleLabeledBookmark();
 	main.registerNavigateToBookmark();
+	main.registerNavigateToBookmarkOfAnyGroup();
 	main.registerSelectGroup();
 	main.registerAddGroup();
 	main.registerDeleteGroup();
@@ -27,7 +28,7 @@ export function activate(context: ExtensionContext) {
 		main.updateDecorationsOnDocumentChange(textDocumentChangeEvent);
 	});
 
-	vscode.workspace.onDidChangeConfiguration(()=>{
+	vscode.workspace.onDidChangeConfiguration(() => {
 		main.readConfig();
 	});
 
