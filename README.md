@@ -8,12 +8,10 @@ Bookmarks with customizable icons, mouse free operation, able to jump to named b
 
 ### Bookmarks
 
-You can set an unnamed bookmark on a line using `ctrl+alt+m`. If there already is a bookmark on the line, it is removed.
-
-Labeled bookmarks can be set using `ctrl+alt+l`. A prompt appears where you can type the label for the bookmark.
-There is a minimal text processing done on the entered text: if there is an "@" symbol in the text, the preceding part is interpreted as the label, and the succeeding part as the bookmark group name (for example: "bookmark label@group name"). The group is created if it does not yet exist. If it already exists, it is selected as the active group. If the input text only contains a group specifier, the group created and activated without creating a bookmark.
-
-Delete bookmarks using `ctrl+alt+b d`, or by using the above toggle commands.
+* You can set an unnamed bookmark on a line using `ctrl+alt+m`. If there already is a bookmark on the line, it is removed.
+* Labeled bookmarks can be set using `ctrl+alt+l`. A prompt appears where you can type the label for the bookmark. **Labels are unique inside a group, so if you define the same label twice, the first bookmark that beared the label is deleted and only the new one remains.**
+* The labeled bookmark creation is multifunctional: it expects the input in the format of "bookmark label" or "bookmark label@group name" or just "@group name. When a group name is specified, the group is created if it does not yet exist and it is set to be the active group. Then, if the label is specified, a new bookmark is created using it.
+* Delete bookmarks using `ctrl+alt+b d`, or by using the above toggle commands on a line that already has a bookmark (of the active group).
 
 ### Navigation
 
@@ -22,7 +20,11 @@ Delete bookmarks using `ctrl+alt+b d`, or by using the above toggle commands.
 * Navigate to a bookmark by selecting it from a list: `ctrl+alt+n` A quick pick list appears where the bookmarks are filtered as you type. All bookmarks are displayed in the list, including the unamed ones.
 * Navigate to a bookmark of any group (same as `ctrl+alt+n` but not limited to the active group): `ctrl+alt+b n`
 
-### Group Management
+### Groups
+
+Most operations work on the currently active group's bookmarks. Each group has its own icon shape/color, but the inactive group icons appear semi transparent (or are hidden when `ctrl+alt+b i` is toggled).
+
+Groups were implemented to be able to separate one set of bookmarks (for one topic/bug/branch etc.) from others. You can work with the set that is currently relevant, without other bookmarks littering the forward/backward navigation and and without having to delete them to avoid this.
 
 * You can create a group and switch to it implicitly by using the "@" symbol when creating a labeled bookmark with `ctrl+alt+l`. See the relevant section above for details.
 * Alternatively, you can create a group using `ctrl+alt+b alt+g`
@@ -36,13 +38,14 @@ Delete bookmarks using `ctrl+alt+b d`, or by using the above toggle commands.
 
 ### Customizing Group Icons
 
-Group icons come in two variants: vector icons and unicode character icons.
+Group icons come in two variants: vector icons (fixed set) and unicode character icons (customizable set).
 
-Vector icons provide a fixed set of shapes to chose from, and they should appear the same accross all devices. When a new group is created it uses the sape specified as the default shape in the configuration options. If your group has a single character name, and it matches `[a-zA-Z0-9!?+-=\/\$%#]`, then the uppercased character is displayed on the icon.
+* Vector icons provide a fixed set of shapes to chose from, and they should appear the same accross all devices. When a new group is created it uses the sape specified as the default shape in the configuration options. If your group has a single character name, and it matches `[a-zA-Z0-9!?+-=\/\$%#]`, then the uppercased character is displayed on the icon.
+* Unicode character icons can be customized using the `labeledBookmarks.unicodeMarkers` configuration option. You can define which unicode cahracters/symbol/emojis you would like to use as the group icon. These can be applied using the shape selection command `ctrl+alt+b s`. If none is defined, a default set is used. (Emojis have their own color and so the color setting remains ineffective on those, but it works as expected on the rest of the unicode alphabets and symbols.)
 
-The other icon variant is the unicode character icon. Using the `labeledBookmarks.unicodeMarkers` configuration option you can define which unicode cahracters/symbol/emojis that you would like to use as the group icon. These can be applied using the shape selection command `ctrl+alt+b s`. If none is defined, a default set is used. (Emojis have theri own color and so the color setting on these remains ineffective.)
+The other display option for group icons is the color.
 
-The icon color can be chosen from a list of colors using `ctrl+alt+b c` from a list that you can define in the `labeledBookmarks.colors` configuration option. If it is not defined a default color set is used.
+* The icon color can be chosen selected from a list using `ctrl+alt+b c`. You can define the elements of this list with the configuration option `labeledBookmarks.colors`. If it is not defined a default color set is used.
 
 ## Extension Settings
 
@@ -52,4 +55,5 @@ The icon color can be chosen from a list of colors using `ctrl+alt+b c` from a l
 
 ## Known Issues
 
-Bookmark icons might interfere with placing breakponts. Use `ctrl+alt+b h` to hide/unhide the bookmark icons.
+* Bookmark icons might interfere with placing breakponts. Use `ctrl+alt+b h` to hide/unhide the bookmark icons to avoid this.
+* On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these actions.
