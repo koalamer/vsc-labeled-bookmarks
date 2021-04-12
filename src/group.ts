@@ -179,7 +179,13 @@ export class Group {
     }
 
     public nextBookmark(fsPath: string, line: number): Bookmark | undefined {
+        let brokenBookmarkCount = 0;
         let firstCandidate = this.navigationCache.find((element, i) => {
+            if (element.failedJump) {
+                brokenBookmarkCount++;
+                return false;
+            }
+
             let fileComparisonResult = element.fsPath.localeCompare(fsPath);
 
             if (fileComparisonResult < 0) {
@@ -193,7 +199,14 @@ export class Group {
         });
 
         if (typeof firstCandidate === "undefined" && this.navigationCache.length > 0) {
-            return this.navigationCache[0];
+            if (this.navigationCache.length >= brokenBookmarkCount) {
+                for (let bookmark of this.navigationCache) {
+                    if (!bookmark.failedJump) {
+                        return bookmark;
+                    }
+                }
+            }
+            vscode.window.showWarningMessage("All bookmarks are broken, time for some cleanup");
         }
 
         return firstCandidate;

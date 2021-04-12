@@ -683,7 +683,7 @@ export class Main {
                     this.colors.set(index, DecorationFactory.normalizeColorFormat(value));
                 }
             } catch (e) {
-                vscode.window.showWarningMessage("error reading bookmark color setting");
+                vscode.window.showWarningMessage("Error reading bookmark color setting");
             }
         }
 
@@ -695,7 +695,7 @@ export class Main {
                     this.unicodeMarkers.set(index, value);
                 }
             } catch (e) {
-                vscode.window.showWarningMessage("error reading bookmark unicode marker setting");
+                vscode.window.showWarningMessage("Error reading bookmark unicode marker setting");
             }
         }
 
@@ -704,7 +704,7 @@ export class Main {
             if (this.shapes.has(configDefaultShape)) {
                 this.defaultShape = configDefaultShape;
             } else {
-                vscode.window.showWarningMessage("error reading bookmark default shape setting, using default");
+                vscode.window.showWarningMessage("Error reading bookmark default shape setting, using default");
                 this.defaultShape = defaultDefaultShape;
             }
         } else {
