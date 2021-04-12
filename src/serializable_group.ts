@@ -9,14 +9,24 @@ export class SerializableGroup {
     iconText: string;
     bookmarkKeys: Array<string>;
     bookmarkValues: Array<Bookmark>;
+    unnamedCounter: number;
 
-    constructor(name: string, color: string, shape: string, iconText: string, bookmarkKeys: Array<string>, bookmarkValues: Array<Bookmark>) {
+    constructor(
+        name: string,
+        color: string,
+        shape: string,
+        iconText: string,
+        bookmarkKeys: Array<string>,
+        bookmarkValues: Array<Bookmark>,
+        unnamedCounter: number
+    ) {
         this.name = name;
         this.color = color;
         this.shape = shape;
         this.iconText = iconText;
         this.bookmarkKeys = bookmarkKeys;
         this.bookmarkValues = bookmarkValues;
+        this.unnamedCounter = unnamedCounter;
     }
 
     public static fromGroup(group: Group): SerializableGroup {
@@ -32,7 +42,8 @@ export class SerializableGroup {
             group.shape,
             group.iconText,
             bookmarkKeys,
-            bookmarkValues
+            bookmarkValues,
+            group.unnamedCounter
         );
     }
 

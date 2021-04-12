@@ -18,11 +18,12 @@ export class Group {
     inactiveColor: string;
     isActive: boolean;
     bookmarks: Map<string, Bookmark>;
+    unnamedCounter: number;
     decoration: TextEditorDecorationType;
     inactiveDecoration: TextEditorDecorationType;
     navigationCache: Array<Bookmark>;
 
-    constructor(main: Main, name: string, color: string, shape: string, text: string) {
+    constructor(main: Main, name: string, color: string, shape: string, text: string, unnamedCounter: number) {
         this.main = main;
         this.name = name;
         this.color = DecorationFactory.normalizeColorFormat(color);
@@ -31,6 +32,7 @@ export class Group {
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.isActive = false;
         this.bookmarks = new Map<string, Bookmark>();
+        this.unnamedCounter = unnamedCounter ?? 0;
         this.decoration = DecorationFactory.placeholderDecoration;
         this.inactiveDecoration = DecorationFactory.placeholderDecoration;
         this.initDecorations();
@@ -39,7 +41,7 @@ export class Group {
     }
 
     public static fromSerializableGroup(main: Main, sg: SerializableGroup): Group {
-        let result = new Group(main, sg.name, sg.color, sg.shape, sg.iconText);
+        let result = new Group(main, sg.name, sg.color, sg.shape, sg.iconText, sg.unnamedCounter);
         for (let i in sg.bookmarkKeys) {
             result.bookmarks.set(sg.bookmarkKeys[i], sg.bookmarkValues[i]);
         }
@@ -84,7 +86,8 @@ export class Group {
             return;
         }
 
-        let newLabel = "line " + lineNumber + " of " + vscode.workspace.asRelativePath(fsPath);
+        this.unnamedCounter++;
+        let newLabel = "unnamed " + (this.unnamedCounter) + " ";
         this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber));
         this.generateNavigationCache();
         this.main.groupChanged(this);

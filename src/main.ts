@@ -752,7 +752,7 @@ export class Main {
             return;
         }
 
-        let group = new Group(this, name, this.getLeastUsedColor(), this.defaultShape, name);
+        let group = new Group(this, name, this.getLeastUsedColor(), this.defaultShape, name, 0);
         this.groups.set(name, group);
     }
 
