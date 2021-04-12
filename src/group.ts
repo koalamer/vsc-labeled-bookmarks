@@ -88,14 +88,14 @@ export class Group {
 
         this.unnamedCounter++;
         let newLabel = "unnamed " + (this.unnamedCounter) + " ";
-        this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber));
+        this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber, false));
         this.generateNavigationCache();
         this.main.groupChanged(this);
     }
 
     public addLabeledBookmark(label: string, fsPath: string, lineNumber: number) {
         let oldBookmarkFsPath = this.bookmarks.get(label)?.fsPath;
-        this.bookmarks.set(label, new Bookmark(fsPath, label, lineNumber));
+        this.bookmarks.set(label, new Bookmark(fsPath, label, lineNumber, false));
         this.generateNavigationCache();
         this.main.fileChanged(fsPath);
         if (typeof oldBookmarkFsPath !== "undefined" && oldBookmarkFsPath !== fsPath) {

@@ -24,7 +24,11 @@ export class BookmarkPickItem implements QuickPickItem {
         if (typeof groupName !== "undefined") {
             description = "@" + groupName;
         }
-        let detail = bookmark.fsPath + " line " + (bookmark.line + 1);
+        let detail = workspace.asRelativePath(bookmark.fsPath) + " line " + (bookmark.line + 1);
+        if (bookmark.failedJump) {
+            label = "$(warning) " + label;
+            detail = "$(warning) " + detail;
+        }
         return new BookmarkPickItem(bookmark, label, description, detail);
     }
 

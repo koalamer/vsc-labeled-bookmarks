@@ -906,12 +906,31 @@ export class Main {
     }
 
     private jumpToBookmark(bookmark: Bookmark) {
-        vscode.workspace.openTextDocument(bookmark.fsPath).then(document => {
-            vscode.window.showTextDocument(document, { preview: false }).then(textEditor => {
-                let range = textEditor.document.lineAt(bookmark.line).range;
-                textEditor.selection = new vscode.Selection(range.start, range.start);
-                textEditor.revealRange(range);
-            });
-        });
+        vscode.workspace.openTextDocument(bookmark.fsPath).then(
+            document => {
+                vscode.window.showTextDocument(document, { preview: false }).then(
+                    textEditor => {
+                        try {
+                            let range = textEditor.document.lineAt(bookmark.line).range;
+                            textEditor.selection = new vscode.Selection(range.start, range.start);
+                            textEditor.revealRange(range);
+                        } catch (e) {
+                            bookmark.failedJump = true;
+                            vscode.window.showWarningMessage("Failed to navigate to bookmark (3): " + e);
+                            return;
+                        }
+                        bookmark.failedJump = false;
+                    },
+                    rejectReason => {
+                        bookmark.failedJump = true;
+                        vscode.window.showWarningMessage("Failed to navigate to bookmark (2): " + rejectReason.message);
+                    }
+                );
+            },
+            rejectReason => {
+                bookmark.failedJump = true;
+                vscode.window.showWarningMessage("Failed to navigate to bookmark (1): " + rejectReason.message);
+            }
+        );
     }
 }
