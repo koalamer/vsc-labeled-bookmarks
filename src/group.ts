@@ -199,7 +199,7 @@ export class Group {
         });
 
         if (typeof firstCandidate === "undefined" && this.navigationCache.length > 0) {
-            if (this.navigationCache.length >= brokenBookmarkCount) {
+            if (this.navigationCache.length > brokenBookmarkCount) {
                 for (let bookmark of this.navigationCache) {
                     if (!bookmark.failedJump) {
                         return bookmark;
@@ -217,22 +217,44 @@ export class Group {
             return;
         }
 
-        let nextIndex = this.navigationCache.findIndex(element => {
+        let brokenBookmarkCount = 0;
+        let firstCandidate: Bookmark | undefined;
+
+        for (let i = this.navigationCache.length - 1; i >= 0; i--) {
+            let element = this.navigationCache[i];
+
+            if (element.failedJump) {
+                brokenBookmarkCount++;
+                continue;
+            }
+
             let fileComparisonResult = element.fsPath.localeCompare(fsPath);
-            if (fileComparisonResult < 0) {
-                return false;
-            }
             if (fileComparisonResult > 0) {
-                return true;
+                continue;
             }
 
-            return line <= element.line;
-        });
+            if (fileComparisonResult < 0) {
+                firstCandidate = element;
+                break;
+            }
 
-        if (nextIndex <= 0) {
-            return this.navigationCache[this.navigationCache.length - 1];
+            if (element.line < line) {
+                firstCandidate = element;
+                break;
+            }
         }
 
-        return this.navigationCache[nextIndex - 1];
+        if (typeof firstCandidate === "undefined" && this.navigationCache.length > 0) {
+            if (this.navigationCache.length > brokenBookmarkCount) {
+                for (let i = this.navigationCache.length - 1; i >= 0; i--) {
+                    if (!this.navigationCache[i].failedJump) {
+                        return this.navigationCache[i];
+                    }
+                }
+            }
+            vscode.window.showWarningMessage("All bookmarks are broken, time for some cleanup");
+        }
+
+        return firstCandidate;
     }
 }
