@@ -30,6 +30,10 @@ export function activate(context: ExtensionContext) {
 		main.updateDecorationsOnDocumentChange(textDocumentChangeEvent);
 	});
 
+	vscode.workspace.onDidRenameFiles(fileRenameEvent => {
+		main.filesRenamed(fileRenameEvent);
+	});
+
 	vscode.workspace.onDidChangeConfiguration(() => {
 		main.readConfig();
 	});

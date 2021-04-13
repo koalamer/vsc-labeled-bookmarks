@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Group } from "./group";
 import { SerializableGroupMap } from './serializable_group_map';
-import { ExtensionContext, Range, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType } from 'vscode';
+import { ExtensionContext, FileRenameEvent, Range, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
 import { BookmarkPickItem } from './bookmark_pick_item';
@@ -709,6 +709,43 @@ export class Main {
             }
         } else {
             this.defaultShape = defaultDefaultShape;
+        }
+    }
+
+    public async filesRenamed(fileRenamedEvent: FileRenameEvent) {
+        let changedFiles = new Map<string, boolean>();
+
+        for (let rename of fileRenamedEvent.files) {
+            let stat = await vscode.workspace.fs.stat(rename.newUri);
+            let oldFsPath = rename.oldUri.fsPath;
+            let newFsPath = rename.newUri.fsPath;
+
+            if ((stat.type & vscode.FileType.Directory) > 0) {
+                for (let [name, group] of this.groups) {
+                    for (let [label, bookmark] of group.bookmarks) {
+                        if (bookmark.fsPath.startsWith(oldFsPath)) {
+                            let originalBookmarkFsPath = bookmark.fsPath;
+                            bookmark.fsPath = newFsPath + bookmark.fsPath.substring(oldFsPath.length);
+                            changedFiles.set(originalBookmarkFsPath, true);
+                            changedFiles.set(bookmark.fsPath, true);
+                        }
+                    }
+                }
+            } else {
+                for (let [name, group] of this.groups) {
+                    for (let [label, bookmark] of group.bookmarks) {
+                        if (bookmark.fsPath === oldFsPath) {
+                            bookmark.fsPath = newFsPath;
+                            changedFiles.set(oldFsPath, true);
+                            changedFiles.set(newFsPath, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (let [changedFile, b] of changedFiles) {
+            this.fileChanged(changedFile);
         }
     }
 
