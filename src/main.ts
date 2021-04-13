@@ -1,7 +1,10 @@
 import * as vscode from 'vscode';
 import { Group } from "./group";
 import { SerializableGroupMap } from './serializable_group_map';
-import { ExtensionContext, FileRenameEvent, Range, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType } from 'vscode';
+import {
+    ExtensionContext, FileDeleteEvent, FileRenameEvent, Range,
+    TextDocumentChangeEvent, TextEditor, TextEditorDecorationType
+} from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
 import { BookmarkPickItem } from './bookmark_pick_item';
@@ -744,8 +747,33 @@ export class Main {
             }
         }
 
+        if (changedFiles.size > 0) {
+            this.saveSettings();
+        }
+
         for (let [changedFile, b] of changedFiles) {
             this.fileChanged(changedFile);
+        }
+    }
+
+    public async filesDeleted(fileDeleteEvent: FileDeleteEvent) {
+        for (let uri of fileDeleteEvent.files) {
+            let deletedFsPath = uri.fsPath;
+
+
+            let changesWereMade = false;
+            for (let [name, group] of this.groups) {
+                for (let [label, bookmark] of group.bookmarks) {
+                    if (bookmark.fsPath === deletedFsPath) {
+                        group.deleteLabeledBookmark(label);
+                        changesWereMade = true;
+                    }
+                }
+            }
+
+            if (changesWereMade) {
+                this.saveSettings();
+            }
         }
     }
 

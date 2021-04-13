@@ -34,6 +34,10 @@ export function activate(context: ExtensionContext) {
 		main.filesRenamed(fileRenameEvent);
 	});
 
+	vscode.workspace.onDidDeleteFiles(fileDeleteEvent => {
+		main.filesDeleted(fileDeleteEvent);
+	});
+
 	vscode.workspace.onDidChangeConfiguration(() => {
 		main.readConfig();
 	});
