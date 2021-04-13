@@ -3,6 +3,7 @@ import { Group } from "./group";
 import { SerializableGroupMap } from './serializable_group_map';
 import {
     ExtensionContext, FileDeleteEvent, FileRenameEvent, Range,
+    StatusBarItem,
     TextDocumentChangeEvent, TextEditor, TextEditorDecorationType
 } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
@@ -46,6 +47,8 @@ export class Main {
     private decorationCache: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
     private fileBookmarkCache: Map<string, Array<FileBookmarkListItem>>;
 
+    private statusBarItem: StatusBarItem;
+
     constructor(ctx: ExtensionContext) {
         this.ctx = ctx;
         Group.svgDir = this.ctx.globalStorageUri;
@@ -68,7 +71,6 @@ export class Main {
 
         this.readConfig();
 
-
         if (this.colors.size < 1) {
             this.colors.set("yellow", DecorationFactory.normalizeColorFormat(this.fallbackColor));
         }
@@ -81,6 +83,11 @@ export class Main {
 
         this.restoreSettings();
         this.activateGroup(this.activeGroupName);
+
+        this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
+        this.statusBarItem.command = 'vsc-labeled-bookmarks.selectGroup';
+        this.statusBarItem.show();
+
         this.saveSettings();
     }
 
@@ -90,6 +97,8 @@ export class Main {
         this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroupName);
         this.ctx.workspaceState.update(this.savedHideInactiveGroupsKey, this.hideInactiveGroups);
         this.ctx.workspaceState.update(this.savedHideAllKey, this.hideAll);
+
+        this.updateStatusBar();
     }
 
     public updateDecorations(textEditor: TextEditor | undefined) {
@@ -775,6 +784,16 @@ export class Main {
                 this.saveSettings();
             }
         }
+    }
+
+    private updateStatusBar() {
+        let activeGroup = this.groups.get(this.activeGroupName);
+        if (typeof activeGroup === "undefined") {
+            this.statusBarItem.text = "$(bookmark) $(stop)";
+            return;
+        }
+
+        this.statusBarItem.text = "$(bookmark) " + activeGroup.bookmarks.size + " in " + this.activeGroupName;
     }
 
     private restoreSettings() {

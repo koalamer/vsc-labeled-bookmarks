@@ -48,12 +48,3 @@ export function activate(context: ExtensionContext) {
 export function deactivate() {
 	main.saveSettings();
 }
-
-// snippets
-
-// status bar item
-// let statusBarWorkspaceLabel = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
-// statusBarWorkspaceLabel.text = '$(bookmark) group: temp';
-// statusBarWorkspaceLabel.tooltip = 'tooltip';
-// statusBarWorkspaceLabel.show();
-// statusBarWorkspaceLabel.text = '$(bookmark) group: another';
