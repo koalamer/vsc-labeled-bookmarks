@@ -335,7 +335,7 @@ export class Main {
     }
 
     public registerNavigateToBookmark() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.navigateToBookmark',
             () => {
                 let pickItems = new Array<BookmarkPickItem>();
@@ -368,7 +368,7 @@ export class Main {
     }
 
     public registerNavigateToBookmarkOfAnyGroup() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.navigateToBookmarkOfAnyGroup',
             () => {
                 let pickItems = new Array<BookmarkPickItem>();
@@ -385,7 +385,7 @@ export class Main {
                     {
                         canPickMany: false,
                         matchOnDescription: true,
-                        placeHolder: "navigate to bookmark"
+                        placeHolder: "navigate to bookmark of any bookmark group"
                     }
                 ).then(selected => {
                     if (typeof selected !== "undefined") {
@@ -398,7 +398,7 @@ export class Main {
     }
 
     public registerSetGroupIconShape() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.setGroupIconShape',
             () => {
                 let activeGroup = this.groups.get(this.activeGroupName);
@@ -425,7 +425,7 @@ export class Main {
                     {
                         canPickMany: false,
                         matchOnDescription: false,
-                        placeHolder: "select group icon shape"
+                        placeHolder: "select bookmark group icon shape"
                     }
                 ).then(selected => {
                     if (typeof selected !== "undefined") {
@@ -446,7 +446,7 @@ export class Main {
     }
 
     public registerSetGroupIconColor() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.setGroupIconColor',
             () => {
                 let activeGroup = this.groups.get(this.activeGroupName);
@@ -467,7 +467,7 @@ export class Main {
                     {
                         canPickMany: false,
                         matchOnDescription: false,
-                        placeHolder: "select group icon color"
+                        placeHolder: "select bookmark group icon color"
                     }
                 ).then(selected => {
                     if (typeof selected !== "undefined") {
@@ -486,7 +486,7 @@ export class Main {
     }
 
     public registerSelectGroup() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.selectGroup',
             () => {
                 let pickItems = new Array<GroupPickItem>();
@@ -513,7 +513,7 @@ export class Main {
     }
 
     public registerAddGroup() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.addGroup',
             () => {
 
@@ -547,7 +547,7 @@ export class Main {
     }
 
     public registerDeleteGroup() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.deleteGroup',
             () => {
                 let pickItems = new Array<GroupPickItem>();
@@ -593,7 +593,7 @@ export class Main {
     }
 
     public registerDeleteBookmark() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.deleteBookmark',
             () => {
                 let activeGroup = this.groups.get(this.activeGroupName);
@@ -633,7 +633,7 @@ export class Main {
     }
 
     public registerToggleHideAll() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.toggleHideAll',
             () => {
                 this.setHideAll(!this.hideAll);
@@ -643,7 +643,7 @@ export class Main {
     }
 
     public registerToggleHideInactiveGroups() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.toggleHideInactiveGroups',
             () => {
                 this.setHideInactiveGroups(!this.hideInactiveGroups);
@@ -653,7 +653,7 @@ export class Main {
     }
 
     public registerClearFailedJumpFlags() {
-        let disposable = vscode.commands.registerTextEditorCommand(
+        let disposable = vscode.commands.registerCommand(
             'vsc-labeled-bookmarks.clearFailedJumpFlags',
             () => {
                 let clearedFlagCount = 0;
