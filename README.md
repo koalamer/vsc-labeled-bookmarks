@@ -53,7 +53,24 @@ The other display option for group icons is the color.
 * `labeledBookmarks.colors`: list of colors to be made available when creating new bookmark groups or when setting the color of an existing one. It should be in the form of: `[["red", "ff0000"], ["green", "00ff00"]]`
 * `labeledBookmarks.defaultShape`: set which vector icon should be used as the default for new groups
 
+## Invalid Bookmarks
+
+This extension tries to follow file rename and delete actions initiated from within VSCode.
+
+* Upon rename, the bookmark is assigned to the new file name.
+* Upon delete, bookmarks belonging to the file are deleted.
+
+If a bookmark becomes invalid because of other kind of file changes (the file or the line it points to becomes unavailable), then the next time you try (and fail) to navigate to it, it gets flagged as having failed the jump. This is signalled with a warning icon in the navigation list. Such flagged bookmarks are skipped the next time. By repeatedly using the navigate to next/previous bookmark action, you can have all broken bookmarks marked as failing, and then the the navigation works on the rest of the bookmarks normally.
+
+You can remove this broken bookmark flag:
+
+* by explicitly navigating to them using `ctrl+alt+n` or `ctrl+alt+b n` after they become valid again
+* or by clearing all the flags using `ctrl+alt+b f`.
+
+Or you can delete them using `ctrl+alt+b d` and selecting them manually.
+
 ## Known Issues
 
 * Bookmark icons might interfere with placing breakponts. Use `ctrl+alt+b h` to hide/unhide the bookmark icons to avoid this.
-* On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these actions.
+* On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these conflicting  actions. If you are not using notebooks, there should be no problem.
+* If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a susppiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.

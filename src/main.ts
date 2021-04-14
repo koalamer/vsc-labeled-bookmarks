@@ -814,6 +814,16 @@ export class Main {
         }
 
         this.statusBarItem.text = "$(bookmark) " + activeGroup.bookmarks.size + " in " + this.activeGroupName;
+
+        let hideStatus = "";
+        if (this.hideAll) {
+            hideStatus = ", all hidden";
+        } else if (this.hideInactiveGroups) {
+            hideStatus = ", inactive groups hidden";
+        } else {
+            hideStatus = ", all visible";
+        }
+        this.statusBarItem.tooltip = this.groups.size + " group(s)" + hideStatus;
     }
 
     private restoreSettings() {
