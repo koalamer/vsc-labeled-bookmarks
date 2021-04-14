@@ -652,6 +652,26 @@ export class Main {
         this.ctx.subscriptions.push(disposable);
     }
 
+    public registerClearFailedJumpFlags() {
+        let disposable = vscode.commands.registerTextEditorCommand(
+            'vsc-labeled-bookmarks.clearFailedJumpFlags',
+            () => {
+                let clearedFlagCount = 0;
+                for (let [name, group] of this.groups) {
+                    for (let [label, bookmark] of group.bookmarks) {
+                        if (bookmark.failedJump) {
+                            bookmark.failedJump = false;
+                            clearedFlagCount++;
+                        }
+                    }
+                }
+
+                vscode.window.showInformationMessage("Cleared broken bookmark flags: " + clearedFlagCount);
+                this.saveSettings();
+            });
+        this.ctx.subscriptions.push(disposable);
+    }
+
     public fileChanged(fsPath: string, clearFileBookmarkCache: boolean = true) {
         this.decorationCache.delete(fsPath);
         if (clearFileBookmarkCache) {

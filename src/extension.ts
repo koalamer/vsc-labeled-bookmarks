@@ -21,6 +21,7 @@ export function activate(context: ExtensionContext) {
 	main.registerDeleteBookmark();
 	main.registerToggleHideAll();
 	main.registerToggleHideInactiveGroups();
+	main.registerClearFailedJumpFlags();
 
 	vscode.window.onDidChangeActiveTextEditor(textEditor => {
 		main.updateDecorations(textEditor);

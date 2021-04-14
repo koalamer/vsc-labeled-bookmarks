@@ -2,7 +2,7 @@
   "name": "labeled-bookmarks",
   "displayName": "Labeled Bookmarks",
   "description": "Bookmarks with labels for quick access, organized into switchable groups",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "publisher": "koalamer",
   "icon": "resources/vsc-labeled-bookmarks-logo.png",
   "repository": {
@@ -76,6 +76,10 @@
       {
         "command": "vsc-labeled-bookmarks.navigateToPreviousBookmark",
         "title": "Bookmarks: navigate to previous bookmark"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.clearFailedJumpFlags",
+        "title": "Bookmarks: clear failed jump flags from bookmarks"
       }
     ],
     "keybindings": [
@@ -138,6 +142,10 @@
       {
         "command": "vsc-labeled-bookmarks.toggleHideInactiveGroups",
         "key": "ctrl+alt+b i"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.clearFailedJumpFlags",
+        "key": "ctrl+alt+b f"
       }
     ],
     "configuration": {
