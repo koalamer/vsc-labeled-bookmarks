@@ -44,8 +44,8 @@ export class Main {
     public hideInactiveGroups: boolean;
     public hideAll: boolean;
 
-    private decorationCache: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
-    private fileBookmarkCache: Map<string, Array<FileBookmarkListItem>>;
+    private fileDecorationCache: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
+    private fileBookmarkPositionCache: Map<string, Array<FileBookmarkListItem>>;
 
     private statusBarItem: StatusBarItem;
 
@@ -78,8 +78,8 @@ export class Main {
         this.hideInactiveGroups = false;
         this.hideAll = false;
 
-        this.decorationCache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
-        this.fileBookmarkCache = new Map<string, Array<FileBookmarkListItem>>();
+        this.fileDecorationCache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
+        this.fileBookmarkPositionCache = new Map<string, Array<FileBookmarkListItem>>();
 
         this.restoreSettings();
         this.activateGroup(this.activeGroupName);
@@ -673,9 +673,9 @@ export class Main {
     }
 
     public fileChanged(fsPath: string, clearFileBookmarkCache: boolean = true) {
-        this.decorationCache.delete(fsPath);
+        this.fileDecorationCache.delete(fsPath);
         if (clearFileBookmarkCache) {
-            this.fileBookmarkCache.delete(fsPath);
+            this.fileBookmarkPositionCache.delete(fsPath);
         }
 
         for (let editor of vscode.window.visibleTextEditors) {
@@ -687,8 +687,8 @@ export class Main {
 
     public groupChanged(group: Group) {
         for (let [label, bookmark] of group.bookmarks) {
-            this.decorationCache.delete(bookmark.fsPath);
-            this.fileBookmarkCache.delete(bookmark.fsPath);
+            this.fileDecorationCache.delete(bookmark.fsPath);
+            this.fileBookmarkPositionCache.delete(bookmark.fsPath);
         }
 
         for (let editor of vscode.window.visibleTextEditors) {
@@ -929,11 +929,11 @@ export class Main {
 
 
     private cacheReset() {
-        this.decorationCache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
+        this.fileDecorationCache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
     }
 
     private getCachedDecorations(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
-        let cached = this.decorationCache.get(fsPath);
+        let cached = this.fileDecorationCache.get(fsPath);
         if (typeof cached !== "undefined") {
             return cached;
         }
@@ -987,12 +987,12 @@ export class Main {
             result.set(decorationShown, ranges);
         }
 
-        this.decorationCache.set(fsPath, result);
+        this.fileDecorationCache.set(fsPath, result);
         return result;
     }
 
     private getCachedFileBookmarks(fsPath: string): Array<FileBookmarkListItem> {
-        let cached = this.fileBookmarkCache.get(fsPath);
+        let cached = this.fileBookmarkPositionCache.get(fsPath);
         if (typeof cached !== "undefined") {
             return cached;
         }
@@ -1007,7 +1007,7 @@ export class Main {
             }
         }
 
-        this.fileBookmarkCache.set(fsPath, result);
+        this.fileBookmarkPositionCache.set(fsPath, result);
         return result;
     }
 
