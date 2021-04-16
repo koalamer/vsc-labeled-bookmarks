@@ -220,9 +220,15 @@ export class Main {
             return;
         }
 
+        let selectedText = textEditor.document.getText(textEditor.selection)
+            .trim()
+            .replace(/[\s\t\r\n]+/, " ")
+            .replace("@", "(a)");
         vscode.window.showInputBox({
             placeHolder: "label or label@group or @group",
-            prompt: "Enter label and/or group to be created"
+            prompt: "Enter label and/or group to be created",
+            value: selectedText,
+            valueSelection: [0, selectedText.length],
         }).then(input => {
             if (typeof input === "undefined") {
                 return;
