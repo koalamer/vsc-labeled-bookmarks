@@ -33,7 +33,7 @@ export class Main {
     public readonly defaultGroupName: string;
 
     public groups: Map<string, Group>;
-    public activeGroupName: string;
+    public activeGroup: Group;
     public fallbackColor: string;
 
     public colors: Map<string, string>;
@@ -56,8 +56,8 @@ export class Main {
 
         this.groups = new Map<string, Group>();
         this.defaultGroupName = "default";
-        this.activeGroupName = this.defaultGroupName;
         this.fallbackColor = "ffee66ff";
+        this.activeGroup = new Group(this, this.defaultGroupName, this.fallbackColor, this.defaultShape, "", 0);
 
         this.colors = new Map<string, string>();
         this.unicodeMarkers = new Map<string, string>();
@@ -82,7 +82,6 @@ export class Main {
         this.fileBookmarkPositionCache = new Map<string, Array<FileBookmarkListItem>>();
 
         this.restoreSettings();
-        this.activateGroup(this.activeGroupName);
 
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
         this.statusBarItem.command = 'vsc-labeled-bookmarks.selectGroup';
@@ -94,7 +93,7 @@ export class Main {
     public saveSettings() {
         let serializedGroupMap = SerializableGroupMap.fromGroupMap(this.groups);
         this.ctx.workspaceState.update(this.savedGroupsKey, serializedGroupMap);
-        this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroupName);
+        this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroup.name);
         this.ctx.workspaceState.update(this.savedHideInactiveGroupsKey, this.hideInactiveGroups);
         this.ctx.workspaceState.update(this.savedHideAllKey, this.hideAll);
 
@@ -182,11 +181,6 @@ export class Main {
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
-        let group = this.groups.get(this.activeGroupName);
-        if (typeof group === "undefined") {
-            return;
-        }
-
         if (textEditor.selections.length === 0) {
             return;
         }
@@ -194,7 +188,7 @@ export class Main {
         let documentFsPath = textEditor.document.uri.fsPath;
         for (let selection of textEditor.selections) {
             let lineNumber = selection.start.line;
-            group.toggleBookmark(documentFsPath, lineNumber);
+            this.activeGroup.toggleBookmark(documentFsPath, lineNumber);
         }
 
         this.saveSettings();
@@ -208,14 +202,9 @@ export class Main {
         let lineNumber = textEditor.selection.start.line;
         let documentFsPath = textEditor.document.uri.fsPath;
 
-        let activeGroup = this.groups.get(this.activeGroupName);
-        if (typeof activeGroup === "undefined") {
-            return;
-        }
-
-        let existingLabel = activeGroup.getBookmarkByPosition(documentFsPath, lineNumber);
+        let existingLabel = this.activeGroup.getBookmarkByPosition(documentFsPath, lineNumber);
         if (typeof existingLabel !== "undefined") {
-            activeGroup.deleteLabeledBookmark(existingLabel);
+            this.activeGroup.deleteLabeledBookmark(existingLabel);
             this.saveSettings();
             return;
         }
@@ -268,10 +257,7 @@ export class Main {
             }
 
             if (label !== "") {
-                let activeGroup = this.groups.get(this.activeGroupName);
-                if (typeof activeGroup !== "undefined") {
-                    activeGroup.addLabeledBookmark(label, documentFsPath, lineNumber);
-                }
+                this.activeGroup.addLabeledBookmark(label, documentFsPath, lineNumber);
             }
 
             this.saveSettings();
@@ -286,12 +272,7 @@ export class Main {
         let documentFsPath = textEditor.document.uri.fsPath;
         let lineNumber = textEditor.selection.start.line;
 
-        let activeGroup = this.groups.get(this.activeGroupName);
-        if (typeof activeGroup === "undefined") {
-            return;
-        }
-
-        let nextBookmark = activeGroup.nextBookmark(documentFsPath, lineNumber);
+        let nextBookmark = this.activeGroup.nextBookmark(documentFsPath, lineNumber);
         if (typeof nextBookmark === "undefined") {
             return;
         }
@@ -307,12 +288,7 @@ export class Main {
         let documentFsPath = textEditor.document.uri.fsPath;
         let lineNumber = textEditor.selection.start.line;
 
-        let activeGroup = this.groups.get(this.activeGroupName);
-        if (typeof activeGroup === "undefined") {
-            return;
-        }
-
-        let previousBookmark = activeGroup.previousBookmark(documentFsPath, lineNumber);
+        let previousBookmark = this.activeGroup.previousBookmark(documentFsPath, lineNumber);
         if (typeof previousBookmark === "undefined") {
             return;
         }
@@ -322,13 +298,8 @@ export class Main {
 
     public actionNavigateToBookmark() {
         let pickItems = new Array<BookmarkPickItem>();
-        let activeGroup = this.groups.get(this.activeGroupName);
 
-        if (typeof activeGroup === "undefined") {
-            return;
-        }
-
-        for (let [label, bookmark] of activeGroup.bookmarks) {
+        for (let [label, bookmark] of this.activeGroup.bookmarks) {
             pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
         }
         pickItems.sort(BookmarkPickItem.sort);
@@ -374,21 +345,16 @@ export class Main {
     }
 
     public actionSetGroupIconShape() {
-        let activeGroup = this.groups.get(this.activeGroupName);
-
-        if (typeof activeGroup === "undefined") {
-            return;
-        }
-        let iconText = activeGroup.iconText;
+        let iconText = this.activeGroup.iconText;
 
         let shapePickItems = new Array<ShapePickItem>();
         for (let [label, id] of this.shapes) {
-            label = (activeGroup.shape === id ? "● " : "◌ ") + label;
+            label = (this.activeGroup.shape === id ? "● " : "◌ ") + label;
             shapePickItems.push(new ShapePickItem(id, iconText, label, "vector", ""));
         }
 
         for (let [name, marker] of this.unicodeMarkers) {
-            let label = (activeGroup.shape === "unicode" && activeGroup.iconText === marker ? "● " : "◌ ");
+            let label = (this.activeGroup.shape === "unicode" && this.activeGroup.iconText === marker ? "● " : "◌ ");
             label += marker + " " + name;
             shapePickItems.push(new ShapePickItem("unicode", marker, label, "unicode", ""));
         }
@@ -402,30 +368,18 @@ export class Main {
             }
         ).then(selected => {
             if (typeof selected !== "undefined") {
-                let activeGroup = this.groups.get(this.activeGroupName);
-
-                if (typeof activeGroup === "undefined") {
-                    return;
-                }
-
                 let shape = (selected as ShapePickItem).shape;
                 let iconText = (selected as ShapePickItem).iconText;
-                activeGroup.setShape(shape, iconText);
+                this.activeGroup.setShape(shape, iconText);
                 this.saveSettings();
             }
         });
     }
 
     public actionSetGroupIconColor() {
-        let activeGroup = this.groups.get(this.activeGroupName);
-
-        if (typeof activeGroup === "undefined") {
-            return;
-        }
-
         let colorPickItems = new Array<ColorPickItem>();
         for (let [name, color] of this.colors) {
-            let label = (activeGroup.color === color ? "● " : "◌ ") + name;
+            let label = (this.activeGroup.color === color ? "● " : "◌ ") + name;
 
             colorPickItems.push(new ColorPickItem(color, label, "", ""));
         }
@@ -439,13 +393,8 @@ export class Main {
             }
         ).then(selected => {
             if (typeof selected !== "undefined") {
-                let activeGroup = this.groups.get(this.activeGroupName);
-
-                if (typeof activeGroup === "undefined") {
-                    return;
-                }
                 let color = (selected as ColorPickItem).color;
-                activeGroup.setColor(color);
+                this.activeGroup.setColor(color);
                 this.saveSettings();
             }
         });
@@ -517,6 +466,8 @@ export class Main {
             }
         ).then(selecteds => {
             if (typeof selecteds !== "undefined") {
+                let activeGroupName = this.activeGroup.name;
+
                 for (let selected of selecteds) {
                     let group = (selected as GroupPickItem).group;
                     group.truncateBookmarks();
@@ -529,7 +480,7 @@ export class Main {
                     return;
                 }
 
-                if (!this.groups.has(this.activeGroupName)) {
+                if (!this.groups.has(activeGroupName)) {
                     for (let [name, group] of this.groups) {
                         this.activateGroup(name);
                         this.saveSettings();
@@ -543,13 +494,8 @@ export class Main {
     }
 
     public actionDeleteBookmark() {
-        let activeGroup = this.groups.get(this.activeGroupName);
-        if (typeof activeGroup === "undefined") {
-            return;
-        }
-
         let pickItems = new Array<BookmarkDeletePickItem>();
-        for (let [index, bookmark] of activeGroup.bookmarks) {
+        for (let [index, bookmark] of this.activeGroup.bookmarks) {
             pickItems.push(BookmarkDeletePickItem.fromGroupEntry(index, bookmark));
         }
         pickItems.sort(BookmarkDeletePickItem.sort);
@@ -563,14 +509,9 @@ export class Main {
             }
         ).then(selecteds => {
             if (typeof selecteds !== "undefined") {
-                let activeGroup = this.groups.get(this.activeGroupName);
-                if (typeof activeGroup === "undefined") {
-                    return;
-                }
-
                 for (let selected of selecteds) {
                     let index = (selected as BookmarkDeletePickItem).index;
-                    activeGroup.deleteLabeledBookmark(index);
+                    this.activeGroup.deleteLabeledBookmark(index);
                 }
                 this.saveSettings();
             }
@@ -737,13 +678,7 @@ export class Main {
     }
 
     private updateStatusBar() {
-        let activeGroup = this.groups.get(this.activeGroupName);
-        if (typeof activeGroup === "undefined") {
-            this.statusBarItem.text = "$(bookmark) $(stop)";
-            return;
-        }
-
-        this.statusBarItem.text = "$(bookmark) " + activeGroup.bookmarks.size + " in " + this.activeGroupName;
+        this.statusBarItem.text = "$(bookmark) " + this.activeGroup.bookmarks.size + " in " + this.activeGroup.name;
 
         let hideStatus = "";
         if (this.hideAll) {
@@ -762,7 +697,7 @@ export class Main {
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
 
-        this.activeGroupName = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
+        let activeGroupName: string = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
         let serializedGroupMap: SerializableGroupMap | undefined = this.ctx.workspaceState.get(this.savedGroupsKey);
 
         this.groups = new Map<string, Group>();
@@ -773,31 +708,29 @@ export class Main {
                 vscode.window.showErrorMessage("Restoring bookmarks failed (" + e + ")");
             }
         }
+
+        this.activateGroup(activeGroupName);
     }
 
     private activateGroup(name: string) {
-        let activeGroup = this.groups.get(this.activeGroupName);
-        if (typeof activeGroup !== "undefined") {
-            activeGroup.setIsActive(false);
-        }
+        this.activeGroup.setIsActive(false);
 
-        this.ensureGroup(name);
-        let newActiveGroup = this.groups.get(name);
-        if (typeof newActiveGroup !== "undefined") {
-            newActiveGroup.setIsActive(true);
-        }
-        this.activeGroupName = name;
+        let newActiveGroup = this.ensureGroup(name);
+        this.activeGroup = newActiveGroup;
+        newActiveGroup.setIsActive(true);
 
         this.cacheReset();
     }
 
-    private ensureGroup(name: string) {
-        if (this.groups.has(name)) {
-            return;
+    private ensureGroup(name: string): Group {
+        let existingGroup = this.groups.get(name);
+        if (typeof existingGroup !== "undefined") {
+            return existingGroup;
         }
 
         let group = new Group(this, name, this.getLeastUsedColor(), this.defaultShape, name, 0);
         this.groups.set(name, group);
+        return group;
     }
 
     private getLeastUsedColor(): string {
@@ -871,13 +804,10 @@ export class Main {
         let result = new Map<TextEditorDecorationType, Array<Range>>();
 
         let linesTaken = new Map<Number, boolean>();
-        let theActiveGroup = this.groups.get(this.activeGroupName);
 
-        if (typeof theActiveGroup !== "undefined") {
-            let bookmarks = theActiveGroup.getBookmarksOfFsPath(fsPath);
-            for (let bookmark of bookmarks) {
-                linesTaken.set(bookmark.line, true);
-            }
+        let bookmarks = this.activeGroup.getBookmarksOfFsPath(fsPath);
+        for (let bookmark of bookmarks) {
+            linesTaken.set(bookmark.line, true);
         }
 
         for (let [name, group] of this.groups) {
@@ -906,7 +836,7 @@ export class Main {
             let ranges: Array<Range> = [];
             let bookmarks = group.getBookmarksOfFsPath(fsPath);
             for (let bookmark of bookmarks) {
-                if (name !== this.activeGroupName && linesTaken.has(bookmark.line)) {
+                if (group !== this.activeGroup && linesTaken.has(bookmark.line)) {
                     continue;
                 }
 
