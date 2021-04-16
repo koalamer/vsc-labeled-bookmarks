@@ -115,7 +115,7 @@ export class Main {
         }
     }
 
-    public updateDecorationsOnDocumentChange(event: TextDocumentChangeEvent) {
+    public onEditorDocumentChanged(event: TextDocumentChangeEvent) {
         let fsPath = event.document.uri.fsPath;
 
         let fileBookmarkList = this.getCachedFileBookmarks(fsPath);
@@ -674,7 +674,7 @@ export class Main {
         }
     }
 
-    public async filesRenamed(fileRenamedEvent: FileRenameEvent) {
+    public async onFilesRenamed(fileRenamedEvent: FileRenameEvent) {
         let changedFiles = new Map<string, boolean>();
 
         for (let rename of fileRenamedEvent.files) {
@@ -715,7 +715,7 @@ export class Main {
         }
     }
 
-    public async filesDeleted(fileDeleteEvent: FileDeleteEvent) {
+    public async onFilesDeleted(fileDeleteEvent: FileDeleteEvent) {
         for (let uri of fileDeleteEvent.files) {
             let deletedFsPath = uri.fsPath;
 

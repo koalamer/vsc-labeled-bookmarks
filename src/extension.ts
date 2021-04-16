@@ -92,22 +92,20 @@ export function activate(context: ExtensionContext) {
 	});
 
 	vscode.workspace.onDidChangeTextDocument(textDocumentChangeEvent => {
-		main.updateDecorationsOnDocumentChange(textDocumentChangeEvent);
+		main.onEditorDocumentChanged(textDocumentChangeEvent);
 	});
 
 	vscode.workspace.onDidRenameFiles(fileRenameEvent => {
-		main.filesRenamed(fileRenameEvent);
+		main.onFilesRenamed(fileRenameEvent);
 	});
 
 	vscode.workspace.onDidDeleteFiles(fileDeleteEvent => {
-		main.filesDeleted(fileDeleteEvent);
+		main.onFilesDeleted(fileDeleteEvent);
 	});
 
 	vscode.workspace.onDidChangeConfiguration(() => {
 		main.readConfig();
 	});
-
-	main.updateDecorations(vscode.window.activeTextEditor);
 }
 
 export function deactivate() {
