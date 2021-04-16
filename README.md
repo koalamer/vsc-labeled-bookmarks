@@ -9,7 +9,9 @@ Bookmarks with customizable icons, mouse free operation, able to jump to named b
 ### Bookmarks
 
 * You can set an unnamed bookmark on a line using `ctrl+alt+m`. If there already is a bookmark on the line, it is removed.
-* Labeled bookmarks can be set using `ctrl+alt+l`. A prompt appears where you can type the label for the bookmark. **Labels are unique inside a group, so if you define the same label twice, the first bookmark that beared the label is deleted and only the new one remains.**
+* Labeled bookmarks can be set using `ctrl+alt+l`. A prompt appears where you can type the label for the bookmark. If you have some text selected, that will be the default value of the input box. (The character '@' is replaced with '(a)' in this case, see the next section why.)  
+Labels are unique inside a group, so if you define the same label twice, the first bookmark that beared the label is deleted and only the new one remains.  
+**Tip: you can easily create a labeled bookmark with the current line's text by selecting the line (`ctrl+l` on windows, `cmd+l` on mac) and then using the `ctrl+alt+l` command.**
 * The labeled bookmark creation is multifunctional: it expects the input in the format of "bookmark label" or "bookmark label@group name" or just "@group name. When a group name is specified, the group is created if it does not yet exist and it is set to be the active group. Then, if the label is specified, a new bookmark is created using it.
 * Delete bookmarks using `ctrl+alt+b d`, or by using the above toggle commands on a line that already has a bookmark (of the active group).
 
@@ -62,10 +64,10 @@ This extension tries to follow file rename and delete actions initiated from wit
 
 If a bookmark becomes invalid because of other kind of file changes (the file or the line it points to becomes unavailable), then the next time you try (and fail) to navigate to it, it gets flagged as having failed the jump. This is signalled with a warning icon in the navigation list. Such flagged bookmarks are skipped the next time. By repeatedly using the navigate to next/previous bookmark action, you can have all broken bookmarks marked as failing, and then the the navigation works on the rest of the bookmarks normally.
 
-You can remove this broken bookmark flag:
+You can remove this broken bookmark flags:
 
-* by explicitly navigating to them using `ctrl+alt+n` or `ctrl+alt+b n` after they become valid again
-* or by clearing all the flags using `ctrl+alt+b f`.
+* by successfully navigating to them using `ctrl+alt+n` or `ctrl+alt+b n`
+* or by clearing all the flags using `ctrl+alt+b f`
 
 Or you can delete them using `ctrl+alt+b d` and selecting them manually.
 
