@@ -22,7 +22,7 @@ export class BookmarkPickItem implements QuickPickItem {
         let label = bookmark.label;
         let description = "";
         if (typeof groupName !== "undefined") {
-            description = "@" + groupName;
+            description = "in " + groupName;
         }
         let detail = workspace.asRelativePath(bookmark.fsPath) + " line " + (bookmark.line + 1);
         if (bookmark.failedJump) {

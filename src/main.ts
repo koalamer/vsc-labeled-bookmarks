@@ -181,495 +181,419 @@ export class Main {
         }
     }
 
-    public registerToggleBookmark() {
-        let disposable = vscode.commands.registerTextEditorCommand(
-            'vsc-labeled-bookmarks.toggleBookmark',
-            (textEditor) => {
-                let group = this.groups.get(this.activeGroupName);
-                if (typeof group === "undefined") {
+    public editorActionToggleBookmark(textEditor: TextEditor) {
+        let group = this.groups.get(this.activeGroupName);
+        if (typeof group === "undefined") {
+            return;
+        }
+
+        if (textEditor.selections.length === 0) {
+            return;
+        }
+
+        let documentFsPath = textEditor.document.uri.fsPath;
+        for (let selection of textEditor.selections) {
+            let lineNumber = selection.start.line;
+            group.toggleBookmark(documentFsPath, lineNumber);
+        }
+
+        this.saveSettings();
+    }
+
+    public editorActionToggleLabeledBookmark(textEditor: TextEditor) {
+        if (textEditor.selections.length === 0) {
+            return;
+        }
+
+        let lineNumber = textEditor.selection.start.line;
+        let documentFsPath = textEditor.document.uri.fsPath;
+
+        let activeGroup = this.groups.get(this.activeGroupName);
+        if (typeof activeGroup === "undefined") {
+            return;
+        }
+
+        let existingLabel = activeGroup.getBookmarkByPosition(documentFsPath, lineNumber);
+        if (typeof existingLabel !== "undefined") {
+            activeGroup.deleteLabeledBookmark(existingLabel);
+            this.saveSettings();
+            return;
+        }
+
+        vscode.window.showInputBox({
+            placeHolder: "label or label@group or @group",
+            prompt: "Enter label and/or group to be created"
+        }).then(input => {
+            if (typeof input === "undefined") {
+                return;
+            }
+
+            input = input.trim();
+            if (input === "") {
+                return;
+            }
+
+            let label = "";
+            let groupName = "";
+
+            let separatorPos = input.indexOf(this.groupSeparator);
+            if (separatorPos >= 0) {
+                label = input.substring(0, separatorPos).trim();
+                groupName = input.substring(separatorPos + 1).trim();
+            } else {
+                label = input;
+            }
+
+            if (label === "" && groupName === "") {
+                return;
+            }
+
+            if (groupName.length > this.maxGroupNameLength) {
+                vscode.window.showErrorMessage(
+                    "Choose a maximum " +
+                    this.maxGroupNameLength +
+                    " character long group name."
+                );
+                return;
+            }
+
+            if (groupName !== "") {
+                this.activateGroup(groupName);
+            }
+
+            if (label !== "") {
+                let activeGroup = this.groups.get(this.activeGroupName);
+                if (typeof activeGroup !== "undefined") {
+                    activeGroup.addLabeledBookmark(label, documentFsPath, lineNumber);
+                }
+            }
+
+            this.saveSettings();
+        });
+    }
+
+    public editorActionnavigateToNextBookmark(textEditor: TextEditor) {
+        if (textEditor.selections.length === 0) {
+            return;
+        }
+
+        let documentFsPath = textEditor.document.uri.fsPath;
+        let lineNumber = textEditor.selection.start.line;
+
+        let activeGroup = this.groups.get(this.activeGroupName);
+        if (typeof activeGroup === "undefined") {
+            return;
+        }
+
+        let nextBookmark = activeGroup.nextBookmark(documentFsPath, lineNumber);
+        if (typeof nextBookmark === "undefined") {
+            return;
+        }
+
+        this.jumpToBookmark(nextBookmark);
+    }
+
+    public editorActionNavigateToPreviousBookmark(textEditor: TextEditor) {
+        if (textEditor.selections.length === 0) {
+            return;
+        }
+
+        let documentFsPath = textEditor.document.uri.fsPath;
+        let lineNumber = textEditor.selection.start.line;
+
+        let activeGroup = this.groups.get(this.activeGroupName);
+        if (typeof activeGroup === "undefined") {
+            return;
+        }
+
+        let previousBookmark = activeGroup.previousBookmark(documentFsPath, lineNumber);
+        if (typeof previousBookmark === "undefined") {
+            return;
+        }
+
+        this.jumpToBookmark(previousBookmark);
+    }
+
+    public actionNavigateToBookmark() {
+        let pickItems = new Array<BookmarkPickItem>();
+        let activeGroup = this.groups.get(this.activeGroupName);
+
+        if (typeof activeGroup === "undefined") {
+            return;
+        }
+
+        for (let [label, bookmark] of activeGroup.bookmarks) {
+            pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
+        }
+        pickItems.sort(BookmarkPickItem.sort);
+
+        vscode.window.showQuickPick(
+            pickItems,
+            {
+                canPickMany: false,
+                matchOnDescription: true,
+                placeHolder: "navigate to bookmark"
+            }
+        ).then(selected => {
+            if (typeof selected !== "undefined") {
+                this.jumpToBookmark(selected.bookmark);
+            }
+            this.saveSettings();
+        });
+    }
+
+    public actionNavigateToBookmarkOfAnyGroup() {
+        let pickItems = new Array<BookmarkPickItem>();
+
+        for (let [name, group] of this.groups) {
+            for (let [label, bookmark] of group.bookmarks) {
+                pickItems.push(BookmarkPickItem.fromBookmark(bookmark, name));
+            }
+        }
+        pickItems.sort(BookmarkPickItem.sort);
+
+        vscode.window.showQuickPick(
+            pickItems,
+            {
+                canPickMany: false,
+                matchOnDescription: true,
+                placeHolder: "navigate to bookmark of any bookmark group"
+            }
+        ).then(selected => {
+            if (typeof selected !== "undefined") {
+                this.jumpToBookmark(selected.bookmark);
+            }
+            this.saveSettings();
+        });
+    }
+
+    public actionSetGroupIconShape() {
+        let activeGroup = this.groups.get(this.activeGroupName);
+
+        if (typeof activeGroup === "undefined") {
+            return;
+        }
+        let iconText = activeGroup.iconText;
+
+        let shapePickItems = new Array<ShapePickItem>();
+        for (let [label, id] of this.shapes) {
+            label = (activeGroup.shape === id ? "● " : "◌ ") + label;
+            shapePickItems.push(new ShapePickItem(id, iconText, label, "vector", ""));
+        }
+
+        for (let [name, marker] of this.unicodeMarkers) {
+            let label = (activeGroup.shape === "unicode" && activeGroup.iconText === marker ? "● " : "◌ ");
+            label += marker + " " + name;
+            shapePickItems.push(new ShapePickItem("unicode", marker, label, "unicode", ""));
+        }
+
+        vscode.window.showQuickPick(
+            shapePickItems,
+            {
+                canPickMany: false,
+                matchOnDescription: false,
+                placeHolder: "select bookmark group icon shape"
+            }
+        ).then(selected => {
+            if (typeof selected !== "undefined") {
+                let activeGroup = this.groups.get(this.activeGroupName);
+
+                if (typeof activeGroup === "undefined") {
                     return;
                 }
 
-                if (textEditor.selections.length === 0) {
+                let shape = (selected as ShapePickItem).shape;
+                let iconText = (selected as ShapePickItem).iconText;
+                activeGroup.setShape(shape, iconText);
+                this.saveSettings();
+            }
+        });
+    }
+
+    public actionSetGroupIconColor() {
+        let activeGroup = this.groups.get(this.activeGroupName);
+
+        if (typeof activeGroup === "undefined") {
+            return;
+        }
+
+        let colorPickItems = new Array<ColorPickItem>();
+        for (let [name, color] of this.colors) {
+            let label = (activeGroup.color === color ? "● " : "◌ ") + name;
+
+            colorPickItems.push(new ColorPickItem(color, label, "", ""));
+        }
+
+        vscode.window.showQuickPick(
+            colorPickItems,
+            {
+                canPickMany: false,
+                matchOnDescription: false,
+                placeHolder: "select bookmark group icon color"
+            }
+        ).then(selected => {
+            if (typeof selected !== "undefined") {
+                let activeGroup = this.groups.get(this.activeGroupName);
+
+                if (typeof activeGroup === "undefined") {
+                    return;
+                }
+                let color = (selected as ColorPickItem).color;
+                activeGroup.setColor(color);
+                this.saveSettings();
+            }
+        });
+    }
+
+    public actionSelectGroup() {
+        let pickItems = new Array<GroupPickItem>();
+        for (let [name, group] of this.groups) {
+            pickItems.push(GroupPickItem.fromGroup(group));
+        }
+        pickItems.sort(GroupPickItem.sort);
+
+        vscode.window.showQuickPick(
+            pickItems,
+            {
+                canPickMany: false,
+                matchOnDescription: false,
+                placeHolder: "select bookmark group"
+            }
+        ).then(selected => {
+            if (typeof selected !== "undefined") {
+                this.activateGroup((selected as GroupPickItem).group.name);
+                this.saveSettings();
+            }
+        });
+    }
+
+    public actionAddGroup() {
+        vscode.window.showInputBox({
+            placeHolder: "group name",
+            prompt: "Enter group name to create or switch to"
+        }).then(groupName => {
+            if (typeof groupName === "undefined") {
+                return;
+            }
+
+            groupName = groupName.trim();
+            if (groupName === "") {
+                return;
+            }
+
+            if (groupName.length > this.maxGroupNameLength) {
+                vscode.window.showErrorMessage(
+                    "Choose a maximum " +
+                    this.maxGroupNameLength +
+                    " character long group name."
+                );
+                return;
+            }
+
+            this.activateGroup(groupName);
+            this.saveSettings();
+        });
+    }
+
+    public actionDeleteGroup() {
+        let pickItems = new Array<GroupPickItem>();
+        for (let [name, group] of this.groups) {
+            pickItems.push(GroupPickItem.fromGroup(group));
+        }
+        pickItems.sort(GroupPickItem.sort);
+
+        vscode.window.showQuickPick(
+            pickItems,
+            {
+                canPickMany: true,
+                matchOnDescription: false,
+                placeHolder: "select bookmark groups to be deleted"
+            }
+        ).then(selecteds => {
+            if (typeof selecteds !== "undefined") {
+                for (let selected of selecteds) {
+                    let group = (selected as GroupPickItem).group;
+                    group.truncateBookmarks();
+                    this.groups.delete(group.name);
+                }
+
+                if (this.groups.size === 0) {
+                    this.activateGroup(this.defaultGroupName);
+                    this.saveSettings();
                     return;
                 }
 
-                let documentFsPath = textEditor.document.uri.fsPath;
-                for (let selection of textEditor.selections) {
-                    let lineNumber = selection.start.line;
-                    group.toggleBookmark(documentFsPath, lineNumber);
+                if (!this.groups.has(this.activeGroupName)) {
+                    for (let [name, group] of this.groups) {
+                        this.activateGroup(name);
+                        this.saveSettings();
+                        return;
+                    }
                 }
 
                 this.saveSettings();
-            });
-        this.ctx.subscriptions.push(disposable);
+            }
+        });
     }
 
-    public registerToggleLabeledBookmark() {
-        let disposable = vscode.commands.registerTextEditorCommand(
-            'vsc-labeled-bookmarks.toggleLabeledBookmark',
-            (textEditor) => {
-                if (textEditor.selections.length === 0) {
-                    return;
-                }
+    public actionDeleteBookmark() {
+        let activeGroup = this.groups.get(this.activeGroupName);
+        if (typeof activeGroup === "undefined") {
+            return;
+        }
 
-                let lineNumber = textEditor.selection.start.line;
-                let documentFsPath = textEditor.document.uri.fsPath;
+        let pickItems = new Array<BookmarkDeletePickItem>();
+        for (let [index, bookmark] of activeGroup.bookmarks) {
+            pickItems.push(BookmarkDeletePickItem.fromGroupEntry(index, bookmark));
+        }
+        pickItems.sort(BookmarkDeletePickItem.sort);
 
+        vscode.window.showQuickPick(
+            pickItems,
+            {
+                canPickMany: true,
+                matchOnDescription: false,
+                placeHolder: "select bookmarks to be deleted"
+            }
+        ).then(selecteds => {
+            if (typeof selecteds !== "undefined") {
                 let activeGroup = this.groups.get(this.activeGroupName);
                 if (typeof activeGroup === "undefined") {
                     return;
                 }
 
-                let existingLabel = activeGroup.getBookmarkByPosition(documentFsPath, lineNumber);
-                if (typeof existingLabel !== "undefined") {
-                    activeGroup.deleteLabeledBookmark(existingLabel);
-                    this.saveSettings();
-                    return;
+                for (let selected of selecteds) {
+                    let index = (selected as BookmarkDeletePickItem).index;
+                    activeGroup.deleteLabeledBookmark(index);
                 }
-
-                vscode.window.showInputBox({
-                    placeHolder: "label or label@group or @group",
-                    prompt: "Enter label and/or group to be created"
-                }).then(input => {
-                    if (typeof input === "undefined") {
-                        return;
-                    }
-
-                    input = input.trim();
-                    if (input === "") {
-                        return;
-                    }
-
-                    let label = "";
-                    let groupName = "";
-
-                    let separatorPos = input.indexOf(this.groupSeparator);
-                    if (separatorPos >= 0) {
-                        label = input.substring(0, separatorPos).trim();
-                        groupName = input.substring(separatorPos + 1).trim();
-                    } else {
-                        label = input;
-                    }
-
-                    if (label === "" && groupName === "") {
-                        return;
-                    }
-
-                    if (groupName.length > this.maxGroupNameLength) {
-                        vscode.window.showErrorMessage(
-                            "Choose a maximum " +
-                            this.maxGroupNameLength +
-                            " character long group name."
-                        );
-                        return;
-                    }
-
-                    if (groupName !== "") {
-                        this.activateGroup(groupName);
-                    }
-
-                    if (label !== "") {
-                        let activeGroup = this.groups.get(this.activeGroupName);
-                        if (typeof activeGroup !== "undefined") {
-                            activeGroup.addLabeledBookmark(label, documentFsPath, lineNumber);
-                        }
-                    }
-
-                    this.saveSettings();
-                });
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerNavigateToNextBookmark() {
-        let disposable = vscode.commands.registerTextEditorCommand(
-            'vsc-labeled-bookmarks.navigateToNextBookmark',
-            (textEditor) => {
-                if (textEditor.selections.length === 0) {
-                    return;
-                }
-
-                let documentFsPath = textEditor.document.uri.fsPath;
-                let lineNumber = textEditor.selection.start.line;
-
-                let activeGroup = this.groups.get(this.activeGroupName);
-                if (typeof activeGroup === "undefined") {
-                    return;
-                }
-
-                let nextBookmark = activeGroup.nextBookmark(documentFsPath, lineNumber);
-                if (typeof nextBookmark === "undefined") {
-                    return;
-                }
-
-                this.jumpToBookmark(nextBookmark);
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerNavigateToPreviousBookmark() {
-        let disposable = vscode.commands.registerTextEditorCommand(
-            'vsc-labeled-bookmarks.navigateToPreviousBookmark',
-            (textEditor) => {
-                if (textEditor.selections.length === 0) {
-                    return;
-                }
-
-                let documentFsPath = textEditor.document.uri.fsPath;
-                let lineNumber = textEditor.selection.start.line;
-
-                let activeGroup = this.groups.get(this.activeGroupName);
-                if (typeof activeGroup === "undefined") {
-                    return;
-                }
-
-                let previousBookmark = activeGroup.previousBookmark(documentFsPath, lineNumber);
-                if (typeof previousBookmark === "undefined") {
-                    return;
-                }
-
-                this.jumpToBookmark(previousBookmark);
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerNavigateToBookmark() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.navigateToBookmark',
-            () => {
-                let pickItems = new Array<BookmarkPickItem>();
-                let activeGroup = this.groups.get(this.activeGroupName);
-
-                if (typeof activeGroup === "undefined") {
-                    return;
-                }
-
-                for (let [label, bookmark] of activeGroup.bookmarks) {
-                    pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
-                }
-                pickItems.sort(BookmarkPickItem.sort);
-
-                vscode.window.showQuickPick(
-                    pickItems,
-                    {
-                        canPickMany: false,
-                        matchOnDescription: true,
-                        placeHolder: "navigate to bookmark"
-                    }
-                ).then(selected => {
-                    if (typeof selected !== "undefined") {
-                        this.jumpToBookmark(selected.bookmark);
-                    }
-                    this.saveSettings();
-                });
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerNavigateToBookmarkOfAnyGroup() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.navigateToBookmarkOfAnyGroup',
-            () => {
-                let pickItems = new Array<BookmarkPickItem>();
-
-                for (let [name, group] of this.groups) {
-                    for (let [label, bookmark] of group.bookmarks) {
-                        pickItems.push(BookmarkPickItem.fromBookmark(bookmark, name));
-                    }
-                }
-                pickItems.sort(BookmarkPickItem.sort);
-
-                vscode.window.showQuickPick(
-                    pickItems,
-                    {
-                        canPickMany: false,
-                        matchOnDescription: true,
-                        placeHolder: "navigate to bookmark of any bookmark group"
-                    }
-                ).then(selected => {
-                    if (typeof selected !== "undefined") {
-                        this.jumpToBookmark(selected.bookmark);
-                    }
-                    this.saveSettings();
-                });
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerSetGroupIconShape() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.setGroupIconShape',
-            () => {
-                let activeGroup = this.groups.get(this.activeGroupName);
-
-                if (typeof activeGroup === "undefined") {
-                    return;
-                }
-                let iconText = activeGroup.iconText;
-
-                let shapePickItems = new Array<ShapePickItem>();
-                for (let [label, id] of this.shapes) {
-                    label = (activeGroup.shape === id ? "● " : "◌ ") + label;
-                    shapePickItems.push(new ShapePickItem(id, iconText, label, "vector", ""));
-                }
-
-                for (let [name, marker] of this.unicodeMarkers) {
-                    let label = (activeGroup.shape === "unicode" && activeGroup.iconText === marker ? "● " : "◌ ");
-                    label += marker + " " + name;
-                    shapePickItems.push(new ShapePickItem("unicode", marker, label, "unicode", ""));
-                }
-
-                vscode.window.showQuickPick(
-                    shapePickItems,
-                    {
-                        canPickMany: false,
-                        matchOnDescription: false,
-                        placeHolder: "select bookmark group icon shape"
-                    }
-                ).then(selected => {
-                    if (typeof selected !== "undefined") {
-                        let activeGroup = this.groups.get(this.activeGroupName);
-
-                        if (typeof activeGroup === "undefined") {
-                            return;
-                        }
-
-                        let shape = (selected as ShapePickItem).shape;
-                        let iconText = (selected as ShapePickItem).iconText;
-                        activeGroup.setShape(shape, iconText);
-                        this.saveSettings();
-                    }
-                });
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerSetGroupIconColor() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.setGroupIconColor',
-            () => {
-                let activeGroup = this.groups.get(this.activeGroupName);
-
-                if (typeof activeGroup === "undefined") {
-                    return;
-                }
-
-                let colorPickItems = new Array<ColorPickItem>();
-                for (let [name, color] of this.colors) {
-                    let label = (activeGroup.color === color ? "● " : "◌ ") + name;
-
-                    colorPickItems.push(new ColorPickItem(color, label, "", ""));
-                }
-
-                vscode.window.showQuickPick(
-                    colorPickItems,
-                    {
-                        canPickMany: false,
-                        matchOnDescription: false,
-                        placeHolder: "select bookmark group icon color"
-                    }
-                ).then(selected => {
-                    if (typeof selected !== "undefined") {
-                        let activeGroup = this.groups.get(this.activeGroupName);
-
-                        if (typeof activeGroup === "undefined") {
-                            return;
-                        }
-                        let color = (selected as ColorPickItem).color;
-                        activeGroup.setColor(color);
-                        this.saveSettings();
-                    }
-                });
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerSelectGroup() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.selectGroup',
-            () => {
-                let pickItems = new Array<GroupPickItem>();
-                for (let [name, group] of this.groups) {
-                    pickItems.push(GroupPickItem.fromGroup(group));
-                }
-                pickItems.sort(GroupPickItem.sort);
-
-                vscode.window.showQuickPick(
-                    pickItems,
-                    {
-                        canPickMany: false,
-                        matchOnDescription: false,
-                        placeHolder: "select bookmark group"
-                    }
-                ).then(selected => {
-                    if (typeof selected !== "undefined") {
-                        this.activateGroup((selected as GroupPickItem).group.name);
-                        this.saveSettings();
-                    }
-                });
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerAddGroup() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.addGroup',
-            () => {
-
-                vscode.window.showInputBox({
-                    placeHolder: "group name",
-                    prompt: "Enter group name to create or switch to"
-                }).then(groupName => {
-                    if (typeof groupName === "undefined") {
-                        return;
-                    }
-
-                    groupName = groupName.trim();
-                    if (groupName === "") {
-                        return;
-                    }
-
-                    if (groupName.length > this.maxGroupNameLength) {
-                        vscode.window.showErrorMessage(
-                            "Choose a maximum " +
-                            this.maxGroupNameLength +
-                            " character long group name."
-                        );
-                        return;
-                    }
-
-                    this.activateGroup(groupName);
-                    this.saveSettings();
-                });
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerDeleteGroup() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.deleteGroup',
-            () => {
-                let pickItems = new Array<GroupPickItem>();
-                for (let [name, group] of this.groups) {
-                    pickItems.push(GroupPickItem.fromGroup(group));
-                }
-                pickItems.sort(GroupPickItem.sort);
-
-                vscode.window.showQuickPick(
-                    pickItems,
-                    {
-                        canPickMany: true,
-                        matchOnDescription: false,
-                        placeHolder: "select bookmark groups to be deleted"
-                    }
-                ).then(selecteds => {
-                    if (typeof selecteds !== "undefined") {
-                        for (let selected of selecteds) {
-                            let group = (selected as GroupPickItem).group;
-                            group.truncateBookmarks();
-                            this.groups.delete(group.name);
-                        }
-
-                        if (this.groups.size === 0) {
-                            this.activateGroup(this.defaultGroupName);
-                            this.saveSettings();
-                            return;
-                        }
-
-                        if (!this.groups.has(this.activeGroupName)) {
-                            for (let [name, group] of this.groups) {
-                                this.activateGroup(name);
-                                this.saveSettings();
-                                return;
-                            }
-                        }
-
-                        this.saveSettings();
-                    }
-                });
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerDeleteBookmark() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.deleteBookmark',
-            () => {
-                let activeGroup = this.groups.get(this.activeGroupName);
-                if (typeof activeGroup === "undefined") {
-                    return;
-                }
-
-                let pickItems = new Array<BookmarkDeletePickItem>();
-                for (let [index, bookmark] of activeGroup.bookmarks) {
-                    pickItems.push(BookmarkDeletePickItem.fromGroupEntry(index, bookmark));
-                }
-                pickItems.sort(BookmarkDeletePickItem.sort);
-
-                vscode.window.showQuickPick(
-                    pickItems,
-                    {
-                        canPickMany: true,
-                        matchOnDescription: false,
-                        placeHolder: "select bookmarks to be deleted"
-                    }
-                ).then(selecteds => {
-                    if (typeof selecteds !== "undefined") {
-                        let activeGroup = this.groups.get(this.activeGroupName);
-                        if (typeof activeGroup === "undefined") {
-                            return;
-                        }
-
-                        for (let selected of selecteds) {
-                            let index = (selected as BookmarkDeletePickItem).index;
-                            activeGroup.deleteLabeledBookmark(index);
-                        }
-                        this.saveSettings();
-                    }
-                });
-            });
-        this.ctx.subscriptions.push(disposable);
-    }
-
-    public registerToggleHideAll() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.toggleHideAll',
-            () => {
-                this.setHideAll(!this.hideAll);
                 this.saveSettings();
-            });
-        this.ctx.subscriptions.push(disposable);
+            }
+        });
     }
 
-    public registerToggleHideInactiveGroups() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.toggleHideInactiveGroups',
-            () => {
-                this.setHideInactiveGroups(!this.hideInactiveGroups);
-                this.saveSettings();
-            });
-        this.ctx.subscriptions.push(disposable);
+    public actionToggleHideAll() {
+        this.setHideAll(!this.hideAll);
+        this.saveSettings();
     }
 
-    public registerClearFailedJumpFlags() {
-        let disposable = vscode.commands.registerCommand(
-            'vsc-labeled-bookmarks.clearFailedJumpFlags',
-            () => {
-                let clearedFlagCount = 0;
-                for (let [name, group] of this.groups) {
-                    for (let [label, bookmark] of group.bookmarks) {
-                        if (bookmark.failedJump) {
-                            bookmark.failedJump = false;
-                            clearedFlagCount++;
-                        }
-                    }
+    public actionToggleHideInactiveGroups() {
+        this.setHideInactiveGroups(!this.hideInactiveGroups);
+        this.saveSettings();
+    }
+
+    public actionClearFailedJumpFlags() {
+        let clearedFlagCount = 0;
+        for (let [name, group] of this.groups) {
+            for (let [label, bookmark] of group.bookmarks) {
+                if (bookmark.failedJump) {
+                    bookmark.failedJump = false;
+                    clearedFlagCount++;
                 }
+            }
+        }
 
-                vscode.window.showInformationMessage("Cleared broken bookmark flags: " + clearedFlagCount);
-                this.saveSettings();
-            });
-        this.ctx.subscriptions.push(disposable);
+        vscode.window.showInformationMessage("Cleared broken bookmark flags: " + clearedFlagCount);
+        this.saveSettings();
     }
 
     public fileChanged(fsPath: string, clearFileBookmarkCache: boolean = true) {
