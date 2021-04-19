@@ -49,6 +49,9 @@ export class Main {
 
     private statusBarItem: StatusBarItem;
 
+    private decorationDirtyFiles: Map<string, boolean>;
+    private removedDecorations: Map<TextEditorDecorationType, boolean>;
+
     constructor(ctx: ExtensionContext) {
         this.ctx = ctx;
         Group.svgDir = this.ctx.globalStorageUri;
@@ -68,6 +71,9 @@ export class Main {
             ["label", "label"],
             ["star", "star"]
         ]);
+
+        this.decorationDirtyFiles = new Map<string, boolean>();
+        this.removedDecorations = new Map<TextEditorDecorationType, boolean>();
 
         this.readConfig();
 
@@ -100,7 +106,7 @@ export class Main {
         this.updateStatusBar();
     }
 
-    public updateDecorations(textEditor: TextEditor | undefined) {
+    public updateEditorDecorations(textEditor: TextEditor | undefined) {
         if (typeof textEditor === "undefined") {
             return;
         }
@@ -144,7 +150,7 @@ export class Main {
                     }
                 }
                 if (visualsChanged) {
-                    this.fileChanged(fsPath, false);
+                    this.addDecorationDirtyFile(fsPath);
                     this.saveSettings();
                 }
                 continue;
@@ -156,7 +162,6 @@ export class Main {
                 let shiftUpBy = oldLines - newLines;
 
                 let visualsChanged = false;
-                let clearFileBookmarkCache = false;
                 for (let item of fileBookmarkList) {
                     if (item.bookmark.line > shiftBelowLine) {
                         item.bookmark.line -= shiftUpBy;
@@ -165,19 +170,21 @@ export class Main {
                     }
                     if (item.bookmark.line > deleteBelowLine) {
                         this.groups.get(item.groupName)?.deleteLabeledBookmark(item.bookmarkLabel);
+                        this.fileBookmarkPositionCache.delete(fsPath);
                         visualsChanged = true;
-                        clearFileBookmarkCache = true;
                     }
                 }
 
                 if (visualsChanged) {
-                    this.fileChanged(fsPath, clearFileBookmarkCache);
+                    this.addDecorationDirtyFile(fsPath);
                     this.saveSettings();
                 }
 
                 continue;
             }
         }
+
+        this.updateDecorations();
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
@@ -191,6 +198,7 @@ export class Main {
             this.activeGroup.toggleBookmark(documentFsPath, lineNumber);
         }
 
+        this.updateDecorations();
         this.saveSettings();
     }
 
@@ -260,6 +268,7 @@ export class Main {
                 this.activeGroup.addLabeledBookmark(label, documentFsPath, lineNumber);
             }
 
+            this.updateDecorations();
             this.saveSettings();
         });
     }
@@ -315,7 +324,6 @@ export class Main {
             if (typeof selected !== "undefined") {
                 this.jumpToBookmark(selected.bookmark);
             }
-            this.saveSettings();
         });
     }
 
@@ -340,7 +348,6 @@ export class Main {
             if (typeof selected !== "undefined") {
                 this.jumpToBookmark(selected.bookmark);
             }
-            this.saveSettings();
         });
     }
 
@@ -417,6 +424,7 @@ export class Main {
         ).then(selected => {
             if (typeof selected !== "undefined") {
                 this.activateGroup((selected as GroupPickItem).group.name);
+                this.updateDecorations();
                 this.saveSettings();
             }
         });
@@ -446,6 +454,7 @@ export class Main {
             }
 
             this.activateGroup(groupName);
+            this.updateDecorations();
             this.saveSettings();
         });
     }
@@ -476,6 +485,7 @@ export class Main {
 
                 if (this.groups.size === 0) {
                     this.activateGroup(this.defaultGroupName);
+                    this.updateDecorations();
                     this.saveSettings();
                     return;
                 }
@@ -483,11 +493,13 @@ export class Main {
                 if (!this.groups.has(activeGroupName)) {
                     for (let [name, group] of this.groups) {
                         this.activateGroup(name);
+                        this.updateDecorations();
                         this.saveSettings();
                         return;
                     }
                 }
 
+                this.updateDecorations();
                 this.saveSettings();
             }
         });
@@ -513,6 +525,7 @@ export class Main {
                     let index = (selected as BookmarkDeletePickItem).index;
                     this.activeGroup.deleteLabeledBookmark(index);
                 }
+                this.updateDecorations();
                 this.saveSettings();
             }
         });
@@ -520,11 +533,13 @@ export class Main {
 
     public actionToggleHideAll() {
         this.setHideAll(!this.hideAll);
+        this.updateDecorations();
         this.saveSettings();
     }
 
     public actionToggleHideInactiveGroups() {
         this.setHideInactiveGroups(!this.hideInactiveGroups);
+        this.updateDecorations();
         this.saveSettings();
     }
 
@@ -543,34 +558,38 @@ export class Main {
         this.saveSettings();
     }
 
-    public fileChanged(fsPath: string, clearFileBookmarkCache: boolean = true) {
-        this.fileDecorationCache.delete(fsPath);
-        if (clearFileBookmarkCache) {
-            this.fileBookmarkPositionCache.delete(fsPath);
-        }
+    public addDecorationDirtyFile(fsPath: string) {
+        this.decorationDirtyFiles.set(fsPath, true);
+    }
 
-        for (let editor of vscode.window.visibleTextEditors) {
-            if (editor.document.uri.fsPath === fsPath) {
-                this.updateDecorations(editor);
-            }
+    private handleDecorationDirtyFiles() {
+        for (let [fsPath, b] of this.decorationDirtyFiles) {
+            this.fileDecorationCache.delete(fsPath);
         }
     }
 
-    public groupChanged(group: Group) {
-        for (let [label, bookmark] of group.bookmarks) {
-            this.fileDecorationCache.delete(bookmark.fsPath);
-            this.fileBookmarkPositionCache.delete(bookmark.fsPath);
-        }
+    private updateDecorations() {
+        this.handleDecorationDirtyFiles();
+        this.decorationDirtyFiles.clear();
 
         for (let editor of vscode.window.visibleTextEditors) {
-            this.updateDecorations(editor);
+            for (let [decoration, b] of this.removedDecorations) {
+                editor.setDecorations(decoration, []);
+            }
         }
+        this.removedDecorations.clear();
+
+        for (let editor of vscode.window.visibleTextEditors) {
+            this.updateEditorDecorations(editor);
+        }
+    }
+
+    public groupDecorationReady() {
+        this.updateDecorations();
     }
 
     public decorationDropped(decoration: TextEditorDecorationType) {
-        for (let editor of vscode.window.visibleTextEditors) {
-            editor.setDecorations(decoration, []);
-        }
+        this.removedDecorations.set(decoration, true);
     }
 
     public readConfig() {
@@ -652,7 +671,7 @@ export class Main {
         }
 
         for (let [changedFile, b] of changedFiles) {
-            this.fileChanged(changedFile);
+            this.addDecorationDirtyFile(changedFile);
         }
     }
 
@@ -719,7 +738,7 @@ export class Main {
         this.activeGroup = newActiveGroup;
         newActiveGroup.setIsActive(true);
 
-        this.cacheReset();
+        this.fileDecorationCache.clear();
     }
 
     private ensureGroup(name: string): Group {
@@ -770,11 +789,8 @@ export class Main {
         }
 
         this.hideInactiveGroups = hideInactiveGroups;
-        this.cacheReset();
 
-        for (let editor of vscode.window.visibleTextEditors) {
-            this.updateDecorations(editor);
-        }
+        this.fileDecorationCache.clear();
     }
 
     private setHideAll(hideAll: boolean) {
@@ -783,17 +799,10 @@ export class Main {
         }
 
         this.hideAll = hideAll;
-        this.cacheReset();
 
-        for (let editor of vscode.window.visibleTextEditors) {
-            this.updateDecorations(editor);
-        }
+        this.fileDecorationCache.clear();
     }
 
-
-    private cacheReset() {
-        this.fileDecorationCache = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
-    }
 
     private getCachedDecorations(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
         let cached = this.fileDecorationCache.get(fsPath);
@@ -814,7 +823,7 @@ export class Main {
             let decorationShown: TextEditorDecorationType;
             let decorationHidden: TextEditorDecorationType;
 
-            if (!group.isDecorationReady()) {
+            if (!group.areAllDecorationsReady()) {
                 continue;
             }
 
@@ -860,6 +869,7 @@ export class Main {
         let result = new Array<FileBookmarkListItem>();
 
         for (let [name, group] of this.groups) {
+            //group.getBookmarksOfFsPath[]
             for (let [label, bookmark] of group.bookmarks) {
                 if (bookmark.fsPath === fsPath) {
                     result.push(new FileBookmarkListItem(name, label, bookmark));
@@ -891,18 +901,21 @@ export class Main {
                         } catch (e) {
                             bookmark.failedJump = true;
                             vscode.window.showWarningMessage("Failed to navigate to bookmark (3): " + e);
+                            this.saveSettings();
                             return;
                         }
                         bookmark.failedJump = false;
                     },
                     rejectReason => {
                         bookmark.failedJump = true;
+                        this.saveSettings();
                         vscode.window.showWarningMessage("Failed to navigate to bookmark (2): " + rejectReason.message);
                     }
                 );
             },
             rejectReason => {
                 bookmark.failedJump = true;
+                this.saveSettings();
                 vscode.window.showWarningMessage("Failed to navigate to bookmark (1): " + rejectReason.message);
             }
         );

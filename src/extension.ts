@@ -88,7 +88,7 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(disposable);
 
 	vscode.window.onDidChangeActiveTextEditor(textEditor => {
-		main.updateDecorations(textEditor);
+		main.updateEditorDecorations(textEditor);
 	});
 
 	vscode.workspace.onDidChangeTextDocument(textDocumentChangeEvent => {

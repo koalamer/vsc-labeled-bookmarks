@@ -1,3 +1,4 @@
+import { throws } from 'node:assert';
 import * as vscode from 'vscode';
 import { TextEditorDecorationType, Uri } from 'vscode';
 import { Bookmark } from "./bookmark";
@@ -59,15 +60,22 @@ export class Group {
 
         DecorationFactory.create(this.shape, this.color, this.iconText).then(newDecoration => {
             this.decoration = newDecoration;
-            this.main.groupChanged(this);
+            this.oneDecorationIsReady();
         });
         DecorationFactory.create(this.shape, this.inactiveColor, this.iconText).then(newInactiveDecoration => {
             this.inactiveDecoration = newInactiveDecoration;
-            this.main.groupChanged(this);
+            this.oneDecorationIsReady();
         });
     }
 
-    public isDecorationReady(): boolean {
+    private oneDecorationIsReady(){
+        if (this.areAllDecorationsReady()) {
+            this.reportFilesAsChanged();
+            this.main.groupDecorationReady();
+        }
+    }
+
+    public areAllDecorationsReady(): boolean {
         return this.decoration !== DecorationFactory.placeholderDecoration
             && this.inactiveDecoration !== DecorationFactory.placeholderDecoration;
     }
@@ -82,7 +90,7 @@ export class Group {
         if (typeof existingLabel !== "undefined") {
             this.bookmarks.delete(existingLabel);
             this.generateNavigationCache();
-            this.main.fileChanged(fsPath);
+            this.main.addDecorationDirtyFile(fsPath);
             return;
         }
 
@@ -90,16 +98,16 @@ export class Group {
         let newLabel = "unnamed " + (this.unnamedCounter) + " ";
         this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber, false));
         this.generateNavigationCache();
-        this.main.groupChanged(this);
+        this.reportFilesAsChanged();
     }
 
     public addLabeledBookmark(label: string, fsPath: string, lineNumber: number) {
         let oldBookmarkFsPath = this.bookmarks.get(label)?.fsPath;
         this.bookmarks.set(label, new Bookmark(fsPath, label, lineNumber, false));
         this.generateNavigationCache();
-        this.main.fileChanged(fsPath);
+        this.main.addDecorationDirtyFile(fsPath);
         if (typeof oldBookmarkFsPath !== "undefined" && oldBookmarkFsPath !== fsPath) {
-            this.main.fileChanged(oldBookmarkFsPath);
+            this.main.addDecorationDirtyFile(oldBookmarkFsPath);
         }
     }
 
@@ -108,7 +116,7 @@ export class Group {
         this.bookmarks.delete(label);
         this.generateNavigationCache();
         if (typeof bookmark !== "undefined") {
-            this.main.fileChanged(bookmark.fsPath);
+            this.main.addDecorationDirtyFile(bookmark.fsPath);
         }
     }
 
@@ -133,7 +141,7 @@ export class Group {
 
     public setIsActive(isActive: boolean) {
         this.isActive = isActive;
-        this.main.groupChanged(this);
+        this.reportFilesAsChanged();
     }
 
     public setShape(shape: string, iconText: string) {
@@ -141,10 +149,11 @@ export class Group {
             return;
         }
 
-        this.shape = shape;
-        this.iconText = iconText;
         this.main.decorationDropped(this.decoration);
         this.main.decorationDropped(this.inactiveDecoration);
+
+        this.shape = shape;
+        this.iconText = iconText;
         this.initDecorations();
     }
 
@@ -153,10 +162,11 @@ export class Group {
             return;
         }
 
-        this.color = DecorationFactory.normalizeColorFormat(color);
-        this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.main.decorationDropped(this.decoration);
         this.main.decorationDropped(this.inactiveDecoration);
+
+        this.color = DecorationFactory.normalizeColorFormat(color);
+        this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.initDecorations();
     }
 
@@ -170,7 +180,7 @@ export class Group {
         this.generateNavigationCache();
 
         for (let [fsPath, flag] of affectedFiles) {
-            this.main.fileChanged(fsPath);
+            this.main.addDecorationDirtyFile(fsPath);
         }
     }
 
@@ -257,4 +267,11 @@ export class Group {
 
         return firstCandidate;
     }
+
+    private reportFilesAsChanged() {
+        for (let [index, bookmark] of this.bookmarks) {
+            this.main.addDecorationDirtyFile(bookmark.fsPath);
+        }
+    }
+
 }
