@@ -23,16 +23,16 @@ export class BookmarkDeletePickItem implements QuickPickItem {
     public static fromGroupEntry(index: string, bookmark: Bookmark): BookmarkDeletePickItem {
         let label = bookmark.label;
         let description = "";
-        let detail = workspace.asRelativePath(bookmark.fsPath) + " line " + (bookmark.line + 1);
-        if (bookmark.failedJump) {
+        let detail = workspace.asRelativePath(bookmark.fsPath) + " line " + (bookmark.lineNumber + 1);
+        if (bookmark.invalid) {
             label = "$(warning) " + label;
             detail = "$(warning) " + detail;
         }
-        return new BookmarkDeletePickItem(bookmark, index, label, description, detail);
+        return new BookmarkDeletePickItem(bookmark, index, label || "", description, detail);
     }
 
     public static sort(a: BookmarkDeletePickItem, b: BookmarkDeletePickItem): number {
         return a.bookmark.fsPath.localeCompare(b.bookmark.fsPath)
-            || (a.bookmark.line - b.bookmark.line);
+            || (a.bookmark.lineNumber - b.bookmark.lineNumber);
     }
 }

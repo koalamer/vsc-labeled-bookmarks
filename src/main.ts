@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { Group } from "./group";
 import { SerializableGroupMap } from './serializable_group_map';
 import {
-    ExtensionContext, FileDeleteEvent, FileRenameEvent, Range,
+    ExtensionContext, FileDeleteEvent, FileRenameEvent, Position, Range,
     StatusBarItem,
     TextDocumentChangeEvent, TextEditor, TextEditorDecorationType
 } from 'vscode';
@@ -17,7 +17,7 @@ import { Bookmark } from "./bookmark";
 
 export class Main {
     public ctx: ExtensionContext;
-    public readonly savedGroupsKey = "vscLabeledBookmarks.groups";
+    public readonly savedGroupsKey = "vscLabeledBookmarks.groups2";
     public readonly savedActiveGroupKey = "vscLabeledBookmarks.activeGroup";
     public readonly savedHideInactiveGroupsKey = "vscLabeledBookmarks.hideInactiveGroups";
     public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
@@ -144,8 +144,8 @@ export class Main {
 
                 let visualsChanged = false;
                 for (let item of fileBookmarkList) {
-                    if (item.bookmark.line > shiftBelowLine) {
-                        item.bookmark.line += shiftDownBy;
+                    if (item.bookmark.lineNumber > shiftBelowLine) {
+                        item.bookmark.lineNumber += shiftDownBy;
                         visualsChanged = true;
                     }
                 }
@@ -163,12 +163,12 @@ export class Main {
 
                 let visualsChanged = false;
                 for (let item of fileBookmarkList) {
-                    if (item.bookmark.line > shiftBelowLine) {
-                        item.bookmark.line -= shiftUpBy;
+                    if (item.bookmark.lineNumber > shiftBelowLine) {
+                        item.bookmark.lineNumber -= shiftUpBy;
                         visualsChanged = true;
                         continue;
                     }
-                    if (item.bookmark.line > deleteBelowLine) {
+                    if (item.bookmark.lineNumber > deleteBelowLine) {
                         this.groups.get(item.groupName)?.deleteLabeledBookmark(item.bookmarkLabel);
                         this.fileBookmarkPositionCache.delete(fsPath);
                         visualsChanged = true;
@@ -195,7 +195,16 @@ export class Main {
         let documentFsPath = textEditor.document.uri.fsPath;
         for (let selection of textEditor.selections) {
             let lineNumber = selection.start.line;
-            this.activeGroup.toggleBookmark(documentFsPath, lineNumber);
+            let characterNumber = selection.start.character;
+            let lineText = textEditor.document.getText(
+                new Range(new Position(lineNumber, 0), new Position(lineNumber + 1, 0))
+            ).trim();
+            this.activeGroup.toggleBookmark(
+                documentFsPath,
+                lineNumber,
+                characterNumber,
+                lineText
+            );
         }
 
         this.updateDecorations();
@@ -265,7 +274,18 @@ export class Main {
             }
 
             if (label !== "") {
-                this.activeGroup.addLabeledBookmark(label, documentFsPath, lineNumber);
+                let characterNumber = textEditor.selection.start.character;
+                let lineText = textEditor.document.getText(
+                    new Range(new Position(lineNumber, 0), new Position(lineNumber + 1, 0))
+                ).trim();
+
+                this.activeGroup.addLabeledBookmark(
+                    documentFsPath,
+                    lineNumber,
+                    characterNumber,
+                    lineText,
+                    label
+                );
             }
 
             this.updateDecorations();
@@ -547,8 +567,8 @@ export class Main {
         let clearedFlagCount = 0;
         for (let [name, group] of this.groups) {
             for (let [label, bookmark] of group.bookmarks) {
-                if (bookmark.failedJump) {
-                    bookmark.failedJump = false;
+                if (bookmark.invalid) {
+                    bookmark.invalid = false;
                     clearedFlagCount++;
                 }
             }
@@ -816,7 +836,7 @@ export class Main {
 
         let bookmarks = this.activeGroup.getBookmarksOfFsPath(fsPath);
         for (let bookmark of bookmarks) {
-            linesTaken.set(bookmark.line, true);
+            linesTaken.set(bookmark.lineNumber, true);
         }
 
         for (let [name, group] of this.groups) {
@@ -845,12 +865,12 @@ export class Main {
             let ranges: Array<Range> = [];
             let bookmarks = group.getBookmarksOfFsPath(fsPath);
             for (let bookmark of bookmarks) {
-                if (group !== this.activeGroup && linesTaken.has(bookmark.line)) {
+                if (group !== this.activeGroup && linesTaken.has(bookmark.lineNumber)) {
                     continue;
                 }
 
-                linesTaken.set(bookmark.line, true);
-                ranges.push(new Range(bookmark.line, 0, bookmark.line, 0));
+                linesTaken.set(bookmark.lineNumber, true);
+                ranges.push(new Range(bookmark.lineNumber, 0, bookmark.lineNumber, 0));
             }
 
             result.set(decorationShown, ranges);
@@ -895,26 +915,26 @@ export class Main {
                 vscode.window.showTextDocument(document, { preview: false }).then(
                     textEditor => {
                         try {
-                            let range = textEditor.document.lineAt(bookmark.line).range;
+                            let range = textEditor.document.lineAt(bookmark.lineNumber).range;
                             textEditor.selection = new vscode.Selection(range.start, range.start);
                             textEditor.revealRange(range);
                         } catch (e) {
-                            bookmark.failedJump = true;
+                            bookmark.invalid = true;
                             vscode.window.showWarningMessage("Failed to navigate to bookmark (3): " + e);
                             this.saveSettings();
                             return;
                         }
-                        bookmark.failedJump = false;
+                        bookmark.invalid = false;
                     },
                     rejectReason => {
-                        bookmark.failedJump = true;
+                        bookmark.invalid = true;
                         this.saveSettings();
                         vscode.window.showWarningMessage("Failed to navigate to bookmark (2): " + rejectReason.message);
                     }
                 );
             },
             rejectReason => {
-                bookmark.failedJump = true;
+                bookmark.invalid = true;
                 this.saveSettings();
                 vscode.window.showWarningMessage("Failed to navigate to bookmark (1): " + rejectReason.message);
             }

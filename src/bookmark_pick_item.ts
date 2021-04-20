@@ -24,17 +24,18 @@ export class BookmarkPickItem implements QuickPickItem {
         if (typeof groupName !== "undefined") {
             description = "in " + groupName;
         }
-        let detail = workspace.asRelativePath(bookmark.fsPath) + " line " + (bookmark.line + 1);
-        if (bookmark.failedJump) {
+        let detail = workspace.asRelativePath(bookmark.fsPath) + " line " + (bookmark.lineNumber + 1);
+        if (bookmark.invalid) {
             label = "$(warning) " + label;
             detail = "$(warning) " + detail;
         }
-        return new BookmarkPickItem(bookmark, label, description, detail);
+        return new BookmarkPickItem(bookmark, label || "", description, detail);
     }
 
     public static sort(a: BookmarkPickItem, b: BookmarkPickItem): number {
         return a.bookmark.fsPath.localeCompare(b.bookmark.fsPath)
-            || (a.bookmark.line - b.bookmark.line)
-            || (a.bookmark.label.localeCompare(b.bookmark.label));
+            || (a.bookmark.lineNumber - b.bookmark.lineNumber)
+            || ((a.bookmark.label || "").localeCompare(b.bookmark.label || ""))
+            ;
     }
 }

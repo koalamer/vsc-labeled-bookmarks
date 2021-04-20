@@ -1,6 +1,5 @@
-import { throws } from 'node:assert';
 import * as vscode from 'vscode';
-import { TextEditorDecorationType, Uri } from 'vscode';
+import { Position, Range, TextEditorDecorationType, Uri } from 'vscode';
 import { Bookmark } from "./bookmark";
 import { DecorationFactory } from "./decoration_factory";
 import { Main } from './main';
@@ -68,7 +67,7 @@ export class Group {
         });
     }
 
-    private oneDecorationIsReady(){
+    private oneDecorationIsReady() {
         if (this.areAllDecorationsReady()) {
             this.reportFilesAsChanged();
             this.main.groupDecorationReady();
@@ -85,7 +84,7 @@ export class Group {
         this.navigationCache.sort(Bookmark.sortByLocation);
     }
 
-    public toggleBookmark(fsPath: string, lineNumber: number) {
+    public toggleBookmark(fsPath: string, lineNumber: number, characterNumber: number, lineText: string) {
         let existingLabel = this.getBookmarkByPosition(fsPath, lineNumber);
         if (typeof existingLabel !== "undefined") {
             this.bookmarks.delete(existingLabel);
@@ -96,14 +95,36 @@ export class Group {
 
         this.unnamedCounter++;
         let newLabel = "unnamed " + (this.unnamedCounter) + " ";
-        this.bookmarks.set(newLabel, new Bookmark(fsPath, newLabel, lineNumber, false));
+        this.bookmarks.set(newLabel, new Bookmark(
+            fsPath,
+            lineNumber,
+            characterNumber,
+            undefined,
+            lineText,
+            lineText,
+            false)
+        );
         this.generateNavigationCache();
         this.reportFilesAsChanged();
     }
 
-    public addLabeledBookmark(label: string, fsPath: string, lineNumber: number) {
+    public addLabeledBookmark(
+        fsPath: string,
+        lineNumber: number,
+        characterNumber: number,
+        lineText: string,
+        label: string
+    ) {
         let oldBookmarkFsPath = this.bookmarks.get(label)?.fsPath;
-        this.bookmarks.set(label, new Bookmark(fsPath, label, lineNumber, false));
+        this.bookmarks.set(label, new Bookmark(
+            fsPath,
+            lineNumber,
+            characterNumber,
+            label,
+            lineText,
+            lineText,
+            false)
+        );
         this.generateNavigationCache();
         this.main.addDecorationDirtyFile(fsPath);
         if (typeof oldBookmarkFsPath !== "undefined" && oldBookmarkFsPath !== fsPath) {
@@ -132,7 +153,7 @@ export class Group {
 
     public getBookmarkByPosition(fsPath: string, lineNumber: number): string | undefined {
         for (let [label, bookmark] of this.bookmarks) {
-            if (bookmark.fsPath === fsPath && bookmark.line === lineNumber) {
+            if (bookmark.fsPath === fsPath && bookmark.lineNumber === lineNumber) {
                 return label;
             }
         }
@@ -191,7 +212,7 @@ export class Group {
     public nextBookmark(fsPath: string, line: number): Bookmark | undefined {
         let brokenBookmarkCount = 0;
         let firstCandidate = this.navigationCache.find((element, i) => {
-            if (element.failedJump) {
+            if (element.invalid) {
                 brokenBookmarkCount++;
                 return false;
             }
@@ -205,13 +226,13 @@ export class Group {
                 return true;
             }
 
-            return line < element.line;
+            return line < element.lineNumber;
         });
 
         if (typeof firstCandidate === "undefined" && this.navigationCache.length > 0) {
             if (this.navigationCache.length > brokenBookmarkCount) {
                 for (let bookmark of this.navigationCache) {
-                    if (!bookmark.failedJump) {
+                    if (!bookmark.invalid) {
                         return bookmark;
                     }
                 }
@@ -233,7 +254,7 @@ export class Group {
         for (let i = this.navigationCache.length - 1; i >= 0; i--) {
             let element = this.navigationCache[i];
 
-            if (element.failedJump) {
+            if (element.invalid) {
                 brokenBookmarkCount++;
                 continue;
             }
@@ -248,7 +269,7 @@ export class Group {
                 break;
             }
 
-            if (element.line < line) {
+            if (element.lineNumber < line) {
                 firstCandidate = element;
                 break;
             }
@@ -257,7 +278,7 @@ export class Group {
         if (typeof firstCandidate === "undefined" && this.navigationCache.length > 0) {
             if (this.navigationCache.length > brokenBookmarkCount) {
                 for (let i = this.navigationCache.length - 1; i >= 0; i--) {
-                    if (!this.navigationCache[i].failedJump) {
+                    if (!this.navigationCache[i].invalid) {
                         return this.navigationCache[i];
                     }
                 }
