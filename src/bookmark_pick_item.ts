@@ -1,7 +1,7 @@
 import { QuickPickItem, workspace } from 'vscode';
 import { Bookmark } from "./bookmark";
 
-export class BookmarkDeletePickItem implements QuickPickItem {
+export class BookmarkPickItem implements QuickPickItem {
     bookmark: Bookmark;
     label: string;
     description?: string;
@@ -23,7 +23,7 @@ export class BookmarkDeletePickItem implements QuickPickItem {
         this.alwaysShow = false;
     }
 
-    public static fromBookmark(bookmark: Bookmark): BookmarkDeletePickItem {
+    public static fromBookmark(bookmark: Bookmark): BookmarkPickItem {
         let label = bookmark.label ?? bookmark.currentLineText;
         let description = "in " + bookmark.group.name
             + (bookmark.label === null ? "" : " - " + bookmark.currentLineText);
@@ -35,10 +35,10 @@ export class BookmarkDeletePickItem implements QuickPickItem {
             detail = "$(warning) " + detail;
         }
 
-        return new BookmarkDeletePickItem(bookmark, label, description, detail);
+        return new BookmarkPickItem(bookmark, label, description, detail);
     }
 
-    public static sort(a: BookmarkDeletePickItem, b: BookmarkDeletePickItem): number {
+    public static sort(a: BookmarkPickItem, b: BookmarkPickItem): number {
         return a.bookmark.fsPath.localeCompare(b.bookmark.fsPath)
             || (a.bookmark.lineNumber - b.bookmark.lineNumber)
             || (a.bookmark.characterNumber - b.bookmark.characterNumber);
