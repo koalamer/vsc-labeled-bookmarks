@@ -1,3 +1,7 @@
+import { TextEditorDecorationType } from "vscode";
+import { SerializableBookmark } from "./serializable_bookmark";
+import { Group } from "./group";
+
 export class Bookmark {
     fsPath: string;
     lineNumber: number;
@@ -5,8 +9,9 @@ export class Bookmark {
     label?: string;
     originalLineText: string;
     currentLineText: string;
-    invalid: boolean;
-    dirty: boolean;
+    failedJump: boolean;
+    isLineNumberChanged: boolean;
+    group: Group;
 
     constructor(
         fsPath: string,
@@ -15,7 +20,7 @@ export class Bookmark {
         label: string | undefined,
         originalLineText: string,
         currentLineText: string,
-        failedJump: boolean
+        group: Group
     ) {
         this.fsPath = fsPath;
         this.lineNumber = lineNumber;
@@ -23,8 +28,24 @@ export class Bookmark {
         this.label = label;
         this.originalLineText = originalLineText;
         this.currentLineText = currentLineText;
-        this.invalid = failedJump;
-        this.dirty = false;
+        this.failedJump = false;
+        this.isLineNumberChanged = false;
+        this.group = group;
+    }
+
+    public static fromSerializableBookMark(
+        serialized: SerializableBookmark,
+        groupGetter: (groupName: string) => Group
+    ): Bookmark {
+        return new Bookmark(
+            serialized.fsPath,
+            serialized.lineNumber,
+            serialized.characterNumber,
+            serialized.label,
+            serialized.originalLineText,
+            serialized.currentLineText,
+            groupGetter(serialized.groupName)
+        );
     }
 
     public static sortByLocation(a: Bookmark, b: Bookmark): number {
@@ -33,16 +54,22 @@ export class Bookmark {
             || (a.characterNumber - b.characterNumber);
     }
 
-    public setNotDirty() {
-        this.dirty = false;
+    public resetIsLineNumberChangedFlag() {
+        this.isLineNumberChanged = false;
     }
 
-    public setLineNumber(lineNumber: number) {
+    public setLineAndCharacterNumbers(lineNumber: number, characterNumber: number) {
+        this.characterNumber = characterNumber;
+
         if (lineNumber === this.lineNumber) {
             return;
         }
 
         this.lineNumber = lineNumber;
-        this.dirty = true;
+        this.isLineNumberChanged = true;
+    }
+
+    public getDecoration(): TextEditorDecorationType | null {
+        return this.group.getActiveDecoration();
     }
 }
