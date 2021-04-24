@@ -1,3 +1,4 @@
+import { throws } from 'node:assert';
 import { TextEditorDecorationType, Uri } from 'vscode';
 import { DecorationFactory } from "./decoration_factory";
 import { SerializableGroup } from "./serializable_group";
@@ -18,7 +19,7 @@ export class Group {
     decoration: TextEditorDecorationType;
     inactiveDecoration: TextEditorDecorationType;
     groupDecorationUpdatedHandler: (group: Group) => void;
-    decorationDroppedHandler: (decoration: TextEditorDecorationType) => void;
+    decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
 
     constructor(
         name: string,
@@ -37,7 +38,7 @@ export class Group {
         this.decoration = DecorationFactory.placeholderDecoration;
         this.inactiveDecoration = DecorationFactory.placeholderDecoration;
         this.groupDecorationUpdatedHandler = () => { return; };
-        this.decorationDroppedHandler = () => { return; };
+        this.decorationRemovedHandler = () => { return; };
     }
 
     public static fromSerializableGroup(sg: SerializableGroup): Group {
@@ -48,8 +49,8 @@ export class Group {
         this.groupDecorationUpdatedHandler = fn;
     }
 
-    public onDecorationDropped(fn: (decoration: TextEditorDecorationType) => void) {
-        this.decorationDroppedHandler = fn;
+    public onDecorationRemoved(fn: (decoration: TextEditorDecorationType) => void) {
+        this.decorationRemovedHandler = fn;
     }
 
     public async initDecorations() {
@@ -88,6 +89,11 @@ export class Group {
             return;
         }
 
+        let activeDecoration = this.getActiveDecoration();
+        if (activeDecoration !== null) {
+            this.decorationRemovedHandler(activeDecoration);
+        }
+
         this.isActive = isActive;
         this.groupDecorationUpdatedHandler(this);
     }
@@ -95,6 +101,11 @@ export class Group {
     public setIsVisible(isVisible: boolean) {
         if (this.isVisible === isVisible) {
             return;
+        }
+
+        let activeDecoration = this.getActiveDecoration();
+        if (activeDecoration !== null) {
+            this.decorationRemovedHandler(activeDecoration);
         }
 
         this.isVisible = isVisible;
@@ -108,8 +119,8 @@ export class Group {
 
         this.isInitialized = false;
 
-        this.decorationDroppedHandler(this.decoration);
-        this.decorationDroppedHandler(this.inactiveDecoration);
+        this.decorationRemovedHandler(this.decoration);
+        this.decorationRemovedHandler(this.inactiveDecoration);
 
         this.shape = shape;
         this.iconText = iconText;
@@ -124,8 +135,8 @@ export class Group {
 
         this.isInitialized = false;
 
-        this.decorationDroppedHandler(this.decoration);
-        this.decorationDroppedHandler(this.inactiveDecoration);
+        this.decorationRemovedHandler(this.decoration);
+        this.decorationRemovedHandler(this.inactiveDecoration);
 
         this.color = DecorationFactory.normalizeColorFormat(color);
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
