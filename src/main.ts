@@ -5,17 +5,17 @@ import {
     FileDeleteEvent, FileRenameEvent,
     Position, Range,
     StatusBarItem,
-    TextDocumentChangeEvent, TextEditor, TextEditorDecorationType
+    TextDocument, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType
 } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
 import { BookmarkPickItem } from './bookmark_pick_item';
 import { ShapePickItem } from './shape_pick_item';
 import { ColorPickItem } from './color_pick_item';
-import { FileBookmarkListItem } from './file_bookmark_list_item';
 import { Bookmark } from "./bookmark";
 import { SerializableGroup } from "./serializable_group";
 import { SerializableBookmark } from "./serializable_bookmark";
+import { documentBookmarkList } from './document_bookmark_list';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -53,6 +53,8 @@ export class Main {
     private statusBarItem: StatusBarItem;
 
     private removedDecorations: Map<TextEditorDecorationType, boolean>;
+
+    private tempDocumentBookmarkList: documentBookmarkList;
 
     constructor(ctx: ExtensionContext) {
         this.ctx = ctx;
@@ -92,6 +94,8 @@ export class Main {
         this.statusBarItem.show();
 
         this.saveSettings();
+
+        this.tempDocumentBookmarkList = new documentBookmarkList("", new Array<Bookmark>());
 
         this.updateDecorations();
     }
@@ -187,74 +191,108 @@ export class Main {
         }
     }
 
-    // todo continue here
-
     public onEditorDocumentChanged(event: TextDocumentChangeEvent) {
         let fsPath = event.document.uri.fsPath;
 
-        let fileBookmarkList = this.getCachedFileBookmarks(fsPath);
+        let fileBookmarkList = this.getTempDocumentBookmarkList(fsPath);
+
         if (fileBookmarkList.length === 0) {
             return;
         }
 
+        let bookmarksChanged = false;
+
         for (let change of event.contentChanges) {
             let newLines = this.getNlCount(change.text);
-            let oldLines = change.range.end.line - change.range.start.line;
+            let firstLine = change.range.start.line;
+            let oldLines = change.range.end.line - firstLine;
+
+            fileBookmarkList
+                .filter((bookmark) => { return bookmark.fsPath === fsPath && bookmark.lineNumber === firstLine; })
+                .forEach((bookmark) => { this.updateBookmarkLineText(event.document, bookmark); });
 
             if (newLines === oldLines) {
                 continue;
             }
 
-            let firstLine = change.range.start.line;
+            let isFirstLinePrefixEmpty = event.document.getText(
+                new Range(firstLine, 0, firstLine, change.range.start.character)
+            ).trim() === "";
 
             if (newLines > oldLines) {
-                let shiftBelowLine = firstLine + oldLines;
+                let shiftDownFromLine = (isFirstLinePrefixEmpty ? firstLine : firstLine + oldLines - 1);
                 let shiftDownBy = newLines - oldLines;
 
-                let visualsChanged = false;
-                for (let item of fileBookmarkList) {
-                    if (item.bookmark.lineNumber > shiftBelowLine) {
-                        item.bookmark.lineNumber += shiftDownBy;
-                        visualsChanged = true;
+                for (let bookmark of fileBookmarkList) {
+                    if (bookmark.lineNumber >= shiftDownFromLine) {
+                        bookmark.lineNumber += shiftDownBy;
+                        bookmarksChanged = true;
+
+                        if (bookmark.lineNumber < firstLine + newLines) {
+                            this.updateBookmarkLineText(event.document, bookmark);
+                        }
                     }
-                }
-                if (visualsChanged) {
-                    this.addDecorationDirtyFile(fsPath);
-                    this.saveSettings();
                 }
                 continue;
             }
 
             if (newLines < oldLines) {
-                let deleteBelowLine = firstLine + newLines;
-                let shiftBelowLine = firstLine + oldLines;
-                let shiftUpBy = oldLines - newLines;
+                let deleteFromLine = (isFirstLinePrefixEmpty ? firstLine : firstLine + 1);
+                let shiftFromLine = firstLine + oldLines;
+                let shiftUpBy = shiftFromLine - deleteFromLine;
 
-                let visualsChanged = false;
-                for (let item of fileBookmarkList) {
-                    if (item.bookmark.lineNumber > shiftBelowLine) {
-                        item.bookmark.lineNumber -= shiftUpBy;
-                        visualsChanged = true;
+                for (let bookmark of fileBookmarkList) {
+                    if (bookmark.lineNumber >= shiftFromLine) {
+                        bookmark.lineNumber -= shiftUpBy;
+                        bookmarksChanged = true;
                         continue;
                     }
-                    if (item.bookmark.lineNumber > deleteBelowLine) {
-                        this.groups.get(item.groupName)?.deleteLabeledBookmark(item.bookmarkLabel);
-                        this.fileBookmarkPositionCache.delete(fsPath);
-                        visualsChanged = true;
+                    if (bookmark.lineNumber >= deleteFromLine) {
+                        this.deleteBookmark(bookmark);
+                        bookmarksChanged = true;
                     }
                 }
-
-                if (visualsChanged) {
-                    this.addDecorationDirtyFile(fsPath);
-                    this.saveSettings();
-                }
-
                 continue;
             }
         }
 
-        this.updateDecorations();
+        if (bookmarksChanged) {
+            this.resetTempDocumentBookmarkList();
+            this.saveSettings();
+            this.updateDecorations();
+        }
     }
+
+    private getTempDocumentBookmarkList(fsPath: string): Array<Bookmark> {
+        if (this.tempDocumentBookmarkList.fsPath === fsPath) {
+            return this.tempDocumentBookmarkList.bookmarks;
+        }
+
+        this.tempDocumentBookmarkList.fsPath = fsPath;
+        this.tempDocumentBookmarkList.bookmarks = this.bookmarks.filter((value) => { return value.fsPath === fsPath; });
+
+        return this.tempDocumentBookmarkList.bookmarks;
+    }
+
+    private resetTempDocumentBookmarkList() {
+        this.tempDocumentBookmarkList.fsPath = "";
+    }
+
+    private updateBookmarkLineText(document: TextDocument, bookmark: Bookmark) {
+        let text = document.getText(new Range(bookmark.lineNumber, 0, bookmark.lineNumber + 1, 0)).trim();
+        bookmark.currentLineText = text;
+    }
+
+    private deleteBookmark(bookmark: Bookmark) {
+        let index = this.bookmarks.indexOf(bookmark);
+        if (index < 0) {
+            return;
+        }
+
+        this.bookmarks.splice(index, 1);
+    }
+
+    // todo continue here
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
         if (textEditor.selections.length === 0) {
@@ -266,7 +304,7 @@ export class Main {
             let lineNumber = selection.start.line;
             let characterNumber = selection.start.character;
             let lineText = textEditor.document.getText(
-                new Range(new Position(lineNumber, 0), new Position(lineNumber + 1, 0))
+                new Range(lineNumber, 0, lineNumber + 1, 0)
             ).trim();
             this.toggleBookmark(
                 documentFsPath,
@@ -346,7 +384,7 @@ export class Main {
             if (label !== "") {
                 let characterNumber = textEditor.selection.start.character;
                 let lineText = textEditor.document.getText(
-                    new Range(new Position(lineNumber, 0), new Position(lineNumber + 1, 0))
+                    new Range(lineNumber, 0, lineNumber + 1, 0)
                 ).trim();
 
                 this.addLabeledBookmark(
