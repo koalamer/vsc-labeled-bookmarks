@@ -1,4 +1,3 @@
-import { mainModule } from 'node:process';
 import * as vscode from 'vscode';
 import { ExtensionContext } from 'vscode';
 import { Main } from './main';

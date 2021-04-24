@@ -45,6 +45,10 @@ export class Group {
         return new Group(sg.name, sg.color, sg.shape, sg.iconText);
     }
 
+    public static sortByName(a: Group, b: Group): number {
+        return a.name.localeCompare(b.name);
+    }
+
     public onGroupDecorationUpdated(fn: (group: Group) => void) {
         this.groupDecorationUpdatedHandler = fn;
     }
