@@ -331,6 +331,7 @@ export class Main {
 
         if (typeof existingBookmark !== "undefined") {
             this.deleteBookmark(existingBookmark);
+            this.saveSettings();
             return;
         }
 
@@ -341,19 +342,19 @@ export class Main {
         this.resetTempDocumentBookmarkList();
     }
 
-    // todo continue here
-
     public editorActionToggleLabeledBookmark(textEditor: TextEditor) {
         if (textEditor.selections.length === 0) {
             return;
         }
 
+        let fsPath = textEditor.document.uri.fsPath;
         let lineNumber = textEditor.selection.start.line;
-        let documentFsPath = textEditor.document.uri.fsPath;
 
-        let existingLabel = this.activeGroup.getBookmarkByPosition(documentFsPath, lineNumber);
-        if (typeof existingLabel !== "undefined") {
-            this.activeGroup.deleteLabeledBookmark(existingLabel);
+        let existingBookmark = this.getTempDocumentBookmarkList(fsPath)
+            .find((bm) => { return bm.lineNumber === lineNumber && bm.group === this.activeGroup; });
+
+        if (typeof existingBookmark !== "undefined") {
+            this.deleteBookmark(existingBookmark);
             this.saveSettings();
             return;
         }
@@ -361,9 +362,9 @@ export class Main {
         let selectedText = textEditor.document.getText(textEditor.selection)
             .trim()
             .replace(/[\s\t\r\n]+/, " ")
-            .replace("@", "(a)");
+            .replace("@", "@\u200b");
         vscode.window.showInputBox({
-            placeHolder: "label or label@group or @group",
+            placeHolder: "label or label@@group or @@group",
             prompt: "Enter label and/or group to be created",
             value: selectedText,
             valueSelection: [0, selectedText.length],
@@ -380,12 +381,12 @@ export class Main {
             let label = "";
             let groupName = "";
 
-            let separatorPos = input.indexOf(this.groupSeparator);
+            let separatorPos = input.indexOf('@@');
             if (separatorPos >= 0) {
                 label = input.substring(0, separatorPos).trim();
-                groupName = input.substring(separatorPos + 1).trim();
+                groupName = input.substring(separatorPos + 2).trim();
             } else {
-                label = input;
+                label = input.replace("@\u200b", "@");
             }
 
             if (label === "" && groupName === "") {
@@ -405,6 +406,19 @@ export class Main {
                 this.activateGroup(groupName);
             }
 
+            if (label.length === 1) {
+                let existingLabeledBookmark = this.getTempDocumentBookmarkList(fsPath)
+                    .find((bm) => {
+                        return bm.group === this.activeGroup
+                            && typeof bm.label !== "undefined"
+                            && bm.label === label;
+                    });
+
+                if (typeof existingLabeledBookmark !== "undefined") {
+                    this.deleteBookmark(existingLabeledBookmark);
+                }
+            }
+
             if (label !== "") {
                 let characterNumber = textEditor.selection.start.character;
                 let lineText = textEditor.document.getText(
@@ -412,7 +426,7 @@ export class Main {
                 ).trim();
 
                 this.addLabeledBookmark(
-                    documentFsPath,
+                    fsPath,
                     lineNumber,
                     characterNumber,
                     lineText,
@@ -421,10 +435,13 @@ export class Main {
                 );
             }
 
-            this.updateDecorations();
+            this.resetTempDocumentBookmarkList();
             this.saveSettings();
+            this.updateDecorations();
         });
     }
+
+    // todo continue here
 
     public editorActionnavigateToNextBookmark(textEditor: TextEditor) {
         if (textEditor.selections.length === 0) {
