@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Uri } from "vscode";
+import { DecorationRangeBehavior, OverviewRulerLane, Uri } from "vscode";
 import { TextEditorDecorationType } from "vscode";
 
 const svgBookmark = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
@@ -150,6 +150,9 @@ export class DecorationFactory {
             {
                 gutterIconPath: svgUri,
                 gutterIconSize: 'contain',
+                overviewRulerColor: '#' + color,
+                overviewRulerLane: OverviewRulerLane.Left,
+                rangeBehavior: DecorationRangeBehavior.ClosedClosed,
             }
         );
 
