@@ -441,8 +441,6 @@ export class Main {
         });
     }
 
-    // todo continue here
-
     public editorActionnavigateToNextBookmark(textEditor: TextEditor) {
         if (textEditor.selections.length === 0) {
             return;
@@ -451,13 +449,53 @@ export class Main {
         let documentFsPath = textEditor.document.uri.fsPath;
         let lineNumber = textEditor.selection.start.line;
 
-        let nextBookmark = this.activeGroup.nextBookmark(documentFsPath, lineNumber);
+        let nextBookmark = this.nextBookmark(documentFsPath, lineNumber);
         if (typeof nextBookmark === "undefined") {
             return;
         }
 
         this.jumpToBookmark(nextBookmark);
     }
+
+    public nextBookmark(fsPath: string, line: number): Bookmark | undefined {
+        let brokenBookmarkCount = 0;
+
+        let groupBookmarkList = this.bookmarks
+            .filter((bookmark) => { return bookmark.group === this.activeGroup; });
+
+        let firstCandidate = groupBookmarkList.find((bookmark, i) => {
+            if (bookmark.failedJump) {
+                brokenBookmarkCount++;
+                return false;
+            }
+
+            let fileComparisonResult = bookmark.fsPath.localeCompare(fsPath);
+
+            if (fileComparisonResult < 0) {
+                return false;
+            }
+            if (fileComparisonResult > 0) {
+                return true;
+            }
+
+            return line < bookmark.lineNumber;
+        });
+
+        if (typeof firstCandidate === "undefined" && groupBookmarkList.length > 0) {
+            if (groupBookmarkList.length > brokenBookmarkCount) {
+                for (let bookmark of groupBookmarkList) {
+                    if (!bookmark.failedJump) {
+                        return bookmark;
+                    }
+                }
+            }
+            vscode.window.showWarningMessage("All bookmarks are broken, time for some cleanup");
+        }
+
+        return firstCandidate;
+    }
+
+    // todo continue here
 
     public editorActionNavigateToPreviousBookmark(textEditor: TextEditor) {
         if (textEditor.selections.length === 0) {
@@ -1020,39 +1058,6 @@ export class Main {
         }
     }
 
-    public nextBookmark(fsPath: string, line: number): Bookmark | undefined {
-        let brokenBookmarkCount = 0;
-        let firstCandidate = this.navigationCache.find((element, i) => {
-            if (element.invalid) {
-                brokenBookmarkCount++;
-                return false;
-            }
-
-            let fileComparisonResult = element.fsPath.localeCompare(fsPath);
-
-            if (fileComparisonResult < 0) {
-                return false;
-            }
-            if (fileComparisonResult > 0) {
-                return true;
-            }
-
-            return line < element.lineNumber;
-        });
-
-        if (typeof firstCandidate === "undefined" && this.navigationCache.length > 0) {
-            if (this.navigationCache.length > brokenBookmarkCount) {
-                for (let bookmark of this.navigationCache) {
-                    if (!bookmark.invalid) {
-                        return bookmark;
-                    }
-                }
-            }
-            vscode.window.showWarningMessage("All bookmarks are broken, time for some cleanup");
-        }
-
-        return firstCandidate;
-    }
 
     public previousBookmark(fsPath: string, line: number): Bookmark | undefined {
         if (this.navigationCache.length === 0) {
