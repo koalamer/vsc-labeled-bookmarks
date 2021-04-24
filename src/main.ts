@@ -257,7 +257,6 @@ export class Main {
         }
 
         if (bookmarksChanged) {
-            this.resetTempDocumentBookmarkList();
             this.saveSettings();
             this.updateDecorations();
         }
@@ -290,9 +289,9 @@ export class Main {
         }
 
         this.bookmarks.splice(index, 1);
-    }
 
-    // todo continue here
+        this.resetTempDocumentBookmarkList();
+    }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
         if (textEditor.selections.length === 0) {
@@ -315,9 +314,34 @@ export class Main {
             );
         }
 
+        this.resetTempDocumentBookmarkList();
         this.updateDecorations();
         this.saveSettings();
     }
+
+    private toggleBookmark(
+        fsPath: string,
+        lineNumber: number,
+        characterNumber: number,
+        lineText: string,
+        group: Group
+    ) {
+        let existingBookmark = this.getTempDocumentBookmarkList(fsPath)
+            .find((bm) => { return bm.lineNumber === lineNumber && bm.group === group; });
+
+        if (typeof existingBookmark !== "undefined") {
+            this.deleteBookmark(existingBookmark);
+            return;
+        }
+
+        let bookmark = new Bookmark(fsPath, lineNumber, characterNumber, undefined, lineText, lineText, group);
+        this.bookmarks.push(bookmark);
+        this.bookmarks.sort(Bookmark.sortByLocation);
+
+        this.resetTempDocumentBookmarkList();
+    }
+
+    // todo continue here
 
     public editorActionToggleLabeledBookmark(textEditor: TextEditor) {
         if (textEditor.selections.length === 0) {
@@ -401,39 +425,6 @@ export class Main {
             this.saveSettings();
         });
     }
-
-    private toggleBookmark(
-        fsPath: string,
-        lineNumber: number,
-        characterNumber: number,
-        lineText: string,
-        group: Group
-    ) {
-        let existingLabel = group.getBookmarkByPosition(fsPath, lineNumber);
-        if (typeof existingLabel !== "undefined") {
-            group.bookmarks.delete(existingLabel);
-            group.generateNavigationCache();
-            this.addDecorationDirtyFile(fsPath);
-            return;
-        }
-
-        group.unnamedCounter++;
-        let newLabel = "unnamed " + (group.unnamedCounter) + " ";
-        group.bookmarks.set(newLabel, new Bookmark(
-            fsPath,
-            lineNumber,
-            characterNumber,
-            undefined,
-            lineText,
-            lineText,
-            false,
-            group)
-        );
-        group.generateNavigationCache();
-        group.reportFilesAsChanged();
-    }
-
-
 
     public editorActionnavigateToNextBookmark(textEditor: TextEditor) {
         if (textEditor.selections.length === 0) {
