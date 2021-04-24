@@ -52,7 +52,6 @@ export class Main {
 
     private statusBarItem: StatusBarItem;
 
-    private decorationChangedFiles: Map<string, boolean>;
     private removedDecorations: Map<TextEditorDecorationType, boolean>;
 
     constructor(ctx: ExtensionContext) {
@@ -75,7 +74,6 @@ export class Main {
             ["star", "star"]
         ]);
 
-        this.decorationChangedFiles = new Map<string, boolean>();
         this.removedDecorations = new Map<TextEditorDecorationType, boolean>();
 
         this.readConfig();
@@ -94,6 +92,8 @@ export class Main {
         this.statusBarItem.show();
 
         this.saveSettings();
+
+        this.updateDecorations();
     }
 
     public saveSettings() {
@@ -116,17 +116,28 @@ export class Main {
         this.updateStatusBar();
     }
 
-
+    public handleDecorationRemoved(decoration: TextEditorDecorationType) {
+        this.removedDecorations.set(decoration, true);
+    }
 
     public handleGroupDecorationUpdated(group: Group) {
-        //todo
+        this.updateDecorations();
     }
 
-    public handleDecorationRemoved(decoration: TextEditorDecorationType) {
-        //todo
+    private updateDecorations() {
+        for (let editor of vscode.window.visibleTextEditors) {
+            for (let [decoration, b] of this.removedDecorations) {
+                editor.setDecorations(decoration, []);
+            }
+        }
+        this.removedDecorations.clear();
+
+        for (let editor of vscode.window.visibleTextEditors) {
+            this.updateEditorDecorations(editor);
+        }
     }
 
-    public getGroupByName(groupName: string): Group {
+    private getGroupByName(groupName: string): Group {
         for (let g of this.groups) {
             if (g.name === groupName) {
                 return g;
@@ -143,12 +154,40 @@ export class Main {
 
         let documentFsPath = textEditor.document.uri.fsPath;
 
-        let decorationsLists: Map<TextEditorDecorationType, Range[]>;
-        decorationsLists = this.getCachedDecorations(documentFsPath);
-        for (let [decoration, ranges] of decorationsLists) {
+        let lineDecorations = new Map<number, TextEditorDecorationType>();
+        for (let bookmark of this.bookmarks) {
+            if (bookmark.fsPath !== documentFsPath) {
+                continue;
+            }
+
+            let decoration = bookmark.getDecoration();
+
+            if (decoration === null) {
+                continue;
+            }
+
+            if (bookmark.group === this.activeGroup || !lineDecorations.has(bookmark.lineNumber)) {
+                lineDecorations.set(bookmark.lineNumber, decoration);
+            }
+        }
+
+        let editorDecorations = new Map<TextEditorDecorationType, Range[]>();
+        for (let [lineNumber, decoration] of lineDecorations) {
+            let ranges = editorDecorations.get(decoration);
+            if (!ranges) {
+                ranges = new Array<Range>();
+                editorDecorations.set(decoration, ranges);
+            }
+
+            ranges.push(new Range(lineNumber, 0, lineNumber, 0));
+        }
+
+        for (let [decoration, ranges] of editorDecorations) {
             textEditor.setDecorations(decoration, ranges);
         }
     }
+
+    // todo continue here
 
     public onEditorDocumentChanged(event: TextDocumentChangeEvent) {
         let fsPath = event.document.uri.fsPath;
@@ -643,40 +682,6 @@ export class Main {
         this.saveSettings();
     }
 
-    public addDecorationDirtyFile(fsPath: string) {
-        this.decorationChangedFiles.set(fsPath, true);
-    }
-
-    private handleDecorationDirtyFiles() {
-        for (let [fsPath, b] of this.decorationChangedFiles) {
-            this.fileDecorationCache.delete(fsPath);
-        }
-    }
-
-    private updateDecorations() {
-        this.handleDecorationDirtyFiles();
-        this.decorationChangedFiles.clear();
-
-        for (let editor of vscode.window.visibleTextEditors) {
-            for (let [decoration, b] of this.removedDecorations) {
-                editor.setDecorations(decoration, []);
-            }
-        }
-        this.removedDecorations.clear();
-
-        for (let editor of vscode.window.visibleTextEditors) {
-            this.updateEditorDecorations(editor);
-        }
-    }
-
-    public groupDecorationReady() {
-        this.updateDecorations();
-    }
-
-    public decorationDropped(decoration: TextEditorDecorationType) {
-        this.removedDecorations.set(decoration, true);
-    }
-
     public readConfig() {
         let defaultDefaultShape = "bookmark";
 
@@ -935,84 +940,6 @@ export class Main {
         this.hideAll = hideAll;
 
         this.fileDecorationCache.clear();
-    }
-
-
-    private getCachedDecorations(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
-        let cached = this.fileDecorationCache.get(fsPath);
-        if (typeof cached !== "undefined") {
-            return cached;
-        }
-
-        let result = new Map<TextEditorDecorationType, Array<Range>>();
-
-        let linesTaken = new Map<Number, boolean>();
-
-        let bookmarks = this.activeGroup.getBookmarksOfFsPath(fsPath);
-        for (let bookmark of bookmarks) {
-            linesTaken.set(bookmark.lineNumber, true);
-        }
-
-        for (let [name, group] of this.groups) {
-            let decorationShown: TextEditorDecorationType;
-            let decorationHidden: TextEditorDecorationType;
-
-            if (!group.areAllDecorationsReady()) {
-                continue;
-            }
-
-            if (group.isActive) {
-                decorationShown = group.decoration;
-                decorationHidden = group.inactiveDecoration;
-            } else {
-                decorationShown = group.inactiveDecoration;
-                decorationHidden = group.decoration;
-            }
-
-            result.set(decorationHidden, []);
-
-            if (this.hideAll || (this.hideInactiveGroups && !group.isActive)) {
-                result.set(decorationShown, []);
-                continue;
-            }
-
-            let ranges: Array<Range> = [];
-            let bookmarks = group.getBookmarksOfFsPath(fsPath);
-            for (let bookmark of bookmarks) {
-                if (group !== this.activeGroup && linesTaken.has(bookmark.lineNumber)) {
-                    continue;
-                }
-
-                linesTaken.set(bookmark.lineNumber, true);
-                ranges.push(new Range(bookmark.lineNumber, 0, bookmark.lineNumber, 0));
-            }
-
-            result.set(decorationShown, ranges);
-        }
-
-        this.fileDecorationCache.set(fsPath, result);
-        return result;
-    }
-
-    private getCachedFileBookmarks(fsPath: string): Array<FileBookmarkListItem> {
-        let cached = this.fileBookmarkPositionCache.get(fsPath);
-        if (typeof cached !== "undefined") {
-            return cached;
-        }
-
-        let result = new Array<FileBookmarkListItem>();
-
-        for (let [name, group] of this.groups) {
-            //group.getBookmarksOfFsPath[]
-            for (let [label, bookmark] of group.bookmarks) {
-                if (bookmark.fsPath === fsPath) {
-                    result.push(new FileBookmarkListItem(name, label, bookmark));
-                }
-            }
-        }
-
-        this.fileBookmarkPositionCache.set(fsPath, result);
-        return result;
     }
 
     private getNlCount(text: string) {
