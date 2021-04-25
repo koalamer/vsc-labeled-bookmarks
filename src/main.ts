@@ -15,7 +15,6 @@ import { ColorPickItem } from './color_pick_item';
 import { Bookmark } from "./bookmark";
 import { SerializableGroup } from "./serializable_group";
 import { SerializableBookmark } from "./serializable_bookmark";
-import { BookmarkList } from './bookmark_list';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -457,14 +456,17 @@ export class Main {
                     new Range(lineNumber, 0, lineNumber + 1, 0)
                 ).trim();
 
-                this.addLabeledBookmark(
+                let bookmark = new Bookmark(
                     fsPath,
                     lineNumber,
                     characterNumber,
-                    lineText,
                     label,
+                    lineText,
+                    lineText,
                     this.activeGroup
                 );
+                this.bookmarks.push(bookmark);
+                this.bookmarks.sort(Bookmark.sortByLocation);
             }
 
             this.resetTempLists();
@@ -587,15 +589,13 @@ export class Main {
         return firstCandidate;
     }
 
-    // todo continue here
-
     public actionNavigateToBookmark() {
         let pickItems = new Array<BookmarkPickItem>();
 
-        for (let [label, bookmark] of this.activeGroup.bookmarks) {
+        for (let bookmark of this.getTempGroupBookmarkList(this.activeGroup)) {
             pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
         }
-        pickItems.sort(BookmarkPickItem.sort);
+        //pickItems.sort(BookmarkPickItem.sort);
 
         vscode.window.showQuickPick(
             pickItems,
@@ -614,12 +614,10 @@ export class Main {
     public actionNavigateToBookmarkOfAnyGroup() {
         let pickItems = new Array<BookmarkPickItem>();
 
-        for (let [name, group] of this.groups) {
-            for (let [label, bookmark] of group.bookmarks) {
-                pickItems.push(BookmarkPickItem.fromBookmark(bookmark, name));
-            }
+        for (let bookmark of this.bookmarks) {
+            pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
         }
-        pickItems.sort(BookmarkPickItem.sort);
+        // pickItems.sort(BookmarkPickItem.sort);
 
         vscode.window.showQuickPick(
             pickItems,
@@ -661,7 +659,7 @@ export class Main {
             if (typeof selected !== "undefined") {
                 let shape = (selected as ShapePickItem).shape;
                 let iconText = (selected as ShapePickItem).iconText;
-                this.activeGroup.setShape(shape, iconText);
+                this.activeGroup.setShapeAndIconText(shape, iconText);
                 this.saveSettings();
             }
         });
@@ -693,8 +691,8 @@ export class Main {
 
     public actionSelectGroup() {
         let pickItems = new Array<GroupPickItem>();
-        for (let [name, group] of this.groups) {
-            pickItems.push(GroupPickItem.fromGroup(group));
+        for (let group of this.groups) {
+            pickItems.push(GroupPickItem.fromGroup(group, this.getTempGroupBookmarkList(group).length));
         }
         pickItems.sort(GroupPickItem.sort);
 
@@ -745,8 +743,8 @@ export class Main {
 
     public actionDeleteGroup() {
         let pickItems = new Array<GroupPickItem>();
-        for (let [name, group] of this.groups) {
-            pickItems.push(GroupPickItem.fromGroup(group));
+        for (let group of this.groups) {
+            pickItems.push(GroupPickItem.fromGroup(group, this.getTempGroupBookmarkList(group).length));
         }
         pickItems.sort(GroupPickItem.sort);
 
@@ -759,30 +757,30 @@ export class Main {
             }
         ).then(selecteds => {
             if (typeof selecteds !== "undefined") {
-                let activeGroupName = this.activeGroup.name;
+                let wasActiveGroupDeleted = false;
 
                 for (let selected of selecteds) {
                     let group = (selected as GroupPickItem).group;
-                    group.truncateBookmarks();
-                    this.groups.delete(group.name);
-                }
+                    wasActiveGroupDeleted ||= (group === this.activeGroup);
 
-                if (this.groups.size === 0) {
-                    this.activateGroup(this.defaultGroupName);
-                    this.updateDecorations();
-                    this.saveSettings();
-                    return;
-                }
+                    this.getTempGroupBookmarkList(group).forEach(bookmark => {
+                        this.deleteBookmark(bookmark);
+                    });
 
-                if (!this.groups.has(activeGroupName)) {
-                    for (let [name, group] of this.groups) {
-                        this.activateGroup(name);
-                        this.updateDecorations();
-                        this.saveSettings();
-                        return;
+                    let index = this.groups.indexOf(group);
+                    if (index >= 0) {
+                        this.groups.splice(index, 1);
                     }
                 }
 
+                if (this.groups.length === 0) {
+                    this.activateGroup(this.defaultGroupName);
+                } else if (wasActiveGroupDeleted) {
+                    this.activateGroup(this.groups[0].name);
+                }
+
+                // todo reset affected files only?
+                this.resetTempLists();
                 this.updateDecorations();
                 this.saveSettings();
             }
@@ -790,11 +788,11 @@ export class Main {
     }
 
     public actionDeleteBookmark() {
-        let pickItems = new Array<BookmarkDeletePickItem>();
-        for (let [index, bookmark] of this.activeGroup.bookmarks) {
-            pickItems.push(BookmarkDeletePickItem.fromGroupEntry(index, bookmark));
+        let pickItems = new Array<BookmarkPickItem>();
+        for (let bookmark of this.getTempGroupBookmarkList(this.activeGroup)) {
+            pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
         }
-        pickItems.sort(BookmarkDeletePickItem.sort);
+        // pickItems.sort(BookmarkPickItem.sort);
 
         vscode.window.showQuickPick(
             pickItems,
@@ -806,8 +804,7 @@ export class Main {
         ).then(selecteds => {
             if (typeof selecteds !== "undefined") {
                 for (let selected of selecteds) {
-                    let index = (selected as BookmarkDeletePickItem).index;
-                    this.activeGroup.deleteLabeledBookmark(index);
+                    this.deleteBookmark(selected.bookmark);
                 }
                 this.updateDecorations();
                 this.saveSettings();
@@ -829,12 +826,11 @@ export class Main {
 
     public actionClearFailedJumpFlags() {
         let clearedFlagCount = 0;
-        for (let [name, group] of this.groups) {
-            for (let [label, bookmark] of group.bookmarks) {
-                if (bookmark.invalid) {
-                    bookmark.invalid = false;
-                    clearedFlagCount++;
-                }
+
+        for (let bookmark of this.bookmarks) {
+            if (bookmark.failedJump) {
+                bookmark.failedJump = false;
+                clearedFlagCount++;
             }
         }
 
@@ -893,24 +889,20 @@ export class Main {
             let newFsPath = rename.newUri.fsPath;
 
             if ((stat.type & vscode.FileType.Directory) > 0) {
-                for (let [name, group] of this.groups) {
-                    for (let [label, bookmark] of group.bookmarks) {
-                        if (bookmark.fsPath.startsWith(oldFsPath)) {
-                            let originalBookmarkFsPath = bookmark.fsPath;
-                            bookmark.fsPath = newFsPath + bookmark.fsPath.substring(oldFsPath.length);
-                            changedFiles.set(originalBookmarkFsPath, true);
-                            changedFiles.set(bookmark.fsPath, true);
-                        }
+                for (let bookmark of this.bookmarks) {
+                    if (bookmark.fsPath.startsWith(oldFsPath)) {
+                        let originalBookmarkFsPath = bookmark.fsPath;
+                        bookmark.fsPath = newFsPath + bookmark.fsPath.substring(oldFsPath.length);
+                        changedFiles.set(originalBookmarkFsPath, true);
+                        changedFiles.set(bookmark.fsPath, true);
                     }
                 }
             } else {
-                for (let [name, group] of this.groups) {
-                    for (let [label, bookmark] of group.bookmarks) {
-                        if (bookmark.fsPath === oldFsPath) {
-                            bookmark.fsPath = newFsPath;
-                            changedFiles.set(oldFsPath, true);
-                            changedFiles.set(newFsPath, true);
-                        }
+                for (let bookmark of this.bookmarks) {
+                    if (bookmark.fsPath === oldFsPath) {
+                        bookmark.fsPath = newFsPath;
+                        changedFiles.set(oldFsPath, true);
+                        changedFiles.set(newFsPath, true);
                     }
                 }
             }
@@ -921,22 +913,22 @@ export class Main {
         }
 
         for (let [changedFile, b] of changedFiles) {
-            this.addDecorationDirtyFile(changedFile);
+            // todo file resets and decoration update?
+            // this.addDecorationDirtyFile(changedFile);
         }
+
+        this.updateDecorations();
     }
 
     public async onFilesDeleted(fileDeleteEvent: FileDeleteEvent) {
         for (let uri of fileDeleteEvent.files) {
             let deletedFsPath = uri.fsPath;
 
-
             let changesWereMade = false;
-            for (let [name, group] of this.groups) {
-                for (let [label, bookmark] of group.bookmarks) {
-                    if (bookmark.fsPath === deletedFsPath) {
-                        group.deleteLabeledBookmark(label);
-                        changesWereMade = true;
-                    }
+            for (let bookmark of this.bookmarks) {
+                if (bookmark.fsPath === deletedFsPath) {
+                    this.deleteBookmark(bookmark);
+                    changesWereMade = true;
                 }
             }
 
@@ -946,34 +938,10 @@ export class Main {
         }
     }
 
-    private addLabeledBookmark(
-        fsPath: string,
-        lineNumber: number,
-        characterNumber: number,
-        lineText: string,
-        label: string,
-        group: Group
-    ) {
-        let oldBookmarkFsPath = group.bookmarks.get(label)?.fsPath;
-        group.bookmarks.set(label, new Bookmark(
-            fsPath,
-            lineNumber,
-            characterNumber,
-            label,
-            lineText,
-            lineText,
-            false,
-            group)
-        );
-        group.generateNavigationCache();
-        this.addDecorationDirtyFile(fsPath);
-        if (typeof oldBookmarkFsPath !== "undefined" && oldBookmarkFsPath !== fsPath) {
-            this.addDecorationDirtyFile(oldBookmarkFsPath);
-        }
-    }
-
     private updateStatusBar() {
-        this.statusBarItem.text = "$(bookmark) " + this.activeGroup.bookmarks.size + " in " + this.activeGroup.name;
+        this.statusBarItem.text = "$(bookmark) "
+            + this.getTempGroupBookmarkList(this.activeGroup).length
+            + " in " + this.activeGroup.name;
 
         let hideStatus = "";
         if (this.hideAll) {
@@ -983,7 +951,7 @@ export class Main {
         } else {
             hideStatus = ", all visible";
         }
-        this.statusBarItem.tooltip = this.groups.size + " group(s)" + hideStatus;
+        this.statusBarItem.tooltip = this.groups.length + " group(s)" + hideStatus;
     }
 
     private restoreSettings() {
@@ -1029,6 +997,10 @@ export class Main {
 
         this.resetTempLists();
         this.activateGroup(activeGroupName);
+
+        this.groups.forEach(group => {
+            group.setIsVisible(!this.hideAll || group.isActive);
+        });
     }
 
     private activateGroup(name: string) {
@@ -1038,17 +1010,22 @@ export class Main {
         this.activeGroup = newActiveGroup;
         newActiveGroup.setIsActive(true);
 
-        this.fileDecorationCache.clear();
+        this.resetTempLists();
     }
 
     private ensureGroup(name: string): Group {
-        let existingGroup = this.groups.get(name);
-        if (typeof existingGroup !== "undefined") {
-            return existingGroup;
+        let group = this.groups.find(
+            (group) => {
+                return group.name === name;
+            });
+
+        if (typeof group !== "undefined") {
+            return group;
         }
 
-        let group = new Group(this, name, this.getLeastUsedColor(), this.defaultShape, name, 0);
-        this.groups.set(name, group);
+        group = new Group(name, this.getLeastUsedColor(), this.defaultShape, name);
+        this.groups.push(group);
+
         return group;
     }
 
@@ -1063,7 +1040,7 @@ export class Main {
             usages.set(color, 0);
         }
 
-        for (let [_, group] of this.groups) {
+        for (let group of this.groups) {
             let groupColor = group.getColor();
             if (usages.has(groupColor)) {
                 usages.set(groupColor, (usages.get(groupColor) ?? 0) + 1);
@@ -1090,7 +1067,11 @@ export class Main {
 
         this.hideInactiveGroups = hideInactiveGroups;
 
-        this.fileDecorationCache.clear();
+        this.groups.forEach(group => {
+            group.setIsVisible(!hideInactiveGroups || group.isActive);
+        });
+
+        this.resetTempLists();
     }
 
     private setHideAll(hideAll: boolean) {
@@ -1100,7 +1081,11 @@ export class Main {
 
         this.hideAll = hideAll;
 
-        this.fileDecorationCache.clear();
+        this.groups.forEach(group => {
+            group.setIsVisible(!hideAll);
+        });
+
+        this.resetTempLists();
     }
 
     private getNlCount(text: string) {
@@ -1110,31 +1095,6 @@ export class Main {
         }
         return nlCount;
     }
-
-    public deleteLabeledBookmark(label: string) {
-        let bookmark = this.bookmarks.get(label);
-        this.bookmarks.delete(label);
-        this.generateNavigationCache();
-        if (typeof bookmark !== "undefined") {
-            this.main.addDecorationDirtyFile(bookmark.fsPath);
-        }
-    }
-
-
-    public truncateBookmarks() {
-        let affectedFiles = new Map<string, boolean>();
-        for (let [label, bookmark] of this.bookmarks) {
-            affectedFiles.set(bookmark.fsPath, true);
-        }
-
-        this.bookmarks.clear();
-        this.generateNavigationCache();
-
-        for (let [fsPath, flag] of affectedFiles) {
-            this.main.addDecorationDirtyFile(fsPath);
-        }
-    }
-
 
     private jumpToBookmark(bookmark: Bookmark) {
         vscode.workspace.openTextDocument(bookmark.fsPath).then(

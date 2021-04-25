@@ -18,11 +18,11 @@ export class GroupPickItem implements QuickPickItem {
         this.alwaysShow = alwaysShow;
     }
 
-    public static fromGroup(group: Group): GroupPickItem {
+    public static fromGroup(group: Group, bookmarkCount: number): GroupPickItem {
         let label = group.name;
         label = (group.isActive ? "● " : "◌ ") + label;
 
-        let description = " $(bookmark) " + group.getBookmarkCount();
+        let description = " $(bookmark) " + bookmarkCount;
         let detail = "";
         return new GroupPickItem(group, label, description, detail);
     }

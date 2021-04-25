@@ -38,9 +38,9 @@ export class BookmarkPickItem implements QuickPickItem {
         return new BookmarkPickItem(bookmark, label, description, detail);
     }
 
-    public static sort(a: BookmarkPickItem, b: BookmarkPickItem): number {
-        return a.bookmark.fsPath.localeCompare(b.bookmark.fsPath)
-            || (a.bookmark.lineNumber - b.bookmark.lineNumber)
-            || (a.bookmark.characterNumber - b.bookmark.characterNumber);
-    }
+    // public static sort(a: BookmarkPickItem, b: BookmarkPickItem): number {
+    //     return a.bookmark.fsPath.localeCompare(b.bookmark.fsPath)
+    //         || (a.bookmark.lineNumber - b.bookmark.lineNumber)
+    //         || (a.bookmark.characterNumber - b.bookmark.characterNumber);
+    // }
 }
