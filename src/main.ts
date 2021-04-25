@@ -54,8 +54,9 @@ export class Main {
 
     private removedDecorations: Map<TextEditorDecorationType, boolean>;
 
-    private tempDocumentBookmarks: BookmarkList;
-    private tempGroupBookmarks: BookmarkList;
+    private tempDocumentBookmarks: Map<string, Array<Bookmark>>;
+    private tempGroupBookmarks: Map<Group, Array<Bookmark>>;
+    private tempDocumentDecorations: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
 
     constructor(ctx: ExtensionContext) {
         this.ctx = ctx;
@@ -79,6 +80,10 @@ export class Main {
 
         this.removedDecorations = new Map<TextEditorDecorationType, boolean>();
 
+        this.tempDocumentBookmarks = new Map<string, Array<Bookmark>>();
+        this.tempGroupBookmarks = new Map<Group, Array<Bookmark>>();
+        this.tempDocumentDecorations = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
+
         this.readConfig();
 
         if (this.colors.size < 1) {
@@ -95,9 +100,6 @@ export class Main {
         this.statusBarItem.show();
 
         this.saveSettings();
-
-        this.tempDocumentBookmarks = new BookmarkList("", new Array<Bookmark>());
-        this.tempGroupBookmarks = new BookmarkList("", new Array<Bookmark>());
 
         this.updateDecorations();
     }
@@ -127,6 +129,7 @@ export class Main {
     }
 
     public handleGroupDecorationUpdated(group: Group) {
+        this.resetTempLists();
         this.updateDecorations();
     }
 
@@ -158,35 +161,8 @@ export class Main {
             return;
         }
 
-        let documentFsPath = textEditor.document.uri.fsPath;
-
-        let lineDecorations = new Map<number, TextEditorDecorationType>();
-        for (let bookmark of this.bookmarks) {
-            if (bookmark.fsPath !== documentFsPath) {
-                continue;
-            }
-
-            let decoration = bookmark.getDecoration();
-
-            if (decoration === null) {
-                continue;
-            }
-
-            if (bookmark.group === this.activeGroup || !lineDecorations.has(bookmark.lineNumber)) {
-                lineDecorations.set(bookmark.lineNumber, decoration);
-            }
-        }
-
-        let editorDecorations = new Map<TextEditorDecorationType, Range[]>();
-        for (let [lineNumber, decoration] of lineDecorations) {
-            let ranges = editorDecorations.get(decoration);
-            if (!ranges) {
-                ranges = new Array<Range>();
-                editorDecorations.set(decoration, ranges);
-            }
-
-            ranges.push(new Range(lineNumber, 0, lineNumber, 0));
-        }
+        let fsPath = textEditor.document.uri.fsPath;
+        let editorDecorations = this.getTempDocumentDecorationsList(fsPath);
 
         for (let [decoration, ranges] of editorDecorations) {
             textEditor.setDecorations(decoration, ranges);
@@ -265,32 +241,72 @@ export class Main {
     }
 
     private getTempDocumentBookmarkList(fsPath: string): Array<Bookmark> {
-        if (this.tempDocumentBookmarks.owner === fsPath) {
-            return this.tempDocumentBookmarks.bookmarks;
+        let list = this.tempDocumentBookmarks.get(fsPath);
+
+        if (typeof list !== "undefined") {
+            return list;
         }
 
-        this.tempDocumentBookmarks.owner = fsPath;
-        this.tempDocumentBookmarks.bookmarks = this.bookmarks.filter((value) => { return value.fsPath === fsPath; });
+        list = this.bookmarks.filter((bookmark) => { return bookmark.fsPath === fsPath; });
+        this.tempDocumentBookmarks.set(fsPath, list);
 
-        return this.tempDocumentBookmarks.bookmarks;
+        return list;
     }
 
     private getTempGroupBookmarkList(group: Group): Array<Bookmark> {
-        if (this.tempGroupBookmarks.owner === group.name) {
-            return this.tempGroupBookmarks.bookmarks;
+        let list = this.tempGroupBookmarks.get(group);
+
+        if (typeof list !== "undefined") {
+            return list;
         }
 
-        this.tempGroupBookmarks.owner = group.name;
-        this.tempGroupBookmarks.bookmarks = this.bookmarks.filter((value) => {
-            return value.group === group;
-        });
+        list = this.bookmarks.filter((bookmark) => { return bookmark.group === group; });
+        this.tempGroupBookmarks.set(group, list);
 
-        return this.tempGroupBookmarks.bookmarks;
+        return list;
+    }
+
+    private getTempDocumentDecorationsList(fsPath: string): Map<TextEditorDecorationType, Array<Range>> {
+        let editorDecorations = this.tempDocumentDecorations.get(fsPath);
+
+        if (typeof editorDecorations !== "undefined") {
+            return editorDecorations;
+        }
+
+        let lineDecorations = new Map<number, TextEditorDecorationType>();
+        this.bookmarks
+            .filter((bookmark) => {
+                return bookmark.fsPath === fsPath && bookmark.getDecoration !== null;
+            })
+            .forEach((bookmark) => {
+                if (bookmark.group === this.activeGroup || !lineDecorations.has(bookmark.lineNumber)) {
+                    let decoration = bookmark.getDecoration();
+                    if (decoration !== null) {
+                        lineDecorations.set(bookmark.lineNumber, decoration);
+                    }
+                }
+            });
+
+        editorDecorations = new Map<TextEditorDecorationType, Range[]>();
+        for (let [lineNumber, decoration] of lineDecorations) {
+            let ranges = editorDecorations.get(decoration);
+            if (!ranges) {
+                ranges = new Array<Range>();
+                editorDecorations.set(decoration, ranges);
+            }
+
+            ranges.push(new Range(lineNumber, 0, lineNumber, 0));
+        }
+
+        this.tempDocumentDecorations.set(fsPath, editorDecorations);
+
+        return editorDecorations;
     }
 
     private resetTempLists() {
-        this.tempDocumentBookmarks.owner = "";
-        this.tempGroupBookmarks.owner = "";
+        this.tempDocumentBookmarks.clear();
+        this.tempGroupBookmarks.clear();
+        this.tempDocumentDecorations.clear();
     }
 
     private updateBookmarkLineText(document: TextDocument, bookmark: Bookmark) {
@@ -1011,6 +1027,7 @@ export class Main {
             }
         }
 
+        this.resetTempLists();
         this.activateGroup(activeGroupName);
     }
 
