@@ -3,7 +3,7 @@ import { Group } from "./group";
 import {
     ExtensionContext,
     FileDeleteEvent, FileRenameEvent,
-    Position, Range,
+    Range,
     StatusBarItem,
     TextDocument, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType
 } from 'vscode';
@@ -15,7 +15,7 @@ import { ColorPickItem } from './color_pick_item';
 import { Bookmark } from "./bookmark";
 import { SerializableGroup } from "./serializable_group";
 import { SerializableBookmark } from "./serializable_bookmark";
-import { documentBookmarkList } from './document_bookmark_list';
+import { BookmarkList } from './bookmark_list';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -54,7 +54,8 @@ export class Main {
 
     private removedDecorations: Map<TextEditorDecorationType, boolean>;
 
-    private tempDocumentBookmarkList: documentBookmarkList;
+    private tempDocumentBookmarks: BookmarkList;
+    private tempGroupBookmarks: BookmarkList;
 
     constructor(ctx: ExtensionContext) {
         this.ctx = ctx;
@@ -95,7 +96,8 @@ export class Main {
 
         this.saveSettings();
 
-        this.tempDocumentBookmarkList = new documentBookmarkList("", new Array<Bookmark>());
+        this.tempDocumentBookmarks = new BookmarkList("", new Array<Bookmark>());
+        this.tempGroupBookmarks = new BookmarkList("", new Array<Bookmark>());
 
         this.updateDecorations();
     }
@@ -263,18 +265,32 @@ export class Main {
     }
 
     private getTempDocumentBookmarkList(fsPath: string): Array<Bookmark> {
-        if (this.tempDocumentBookmarkList.fsPath === fsPath) {
-            return this.tempDocumentBookmarkList.bookmarks;
+        if (this.tempDocumentBookmarks.owner === fsPath) {
+            return this.tempDocumentBookmarks.bookmarks;
         }
 
-        this.tempDocumentBookmarkList.fsPath = fsPath;
-        this.tempDocumentBookmarkList.bookmarks = this.bookmarks.filter((value) => { return value.fsPath === fsPath; });
+        this.tempDocumentBookmarks.owner = fsPath;
+        this.tempDocumentBookmarks.bookmarks = this.bookmarks.filter((value) => { return value.fsPath === fsPath; });
 
-        return this.tempDocumentBookmarkList.bookmarks;
+        return this.tempDocumentBookmarks.bookmarks;
     }
 
-    private resetTempDocumentBookmarkList() {
-        this.tempDocumentBookmarkList.fsPath = "";
+    private getTempGroupBookmarkList(group: Group): Array<Bookmark> {
+        if (this.tempGroupBookmarks.owner === group.name) {
+            return this.tempGroupBookmarks.bookmarks;
+        }
+
+        this.tempGroupBookmarks.owner = group.name;
+        this.tempGroupBookmarks.bookmarks = this.bookmarks.filter((value) => {
+            return value.group === group;
+        });
+
+        return this.tempGroupBookmarks.bookmarks;
+    }
+
+    private resetTempLists() {
+        this.tempDocumentBookmarks.owner = "";
+        this.tempGroupBookmarks.owner = "";
     }
 
     private updateBookmarkLineText(document: TextDocument, bookmark: Bookmark) {
@@ -290,7 +306,7 @@ export class Main {
 
         this.bookmarks.splice(index, 1);
 
-        this.resetTempDocumentBookmarkList();
+        this.resetTempLists();
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
@@ -314,7 +330,7 @@ export class Main {
             );
         }
 
-        this.resetTempDocumentBookmarkList();
+        this.resetTempLists();
         this.updateDecorations();
         this.saveSettings();
     }
@@ -339,7 +355,7 @@ export class Main {
         this.bookmarks.push(bookmark);
         this.bookmarks.sort(Bookmark.sortByLocation);
 
-        this.resetTempDocumentBookmarkList();
+        this.resetTempLists();
     }
 
     public editorActionToggleLabeledBookmark(textEditor: TextEditor) {
@@ -435,7 +451,7 @@ export class Main {
                 );
             }
 
-            this.resetTempDocumentBookmarkList();
+            this.resetTempLists();
             this.saveSettings();
             this.updateDecorations();
         });
@@ -460,8 +476,7 @@ export class Main {
     public nextBookmark(fsPath: string, line: number): Bookmark | undefined {
         let brokenBookmarkCount = 0;
 
-        let groupBookmarkList = this.bookmarks
-            .filter((bookmark) => { return bookmark.group === this.activeGroup; });
+        let groupBookmarkList = this.getTempGroupBookmarkList(this.activeGroup);
 
         let firstCandidate = groupBookmarkList.find((bookmark, i) => {
             if (bookmark.failedJump) {
@@ -495,8 +510,6 @@ export class Main {
         return firstCandidate;
     }
 
-    // todo continue here
-
     public editorActionNavigateToPreviousBookmark(textEditor: TextEditor) {
         if (textEditor.selections.length === 0) {
             return;
@@ -505,13 +518,60 @@ export class Main {
         let documentFsPath = textEditor.document.uri.fsPath;
         let lineNumber = textEditor.selection.start.line;
 
-        let previousBookmark = this.activeGroup.previousBookmark(documentFsPath, lineNumber);
+        let previousBookmark = this.previousBookmark(documentFsPath, lineNumber);
         if (typeof previousBookmark === "undefined") {
             return;
         }
 
         this.jumpToBookmark(previousBookmark);
     }
+
+    public previousBookmark(fsPath: string, line: number): Bookmark | undefined {
+        let brokenBookmarkCount = 0;
+
+        let groupBookmarkList = this.getTempGroupBookmarkList(this.activeGroup);
+
+        let firstCandidate: Bookmark | undefined;
+
+        for (let i = groupBookmarkList.length - 1; i >= 0; i--) {
+            let bookmark = groupBookmarkList[i];
+
+            if (bookmark.failedJump) {
+                brokenBookmarkCount++;
+                continue;
+            }
+
+            let fileComparisonResult = bookmark.fsPath.localeCompare(fsPath);
+            if (fileComparisonResult > 0) {
+                continue;
+            }
+
+            if (fileComparisonResult < 0) {
+                firstCandidate = bookmark;
+                break;
+            }
+
+            if (bookmark.lineNumber < line) {
+                firstCandidate = bookmark;
+                break;
+            }
+        }
+
+        if (typeof firstCandidate === "undefined" && groupBookmarkList.length > 0) {
+            if (groupBookmarkList.length > brokenBookmarkCount) {
+                for (let i = groupBookmarkList.length - 1; i >= 0; i--) {
+                    if (!groupBookmarkList[i].failedJump) {
+                        return groupBookmarkList[i];
+                    }
+                }
+            }
+            vscode.window.showWarningMessage("All bookmarks are broken, time for some cleanup");
+        }
+
+        return firstCandidate;
+    }
+
+    // todo continue here
 
     public actionNavigateToBookmark() {
         let pickItems = new Array<BookmarkPickItem>();
@@ -1058,52 +1118,6 @@ export class Main {
         }
     }
 
-
-    public previousBookmark(fsPath: string, line: number): Bookmark | undefined {
-        if (this.navigationCache.length === 0) {
-            return;
-        }
-
-        let brokenBookmarkCount = 0;
-        let firstCandidate: Bookmark | undefined;
-
-        for (let i = this.navigationCache.length - 1; i >= 0; i--) {
-            let element = this.navigationCache[i];
-
-            if (element.invalid) {
-                brokenBookmarkCount++;
-                continue;
-            }
-
-            let fileComparisonResult = element.fsPath.localeCompare(fsPath);
-            if (fileComparisonResult > 0) {
-                continue;
-            }
-
-            if (fileComparisonResult < 0) {
-                firstCandidate = element;
-                break;
-            }
-
-            if (element.lineNumber < line) {
-                firstCandidate = element;
-                break;
-            }
-        }
-
-        if (typeof firstCandidate === "undefined" && this.navigationCache.length > 0) {
-            if (this.navigationCache.length > brokenBookmarkCount) {
-                for (let i = this.navigationCache.length - 1; i >= 0; i--) {
-                    if (!this.navigationCache[i].invalid) {
-                        return this.navigationCache[i];
-                    }
-                }
-            }
-            vscode.window.showWarningMessage("All bookmarks are broken, time for some cleanup");
-        }
-
-        return firstCandidate;
-    }
 
     private jumpToBookmark(bookmark: Bookmark) {
         vscode.workspace.openTextDocument(bookmark.fsPath).then(
