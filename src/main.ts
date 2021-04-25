@@ -968,8 +968,8 @@ export class Main {
             try {
                 for (let sg of serializedGroups) {
                     let group = Group.fromSerializableGroup(sg);
-                    group.onGroupDecorationUpdated(this.handleGroupDecorationUpdated);
-                    group.onDecorationRemoved(this.handleDecorationRemoved);
+                    group.onGroupDecorationUpdated(this.handleGroupDecorationUpdated.bind(this));
+                    group.onDecorationRemoved(this.handleDecorationRemoved.bind(this));
                     group.initDecorations();
                     this.groups.push(group);
                 }

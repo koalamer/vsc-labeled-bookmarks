@@ -37,8 +37,8 @@ export class Group {
         this.isInitialized = false;
         this.decoration = DecorationFactory.placeholderDecoration;
         this.inactiveDecoration = DecorationFactory.placeholderDecoration;
-        this.groupDecorationUpdatedHandler = () => { return; };
-        this.decorationRemovedHandler = () => { return; };
+        this.groupDecorationUpdatedHandler = (group: Group) => { return; };
+        this.decorationRemovedHandler = (decoration: TextEditorDecorationType) => { return; };
     }
 
     public static fromSerializableGroup(sg: SerializableGroup): Group {
