@@ -985,7 +985,7 @@ export class Main {
         if (typeof serializedBookmarks !== "undefined") {
             try {
                 for (let sb of serializedBookmarks) {
-                    let bookmark = Bookmark.fromSerializableBookMark(sb, this.getGroupByName);
+                    let bookmark = Bookmark.fromSerializableBookMark(sb, this.getGroupByName.bind(this));
                     this.bookmarks.push(bookmark);
                 }
 
@@ -997,10 +997,6 @@ export class Main {
 
         this.resetTempLists();
         this.activateGroup(activeGroupName);
-
-        this.groups.forEach(group => {
-            group.setIsVisible(!this.hideAll || group.isActive);
-        });
     }
 
     private activateGroup(name: string) {
@@ -1009,6 +1005,10 @@ export class Main {
         let newActiveGroup = this.ensureGroup(name);
         this.activeGroup = newActiveGroup;
         newActiveGroup.setIsActive(true);
+
+        this.groups.forEach(group => {
+            group.setIsVisible(!this.hideAll || group.isActive);
+        });
 
         this.resetTempLists();
     }
@@ -1024,6 +1024,9 @@ export class Main {
         }
 
         group = new Group(name, this.getLeastUsedColor(), this.defaultShape, name);
+        group.onGroupDecorationUpdated(this.handleGroupDecorationUpdated.bind(this));
+        group.onDecorationRemoved(this.handleDecorationRemoved.bind(this));
+        group.initDecorations();
         this.groups.push(group);
 
         return group;

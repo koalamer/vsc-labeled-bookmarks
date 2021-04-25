@@ -77,7 +77,7 @@ export class Group {
     }
 
     public getActiveDecoration(): TextEditorDecorationType | null {
-        if (!this.isVisible) {
+        if (!this.isVisible || !this.isInitialized) {
             return null;
         }
 
