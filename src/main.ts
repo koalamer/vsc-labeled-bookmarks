@@ -946,11 +946,7 @@ export class Main {
         if (typeof serializedGroups !== "undefined") {
             try {
                 for (let sg of serializedGroups) {
-                    let group = Group.fromSerializableGroup(sg);
-                    group.onGroupDecorationUpdated(this.handleGroupDecorationUpdated.bind(this));
-                    group.onDecorationRemoved(this.handleDecorationRemoved.bind(this));
-                    group.initDecorations();
-                    this.groups.push(group);
+                    this.addNewGroup(Group.fromSerializableGroup(sg));
                 }
 
                 this.groups.sort(Group.sortByName);
@@ -977,6 +973,13 @@ export class Main {
 
         this.resetTempLists();
         this.activateGroup(activeGroupName);
+    }
+
+    private addNewGroup(group: Group) {
+        group.onGroupDecorationUpdated(this.handleGroupDecorationUpdated.bind(this));
+        group.onDecorationRemoved(this.handleDecorationRemoved.bind(this));
+        group.initDecorations();
+        this.groups.push(group);
     }
 
     private activateGroup(name: string) {
@@ -1007,10 +1010,7 @@ export class Main {
         }
 
         group = new Group(name, this.getLeastUsedColor(), this.defaultShape, name);
-        group.onGroupDecorationUpdated(this.handleGroupDecorationUpdated.bind(this));
-        group.onDecorationRemoved(this.handleDecorationRemoved.bind(this));
-        group.initDecorations();
-        this.groups.push(group);
+        this.addNewGroup(group);
         this.groups.sort(Group.sortByName);
 
         return group;
