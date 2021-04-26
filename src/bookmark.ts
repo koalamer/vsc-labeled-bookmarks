@@ -7,7 +7,6 @@ export class Bookmark {
     lineNumber: number;
     characterNumber: number;
     label?: string;
-    originalLineText: string;
     currentLineText: string;
     failedJump: boolean;
     isLineNumberChanged: boolean;
@@ -18,7 +17,6 @@ export class Bookmark {
         lineNumber: number,
         characterNumber: number,
         label: string | undefined,
-        originalLineText: string,
         currentLineText: string,
         group: Group
     ) {
@@ -26,7 +24,6 @@ export class Bookmark {
         this.lineNumber = lineNumber;
         this.characterNumber = characterNumber;
         this.label = label;
-        this.originalLineText = originalLineText;
         this.currentLineText = currentLineText;
         this.failedJump = false;
         this.isLineNumberChanged = false;
@@ -42,7 +39,6 @@ export class Bookmark {
             serialized.lineNumber,
             serialized.characterNumber,
             serialized.label,
-            serialized.originalLineText,
             serialized.currentLineText,
             groupGetter(serialized.groupName)
         );

@@ -365,7 +365,7 @@ export class Main {
             return;
         }
 
-        let bookmark = new Bookmark(fsPath, lineNumber, characterNumber, undefined, lineText, lineText, group);
+        let bookmark = new Bookmark(fsPath, lineNumber, characterNumber, undefined, lineText, group);
         this.bookmarks.push(bookmark);
         this.bookmarks.sort(Bookmark.sortByLocation);
 
@@ -460,7 +460,6 @@ export class Main {
                     lineNumber,
                     characterNumber,
                     label,
-                    lineText,
                     lineText,
                     this.activeGroup
                 );

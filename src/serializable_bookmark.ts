@@ -5,7 +5,6 @@ export class SerializableBookmark {
     lineNumber: number;
     characterNumber: number;
     label?: string;
-    originalLineText: string;
     currentLineText: string;
     isLineNumberChanged: boolean;
     groupName: string;
@@ -15,7 +14,6 @@ export class SerializableBookmark {
         lineNumber: number,
         characterNumber: number,
         label: string | undefined,
-        originalLineText: string,
         currentLineText: string,
         groupName: string
     ) {
@@ -23,7 +21,6 @@ export class SerializableBookmark {
         this.lineNumber = lineNumber;
         this.characterNumber = characterNumber;
         this.label = label;
-        this.originalLineText = originalLineText;
         this.currentLineText = currentLineText;
         this.isLineNumberChanged = false;
         this.groupName = groupName;
@@ -35,7 +32,6 @@ export class SerializableBookmark {
             bookmark.lineNumber,
             bookmark.characterNumber,
             bookmark.label,
-            bookmark.originalLineText,
             bookmark.currentLineText,
             bookmark.group.name
         );
