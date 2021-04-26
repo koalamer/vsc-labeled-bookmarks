@@ -1,11 +1,8 @@
-import { throws } from 'node:assert';
 import { TextEditorDecorationType, Uri } from 'vscode';
 import { DecorationFactory } from "./decoration_factory";
 import { SerializableGroup } from "./serializable_group";
 
 export class Group {
-    static svgDir: Uri;
-
     static readonly inactiveTransparency: string = "33";
 
     name: string;

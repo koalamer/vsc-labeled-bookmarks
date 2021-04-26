@@ -103,10 +103,10 @@ export function activate(context: ExtensionContext) {
 	});
 
 	vscode.workspace.onDidChangeConfiguration(() => {
-		main.readConfig();
+		main.readSettings();
 	});
 }
 
 export function deactivate() {
-	main.saveSettings();
+	main.saveState();
 }

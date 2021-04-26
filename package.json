@@ -2,7 +2,7 @@
   "name": "labeled-bookmarks",
   "displayName": "Labeled Bookmarks",
   "description": "Bookmarks with labels for quick access, organized into switchable groups",
-  "version": "0.5.6",
+  "version": "0.6.0",
   "publisher": "koalamer",
   "icon": "resources/vsc-labeled-bookmarks-logo.png",
   "repository": {
@@ -186,8 +186,8 @@
           "description": "Array of names and unicode characters, eg: [[\"look\": \"👀\"], [\"bug\",\"🐞\"]]",
           "default": [
             [
-              "astonishing",
-              "😲"
+              "look",
+              "👀"
             ],
             [
               "bug",
