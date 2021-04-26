@@ -103,16 +103,10 @@ export class Main {
     }
 
     public saveState() {
-        let serializedGroups = new Array<SerializableGroup>();
-        for (let g of this.groups) {
-            serializedGroups.push(SerializableGroup.fromGroup(g));
-        }
+        let serializedGroups = this.groups.map(group => SerializableGroup.fromGroup(group));
         this.ctx.workspaceState.update(this.savedGroupsKey, serializedGroups);
 
-        let serializedBookmarks = new Array<SerializableBookmark>();
-        for (let bm of this.bookmarks) {
-            serializedBookmarks.push(SerializableBookmark.fromBookmark(bm));
-        }
+        let serializedBookmarks = this.bookmarks.map(bookmark => SerializableBookmark.fromBookmark(bookmark));
         this.ctx.workspaceState.update(this.savedBookmarksKey, serializedBookmarks);
 
         this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroup.name);
@@ -588,12 +582,9 @@ export class Main {
     }
 
     public actionNavigateToBookmark() {
-        let pickItems = new Array<BookmarkPickItem>();
-
-        for (let bookmark of this.getTempGroupBookmarkList(this.activeGroup)) {
-            pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
-        }
-        //pickItems.sort(BookmarkPickItem.sort);
+        let pickItems = this.getTempGroupBookmarkList(this.activeGroup).map(
+            bookmark => BookmarkPickItem.fromBookmark(bookmark)
+        );
 
         vscode.window.showQuickPick(
             pickItems,
@@ -610,12 +601,9 @@ export class Main {
     }
 
     public actionNavigateToBookmarkOfAnyGroup() {
-        let pickItems = new Array<BookmarkPickItem>();
-
-        for (let bookmark of this.bookmarks) {
-            pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
-        }
-        // pickItems.sort(BookmarkPickItem.sort);
+        let pickItems = this.bookmarks.map(
+            bookmark => BookmarkPickItem.fromBookmark(bookmark)
+        );
 
         vscode.window.showQuickPick(
             pickItems,
@@ -688,11 +676,9 @@ export class Main {
     }
 
     public actionSelectGroup() {
-        let pickItems = new Array<GroupPickItem>();
-        for (let group of this.groups) {
-            pickItems.push(GroupPickItem.fromGroup(group, this.getTempGroupBookmarkList(group).length));
-        }
-        pickItems.sort(GroupPickItem.sort);
+        let pickItems = this.groups.map(
+            group => GroupPickItem.fromGroup(group, this.getTempGroupBookmarkList(group).length)
+        );
 
         vscode.window.showQuickPick(
             pickItems,
@@ -740,11 +726,9 @@ export class Main {
     }
 
     public actionDeleteGroup() {
-        let pickItems = new Array<GroupPickItem>();
-        for (let group of this.groups) {
-            pickItems.push(GroupPickItem.fromGroup(group, this.getTempGroupBookmarkList(group).length));
-        }
-        pickItems.sort(GroupPickItem.sort);
+        let pickItems = this.groups.map(
+            group => GroupPickItem.fromGroup(group, this.getTempGroupBookmarkList(group).length)
+        );
 
         vscode.window.showQuickPick(
             pickItems,
@@ -786,11 +770,9 @@ export class Main {
     }
 
     public actionDeleteBookmark() {
-        let pickItems = new Array<BookmarkPickItem>();
-        for (let bookmark of this.getTempGroupBookmarkList(this.activeGroup)) {
-            pickItems.push(BookmarkPickItem.fromBookmark(bookmark));
-        }
-        // pickItems.sort(BookmarkPickItem.sort);
+        let pickItems = this.getTempGroupBookmarkList(this.activeGroup).map(
+            bookmark => BookmarkPickItem.fromBookmark(bookmark)
+        );
 
         vscode.window.showQuickPick(
             pickItems,
@@ -953,8 +935,7 @@ export class Main {
     }
 
     private restoreSavedState() {
-        this.hideInactiveGroups =
-            this.ctx.workspaceState.get(this.savedHideInactiveGroupsKey) ?? false;
+        this.hideInactiveGroups = this.ctx.workspaceState.get(this.savedHideInactiveGroupsKey) ?? false;
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
 
@@ -978,7 +959,8 @@ export class Main {
             }
         }
 
-        let serializedBookmarks: Array<SerializableBookmark> | undefined = this.ctx.workspaceState.get(this.savedBookmarksKey);
+        let serializedBookmarks: Array<SerializableBookmark> | undefined
+            = this.ctx.workspaceState.get(this.savedBookmarksKey);
         this.bookmarks = new Array<Bookmark>();
         if (typeof serializedBookmarks !== "undefined") {
             try {
@@ -1026,6 +1008,7 @@ export class Main {
         group.onDecorationRemoved(this.handleDecorationRemoved.bind(this));
         group.initDecorations();
         this.groups.push(group);
+        this.groups.sort(Group.sortByName);
 
         return group;
     }
