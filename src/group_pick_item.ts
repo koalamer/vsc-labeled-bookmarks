@@ -26,8 +26,4 @@ export class GroupPickItem implements QuickPickItem {
         let detail = "";
         return new GroupPickItem(group, label, description, detail);
     }
-
-    // public static sort(a: GroupPickItem, b: GroupPickItem): number {
-    //     return a.group.name.localeCompare(b.group.name);
-    // }
 }

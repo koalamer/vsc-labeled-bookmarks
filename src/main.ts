@@ -986,11 +986,14 @@ export class Main {
         this.activeGroup = newActiveGroup;
         newActiveGroup.setIsActive(true);
 
-        this.groups.forEach(group => {
-            group.setIsVisible(!this.hideAll || group.isActive);
-        });
-
+        this.setGroupVisibilities();
         this.resetTempLists();
+    }
+
+    private setGroupVisibilities() {
+        this.groups.forEach(group => {
+            group.setIsVisible(!this.hideAll && (!this.hideInactiveGroups || group.isActive));
+        });
     }
 
     private ensureGroup(name: string): Group {
@@ -1051,10 +1054,7 @@ export class Main {
 
         this.hideInactiveGroups = hideInactiveGroups;
 
-        this.groups.forEach(group => {
-            group.setIsVisible(!hideInactiveGroups || group.isActive);
-        });
-
+        this.setGroupVisibilities();
         this.resetTempLists();
     }
 
@@ -1065,10 +1065,7 @@ export class Main {
 
         this.hideAll = hideAll;
 
-        this.groups.forEach(group => {
-            group.setIsVisible(!hideAll);
-        });
-
+        this.setGroupVisibilities();
         this.resetTempLists();
     }
 
