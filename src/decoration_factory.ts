@@ -151,7 +151,7 @@ export class DecorationFactory {
                 gutterIconPath: svgUri,
                 gutterIconSize: 'contain',
                 overviewRulerColor: '#' + color,
-                overviewRulerLane: OverviewRulerLane.Left,
+                overviewRulerLane: OverviewRulerLane.Center,
                 rangeBehavior: DecorationRangeBehavior.ClosedClosed,
             }
         );

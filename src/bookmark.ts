@@ -7,7 +7,7 @@ export class Bookmark {
     lineNumber: number;
     characterNumber: number;
     label?: string;
-    currentLineText: string;
+    lineText: string;
     failedJump: boolean;
     isLineNumberChanged: boolean;
     group: Group;
@@ -17,14 +17,14 @@ export class Bookmark {
         lineNumber: number,
         characterNumber: number,
         label: string | undefined,
-        currentLineText: string,
+        lineText: string,
         group: Group
     ) {
         this.fsPath = fsPath;
         this.lineNumber = lineNumber;
         this.characterNumber = characterNumber;
         this.label = label;
-        this.currentLineText = currentLineText;
+        this.lineText = lineText;
         this.failedJump = false;
         this.isLineNumberChanged = false;
         this.group = group;
@@ -39,7 +39,7 @@ export class Bookmark {
             serialized.lineNumber,
             serialized.characterNumber,
             serialized.label,
-            serialized.currentLineText,
+            serialized.lineText,
             groupGetter(serialized.groupName)
         );
     }

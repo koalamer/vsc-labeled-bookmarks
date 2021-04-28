@@ -121,7 +121,7 @@ export class Main {
     }
 
     public handleGroupDecorationUpdated(group: Group) {
-        this.resetTempLists();
+        this.tempDocumentDecorations.clear();
         this.updateDecorations();
     }
 
@@ -178,7 +178,7 @@ export class Main {
             let oldLines = change.range.end.line - firstLine;
 
             fileBookmarkList
-                .filter((bookmark) => { return bookmark.fsPath === fsPath && bookmark.lineNumber === firstLine; })
+                .filter((bookmark) => { return bookmark.lineNumber === firstLine; })
                 .forEach((bookmark) => { this.updateBookmarkLineText(event.document, bookmark); });
 
             if (newLines === oldLines) {
@@ -208,8 +208,8 @@ export class Main {
 
             if (newLines < oldLines) {
                 let deleteFromLine = (isFirstLinePrefixEmpty ? firstLine : firstLine + 1);
-                let shiftFromLine = firstLine + oldLines;
-                let shiftUpBy = shiftFromLine - deleteFromLine;
+                let shiftFromLine = firstLine + oldLines - newLines;
+                let shiftUpBy = oldLines - newLines;
 
                 for (let bookmark of fileBookmarkList) {
                     if (bookmark.lineNumber >= shiftFromLine) {
@@ -227,6 +227,7 @@ export class Main {
         }
 
         if (bookmarksChanged) {
+            this.tempDocumentDecorations.delete(fsPath);
             this.saveState();
             this.updateDecorations();
         }
@@ -282,7 +283,7 @@ export class Main {
         editorDecorations = new Map<TextEditorDecorationType, Range[]>();
         for (let [lineNumber, decoration] of lineDecorations) {
             let ranges = editorDecorations.get(decoration);
-            if (!ranges) {
+            if (typeof ranges === "undefined") {
                 ranges = new Array<Range>();
                 editorDecorations.set(decoration, ranges);
             }
@@ -303,7 +304,7 @@ export class Main {
 
     private updateBookmarkLineText(document: TextDocument, bookmark: Bookmark) {
         let text = document.getText(new Range(bookmark.lineNumber, 0, bookmark.lineNumber + 1, 0)).trim();
-        bookmark.currentLineText = text;
+        bookmark.lineText = text;
     }
 
     private deleteBookmark(bookmark: Bookmark) {
@@ -314,7 +315,9 @@ export class Main {
 
         this.bookmarks.splice(index, 1);
 
-        this.resetTempLists();
+        this.tempDocumentBookmarks.delete(bookmark.fsPath);
+        this.tempDocumentDecorations.delete(bookmark.fsPath);
+        this.tempGroupBookmarks.delete(bookmark.group);
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
@@ -338,9 +341,7 @@ export class Main {
             );
         }
 
-        this.resetTempLists();
         this.updateDecorations();
-        this.saveState();
     }
 
     private toggleBookmark(
@@ -351,7 +352,7 @@ export class Main {
         group: Group
     ) {
         let existingBookmark = this.getTempDocumentBookmarkList(fsPath)
-            .find((bm) => { return bm.lineNumber === lineNumber && bm.group === group; });
+            .find((bookmark) => { return bookmark.lineNumber === lineNumber && bookmark.group === group; });
 
         if (typeof existingBookmark !== "undefined") {
             this.deleteBookmark(existingBookmark);
@@ -363,7 +364,11 @@ export class Main {
         this.bookmarks.push(bookmark);
         this.bookmarks.sort(Bookmark.sortByLocation);
 
-        this.resetTempLists();
+        this.tempDocumentBookmarks.delete(fsPath);
+        this.tempDocumentDecorations.delete(fsPath);
+        this.tempGroupBookmarks.delete(group);
+
+        this.saveState();
     }
 
     public editorActionToggleLabeledBookmark(textEditor: TextEditor) {
@@ -375,18 +380,22 @@ export class Main {
         let lineNumber = textEditor.selection.start.line;
 
         let existingBookmark = this.getTempDocumentBookmarkList(fsPath)
-            .find((bm) => { return bm.lineNumber === lineNumber && bm.group === this.activeGroup; });
+            .find((bookmark) => { return bookmark.lineNumber === lineNumber && bookmark.group === this.activeGroup; });
 
         if (typeof existingBookmark !== "undefined") {
             this.deleteBookmark(existingBookmark);
             this.saveState();
+            this.updateDecorations();
             return;
         }
 
-        let selectedText = textEditor.document.getText(textEditor.selection)
-            .trim()
-            .replace(/[\s\t\r\n]+/, " ")
-            .replace("@", "@\u200b");
+        let selectedText = textEditor.document.getText(textEditor.selection).trim();
+        let firstNlPos = selectedText.indexOf("\n");
+        if (firstNlPos >= 0) {
+            selectedText = selectedText.substring(0, firstNlPos).trim();
+        }
+        selectedText = selectedText.replace(/[\s\t\r\n]+/, " ").replace("@", "@\u200b");
+
         vscode.window.showInputBox({
             placeHolder: "label or label@@group or @@group",
             prompt: "Enter label and/or group to be created",
@@ -432,10 +441,10 @@ export class Main {
 
             if (label.length === 1) {
                 let existingLabeledBookmark = this.getTempDocumentBookmarkList(fsPath)
-                    .find((bm) => {
-                        return bm.group === this.activeGroup
-                            && typeof bm.label !== "undefined"
-                            && bm.label === label;
+                    .find((bookmark) => {
+                        return bookmark.group === this.activeGroup
+                            && typeof bookmark.label !== "undefined"
+                            && bookmark.label === label;
                     });
 
                 if (typeof existingLabeledBookmark !== "undefined") {
@@ -461,7 +470,9 @@ export class Main {
                 this.bookmarks.sort(Bookmark.sortByLocation);
             }
 
-            this.resetTempLists();
+            this.tempDocumentDecorations.delete(fsPath);
+            this.tempDocumentBookmarks.delete(fsPath);
+            this.tempGroupBookmarks.delete(this.activeGroup);
             this.saveState();
             this.updateDecorations();
         });
@@ -753,6 +764,8 @@ export class Main {
                     if (index >= 0) {
                         this.groups.splice(index, 1);
                     }
+
+                    this.tempGroupBookmarks.delete(group);
                 }
 
                 if (this.groups.length === 0) {
@@ -761,8 +774,6 @@ export class Main {
                     this.activateGroup(this.groups[0].name);
                 }
 
-                // todo reset affected files only?
-                this.resetTempLists();
                 this.updateDecorations();
                 this.saveState();
             }
@@ -786,6 +797,7 @@ export class Main {
                 for (let selected of selecteds) {
                     this.deleteBookmark(selected.bookmark);
                 }
+
                 this.updateDecorations();
                 this.saveState();
             }
@@ -888,16 +900,15 @@ export class Main {
             }
         }
 
+        for (let [changedFile, b] of changedFiles) {
+            this.tempDocumentBookmarks.delete(changedFile);
+            this.tempDocumentDecorations.delete(changedFile);
+        }
+
         if (changedFiles.size > 0) {
             this.saveState();
+            this.updateDecorations();
         }
-
-        for (let [changedFile, b] of changedFiles) {
-            // todo file resets and decoration update?
-            // this.addDecorationDirtyFile(changedFile);
-        }
-
-        this.updateDecorations();
     }
 
     public async onFilesDeleted(fileDeleteEvent: FileDeleteEvent) {
@@ -914,14 +925,16 @@ export class Main {
 
             if (changesWereMade) {
                 this.saveState();
+                this.updateDecorations();
             }
         }
     }
 
     private updateStatusBar() {
         this.statusBarItem.text = "$(bookmark) "
-            + this.getTempGroupBookmarkList(this.activeGroup).length
-            + " in " + this.activeGroup.name;
+            + this.activeGroup.name
+            + ": "
+            + this.getTempGroupBookmarkList(this.activeGroup).length;
 
         let hideStatus = "";
         if (this.hideAll) {
@@ -983,6 +996,10 @@ export class Main {
     }
 
     private activateGroup(name: string) {
+        if (this.activeGroup.name === name) {
+            return;
+        }
+
         this.activeGroup.setIsActive(false);
 
         let newActiveGroup = this.ensureGroup(name);
@@ -990,7 +1007,7 @@ export class Main {
         newActiveGroup.setIsActive(true);
 
         this.setGroupVisibilities();
-        this.resetTempLists();
+        this.tempDocumentDecorations.clear();
     }
 
     private setGroupVisibilities() {
@@ -1055,7 +1072,8 @@ export class Main {
         this.hideInactiveGroups = hideInactiveGroups;
 
         this.setGroupVisibilities();
-        this.resetTempLists();
+
+        this.tempDocumentDecorations.clear();
     }
 
     private setHideAll(hideAll: boolean) {
@@ -1066,7 +1084,8 @@ export class Main {
         this.hideAll = hideAll;
 
         this.setGroupVisibilities();
-        this.resetTempLists();
+
+        this.tempDocumentDecorations.clear();
     }
 
     private getNlCount(text: string) {
@@ -1089,21 +1108,21 @@ export class Main {
                         } catch (e) {
                             bookmark.failedJump = true;
                             vscode.window.showWarningMessage("Failed to navigate to bookmark (3): " + e);
-                            this.saveState();
+                            // this.saveState();
                             return;
                         }
                         bookmark.failedJump = false;
                     },
                     rejectReason => {
                         bookmark.failedJump = true;
-                        this.saveState();
+                        // this.saveState();
                         vscode.window.showWarningMessage("Failed to navigate to bookmark (2): " + rejectReason.message);
                     }
                 );
             },
             rejectReason => {
                 bookmark.failedJump = true;
-                this.saveState();
+                // this.saveState();
                 vscode.window.showWarningMessage("Failed to navigate to bookmark (1): " + rejectReason.message);
             }
         );

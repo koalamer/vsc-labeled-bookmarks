@@ -24,9 +24,9 @@ export class BookmarkPickItem implements QuickPickItem {
     }
 
     public static fromBookmark(bookmark: Bookmark): BookmarkPickItem {
-        let label = bookmark.label ?? bookmark.currentLineText;
+        let label = bookmark.label ?? bookmark.lineText;
         let description = "in " + bookmark.group.name
-            + (bookmark.label === null ? "" : " - " + bookmark.currentLineText);
+            + (bookmark.label === null ? "" : " - " + bookmark.lineText);
         let detail = "line " + (bookmark.lineNumber + 1) + " "
             + workspace.asRelativePath(bookmark.fsPath);
 
