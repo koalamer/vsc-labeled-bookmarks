@@ -23,10 +23,10 @@ export class BookmarkPickItem implements QuickPickItem {
         this.alwaysShow = false;
     }
 
-    public static fromBookmark(bookmark: Bookmark): BookmarkPickItem {
-        let label = bookmark.label ?? bookmark.lineText;
-        let description = "in " + bookmark.group.name
-            + (bookmark.label === null ? "" : " - " + bookmark.lineText);
+    public static fromBookmark(bookmark: Bookmark, withGroupName: boolean): BookmarkPickItem {
+        let label = (typeof bookmark.label !== "undefined" ? "$(tag) " + bookmark.label + ":\u2003" : "")
+            + bookmark.lineText;
+        let description = withGroupName ? bookmark.group.name : "";
         let detail = "line " + (bookmark.lineNumber + 1) + " "
             + workspace.asRelativePath(bookmark.fsPath);
 

@@ -591,7 +591,7 @@ export class Main {
 
     public actionNavigateToBookmark() {
         let pickItems = this.getTempGroupBookmarkList(this.activeGroup).map(
-            bookmark => BookmarkPickItem.fromBookmark(bookmark)
+            bookmark => BookmarkPickItem.fromBookmark(bookmark, false)
         );
 
         vscode.window.showQuickPick(
@@ -610,7 +610,7 @@ export class Main {
 
     public actionNavigateToBookmarkOfAnyGroup() {
         let pickItems = this.bookmarks.map(
-            bookmark => BookmarkPickItem.fromBookmark(bookmark)
+            bookmark => BookmarkPickItem.fromBookmark(bookmark, true)
         );
 
         vscode.window.showQuickPick(
@@ -762,6 +762,7 @@ export class Main {
                         this.groups.splice(index, 1);
                     }
 
+                    group.removeDecorations();
                     this.tempGroupBookmarks.delete(group);
                 }
 
@@ -779,7 +780,7 @@ export class Main {
 
     public actionDeleteBookmark() {
         let pickItems = this.getTempGroupBookmarkList(this.activeGroup).map(
-            bookmark => BookmarkPickItem.fromBookmark(bookmark)
+            bookmark => BookmarkPickItem.fromBookmark(bookmark, false)
         );
 
         vscode.window.showQuickPick(
@@ -993,13 +994,12 @@ export class Main {
     }
 
     private activateGroup(name: string) {
-        if (this.activeGroup.name === name) {
+        let newActiveGroup = this.ensureGroup(name);
+        if (newActiveGroup === this.activeGroup) {
             return;
         }
 
         this.activeGroup.setIsActive(false);
-
-        let newActiveGroup = this.ensureGroup(name);
         this.activeGroup = newActiveGroup;
         newActiveGroup.setIsActive(true);
 
@@ -1099,7 +1099,12 @@ export class Main {
                 vscode.window.showTextDocument(document, { preview: false }).then(
                     textEditor => {
                         try {
-                            let range = textEditor.document.lineAt(bookmark.lineNumber).range;
+                            let range = new Range(
+                                bookmark.lineNumber,
+                                bookmark.characterNumber,
+                                bookmark.lineNumber,
+                                bookmark.characterNumber
+                            );
                             textEditor.selection = new vscode.Selection(range.start, range.start);
                             textEditor.revealRange(range);
                         } catch (e) {

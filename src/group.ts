@@ -118,10 +118,7 @@ export class Group {
             return;
         }
 
-        this.isInitialized = false;
-
-        this.decorationRemovedHandler(this.decoration);
-        this.decorationRemovedHandler(this.inactiveDecoration);
+        this.removeDecorations();
 
         this.shape = shape;
         this.iconText = iconText;
@@ -134,14 +131,18 @@ export class Group {
             return;
         }
 
-        this.isInitialized = false;
-
-        this.decorationRemovedHandler(this.decoration);
-        this.decorationRemovedHandler(this.inactiveDecoration);
+        this.removeDecorations();
 
         this.color = DecorationFactory.normalizeColorFormat(color);
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
 
         this.initDecorations();
+    }
+
+    public removeDecorations() {
+        this.isInitialized = false;
+
+        this.decorationRemovedHandler(this.decoration);
+        this.decorationRemovedHandler(this.inactiveDecoration);
     }
 }
