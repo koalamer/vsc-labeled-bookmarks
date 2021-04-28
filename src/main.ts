@@ -303,7 +303,8 @@ export class Main {
     }
 
     private updateBookmarkLineText(document: TextDocument, bookmark: Bookmark) {
-        let text = document.getText(new Range(bookmark.lineNumber, 0, bookmark.lineNumber + 1, 0)).trim();
+        let text = document.lineAt(bookmark.lineNumber).text.trim();
+
         bookmark.lineText = text;
     }
 
@@ -329,9 +330,7 @@ export class Main {
         for (let selection of textEditor.selections) {
             let lineNumber = selection.start.line;
             let characterNumber = selection.start.character;
-            let lineText = textEditor.document.getText(
-                new Range(lineNumber, 0, lineNumber + 1, 0)
-            ).trim();
+            let lineText = textEditor.document.lineAt(lineNumber).text.trim();
             this.toggleBookmark(
                 documentFsPath,
                 lineNumber,
@@ -454,9 +453,7 @@ export class Main {
 
             if (label !== "") {
                 let characterNumber = textEditor.selection.start.character;
-                let lineText = textEditor.document.getText(
-                    new Range(lineNumber, 0, lineNumber + 1, 0)
-                ).trim();
+                let lineText = textEditor.document.lineAt(lineNumber).text.trim();
 
                 let bookmark = new Bookmark(
                     fsPath,
