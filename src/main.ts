@@ -127,15 +127,10 @@ export class Main {
 
     private updateDecorations() {
         for (let editor of vscode.window.visibleTextEditors) {
-            for (let [decoration, b] of this.removedDecorations) {
-                editor.setDecorations(decoration, []);
-            }
-        }
-        this.removedDecorations.clear();
-
-        for (let editor of vscode.window.visibleTextEditors) {
             this.updateEditorDecorations(editor);
         }
+
+        this.removedDecorations.clear();
     }
 
     private getGroupByName(groupName: string): Group {
@@ -156,6 +151,14 @@ export class Main {
         let fsPath = textEditor.document.uri.fsPath;
         let editorDecorations = this.getTempDocumentDecorationsList(fsPath);
 
+        for (let [removedDecoration, b] of this.removedDecorations) {
+            if (editorDecorations.has(removedDecoration)) {
+                continue;
+            }
+
+            editorDecorations.set(removedDecoration, []);
+        }
+
         for (let [decoration, ranges] of editorDecorations) {
             textEditor.setDecorations(decoration, ranges);
         }
@@ -173,32 +176,37 @@ export class Main {
         let bookmarksChanged = false;
 
         for (let change of event.contentChanges) {
-            let newLines = this.getNlCount(change.text);
-            let firstLine = change.range.start.line;
-            let oldLines = change.range.end.line - firstLine;
+            let newLineCount = this.getNlCount(change.text);
 
-            fileBookmarkList
-                .filter((bookmark) => { return bookmark.lineNumber === firstLine; })
-                .forEach((bookmark) => { this.updateBookmarkLineText(event.document, bookmark); });
+            let oldFirstLine = change.range.start.line;
+            let oldLastLine = change.range.end.line;
+            let oldLineCount = oldLastLine - oldFirstLine;
 
-            if (newLines === oldLines) {
+            if (newLineCount === oldLineCount) {
+                this.updateBookmarkLineTextInRange(event.document, fileBookmarkList, oldFirstLine, oldLastLine);
                 continue;
             }
 
-            let isFirstLinePrefixEmpty = event.document.getText(
-                new Range(firstLine, 0, firstLine, change.range.start.character)
-            ).trim() === "";
+            let firstLinePrefix = event.document.getText(
+                new Range(oldFirstLine, 0, oldFirstLine, change.range.start.character)
+            );
+            let isFirstLinePrefixEmpty = firstLinePrefix.trim() === "";
 
-            if (newLines > oldLines) {
-                let shiftDownFromLine = (isFirstLinePrefixEmpty ? firstLine : firstLine + oldLines - 1);
-                let shiftDownBy = newLines - oldLines;
+            let newLastLine = oldFirstLine + newLineCount;
+
+            // todo get last new line prefix length to do sun=bstring to get tail
+            let lastLinePostfix = event.document.lineAt(newLastLine).text.substring(change.range.end.character);
+
+            if (newLineCount > oldLineCount) {
+                let shiftDownFromLine = (isFirstLinePrefixEmpty ? oldFirstLine : oldLastLine);
+                let shiftDownBy = newLineCount - oldLineCount;
 
                 for (let bookmark of fileBookmarkList) {
                     if (bookmark.lineNumber >= shiftDownFromLine) {
                         bookmark.lineNumber += shiftDownBy;
                         bookmarksChanged = true;
 
-                        if (bookmark.lineNumber < firstLine + newLines) {
+                        if (bookmark.lineNumber < oldFirstLine + newLineCount) {
                             this.updateBookmarkLineText(event.document, bookmark);
                         }
                     }
@@ -206,10 +214,10 @@ export class Main {
                 continue;
             }
 
-            if (newLines < oldLines) {
-                let deleteFromLine = (isFirstLinePrefixEmpty ? firstLine : firstLine + 1);
-                let shiftFromLine = firstLine + oldLines - newLines;
-                let shiftUpBy = oldLines - newLines;
+            if (newLineCount < oldLineCount) {
+                let deleteFromLine = (isFirstLinePrefixEmpty ? oldFirstLine : oldFirstLine + 1);
+                let shiftFromLine = oldFirstLine + oldLineCount - newLineCount;
+                let shiftUpBy = oldLineCount - newLineCount;
 
                 for (let bookmark of fileBookmarkList) {
                     if (bookmark.lineNumber >= shiftFromLine) {
@@ -302,6 +310,20 @@ export class Main {
         this.tempDocumentDecorations.clear();
     }
 
+    private updateBookmarkLineTextInRange(
+        document: TextDocument,
+        bookmarks: Array<Bookmark>,
+        firstLine: number,
+        lastLine: number
+    ) {
+        bookmarks.filter(bookmark => {
+            return bookmark.lineNumber >= firstLine && bookmark.lineNumber <= lastLine;
+        }).forEach(bookmark => {
+            this.updateBookmarkLineText(document, bookmark);
+        });
+
+    }
+
     private updateBookmarkLineText(document: TextDocument, bookmark: Bookmark) {
         let text = document.lineAt(bookmark.lineNumber).text.trim();
 
@@ -319,6 +341,10 @@ export class Main {
         this.tempDocumentBookmarks.delete(bookmark.fsPath);
         this.tempDocumentDecorations.delete(bookmark.fsPath);
         this.tempGroupBookmarks.delete(bookmark.group);
+        let bookmarkDecoration = bookmark.getDecoration();
+        if (bookmarkDecoration !== null) {
+            this.handleDecorationRemoved(bookmarkDecoration);
+        }
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
