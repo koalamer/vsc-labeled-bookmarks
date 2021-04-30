@@ -2,7 +2,7 @@
   "name": "labeled-bookmarks",
   "displayName": "Labeled Bookmarks",
   "description": "Bookmarks with labels for quick access, organized into switchable groups",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "publisher": "koalamer",
   "icon": "resources/vsc-labeled-bookmarks-logo.png",
   "repository": {
@@ -80,6 +80,14 @@
       {
         "command": "vsc-labeled-bookmarks.clearFailedJumpFlags",
         "title": "Bookmarks: clear failed jump flags from bookmarks"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.expandSelectionToNextBookmark",
+        "title": "Bookmarks: expand selection to next bookmark"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
+        "title": "Bookmarks: expand selection to previous bookmark"
       }
     ],
     "keybindings": [
@@ -101,6 +109,16 @@
       {
         "command": "vsc-labeled-bookmarks.navigateToPreviousBookmark",
         "key": "ctrl+alt+j",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.expandSelectionToNextBookmark",
+        "key": "shift+alt+k",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
+        "key": "shift+alt+j",
         "when": "editorTextFocus"
       },
       {
@@ -205,7 +223,7 @@
         },
         "labeledBookmarks.defaultShape": {
           "type": "string",
-          "description":"The default shape for new bookmark groups",
+          "description": "The default shape for new bookmark groups",
           "default": "bookmark",
           "enum": [
             "bookmark",

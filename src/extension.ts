@@ -86,6 +86,16 @@ export function activate(context: ExtensionContext) {
 		() => main.actionClearFailedJumpFlags());
 	context.subscriptions.push(disposable);
 
+	disposable = vscode.commands.registerTextEditorCommand(
+		'vsc-labeled-bookmarks.expandSelectionToNextBookmark',
+		(textEditor) => main.actionExpandSelectionToNextBookmark(textEditor));
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerTextEditorCommand(
+		'vsc-labeled-bookmarks.expandSelectionToPreviousBookmark',
+		(textEditor) => main.actionExpandSelectionToPreviousBookmark(textEditor));
+	context.subscriptions.push(disposable);
+
 	vscode.window.onDidChangeActiveTextEditor(textEditor => {
 		main.updateEditorDecorations(textEditor);
 	});

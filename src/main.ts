@@ -644,6 +644,104 @@ export class Main {
         return firstCandidate;
     }
 
+    public actionExpandSelectionToNextBookmark(editor: TextEditor) {
+        let bookmarks = this.getTempDocumentBookmarkList(editor.document.uri.fsPath);
+        if (typeof bookmarks === "undefined") {
+            return;
+        }
+
+        let selection = editor.selection;
+
+        let endLineRange = editor.document.lineAt(selection.end.line).range;
+        let selectionEndsAtLineEnd = selection.end.character >= endLineRange.end.character;
+
+        let searchFromLine = selection.end.line;
+        if (selectionEndsAtLineEnd) {
+            searchFromLine++;
+        }
+
+        let nextBookmark = bookmarks.find(
+            bookmark => {
+                return bookmark.group === this.activeGroup && bookmark.lineNumber >= searchFromLine;
+            }
+        );
+
+        if (typeof nextBookmark === "undefined") {
+            return;
+        }
+
+        let newSelectionEndCharacter: number;
+        if (nextBookmark.lineNumber === selection.end.line) {
+            newSelectionEndCharacter = endLineRange.end.character;
+        } else {
+            newSelectionEndCharacter = 0;
+        }
+
+        editor.selection = new Selection(
+            selection.start.line,
+            selection.start.character,
+            nextBookmark.lineNumber,
+            newSelectionEndCharacter
+        );
+
+        editor.revealRange(new Range(
+            nextBookmark.lineNumber,
+            newSelectionEndCharacter,
+            nextBookmark.lineNumber,
+            newSelectionEndCharacter
+        ));
+    }
+
+    public actionExpandSelectionToPreviousBookmark(editor: TextEditor) {
+        let bookmarks = this.getTempDocumentBookmarkList(editor.document.uri.fsPath);
+        if (typeof bookmarks === "undefined") {
+            return;
+        }
+
+        let selection = editor.selection;
+
+        let startLineRange = editor.document.lineAt(selection.start.line).range;
+        let selectionStartsAtLineStart = selection.start.character === 0;
+
+        let searchFromLine = selection.start.line;
+        if (selectionStartsAtLineStart) {
+            searchFromLine--;
+        }
+
+        let nextBookmark: Bookmark | undefined;
+        for (let i = bookmarks.length - 1; i >= 0; i--) {
+            if (bookmarks[i].group === this.activeGroup && bookmarks[i].lineNumber <= searchFromLine) {
+                nextBookmark = bookmarks[i];
+                break;
+            }
+        }
+
+        if (typeof nextBookmark === "undefined") {
+            return;
+        }
+
+        let newSelectionStartCharacter: number;
+        if (nextBookmark.lineNumber === selection.start.line) {
+            newSelectionStartCharacter = 0;
+        } else {
+            newSelectionStartCharacter = editor.document.lineAt(nextBookmark.lineNumber).range.end.character;
+        }
+
+        editor.selection = new Selection(
+            nextBookmark.lineNumber,
+            newSelectionStartCharacter,
+            selection.end.line,
+            selection.end.character
+        );
+
+        editor.revealRange(new Range(
+            nextBookmark.lineNumber,
+            newSelectionStartCharacter,
+            nextBookmark.lineNumber,
+            newSelectionStartCharacter
+        ));
+    }
+
     public actionNavigateToBookmark() {
         this.navigateBookmarkList(
             "navigate to bookmark",
