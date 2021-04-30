@@ -642,6 +642,23 @@ export class Main {
     }
 
     public actionNavigateToBookmark() {
+        this.navigateBookmarkList(
+            "navigate to bookmark",
+            this.getTempGroupBookmarkList(this.activeGroup),
+            false
+        );
+    }
+
+
+    public actionNavigateToBookmarkOfAnyGroup() {
+        this.navigateBookmarkList(
+            "navigate to bookmark of any bookmark group",
+            this.bookmarks,
+            true
+        );
+    }
+
+    private navigateBookmarkList(placeholderText: string, bookmarks: Array<Bookmark>, withGroupNames: boolean) {
         let currentEditor = vscode.window.activeTextEditor;
         let currentDocument: TextDocument;
         let currentSelection: Selection;
@@ -651,8 +668,8 @@ export class Main {
         }
         let didNavigateBeforeClosing = false;
 
-        let pickItems = this.getTempGroupBookmarkList(this.activeGroup).map(
-            bookmark => BookmarkPickItem.fromBookmark(bookmark, false)
+        let pickItems = bookmarks.map(
+            bookmark => BookmarkPickItem.fromBookmark(bookmark, withGroupNames)
         );
 
         vscode.window.showQuickPick(
@@ -660,7 +677,7 @@ export class Main {
             {
                 canPickMany: false,
                 matchOnDescription: true,
-                placeHolder: "navigate to bookmark",
+                placeHolder: placeholderText,
                 ignoreFocusOut: true,
                 onDidSelectItem: (selected: BookmarkPickItem) => {
                     didNavigateBeforeClosing = true;
@@ -695,25 +712,6 @@ export class Main {
                     vscode.window.showWarningMessage("Failed to navigate to origin (2): " + rejectReason.message);
                 }
             );
-        });
-    }
-
-    public actionNavigateToBookmarkOfAnyGroup() {
-        let pickItems = this.bookmarks.map(
-            bookmark => BookmarkPickItem.fromBookmark(bookmark, true)
-        );
-
-        vscode.window.showQuickPick(
-            pickItems,
-            {
-                canPickMany: false,
-                matchOnDescription: true,
-                placeHolder: "navigate to bookmark of any bookmark group"
-            }
-        ).then(selected => {
-            if (typeof selected !== "undefined") {
-                this.jumpToBookmark(selected.bookmark);
-            }
         });
     }
 
