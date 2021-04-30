@@ -153,7 +153,7 @@
       "properties": {
         "labeledBookmarks.colors": {
           "type": "array",
-          "description": "Array of names and color codes, eg: [[\"red\": \"ff0000\"], [\"green\": \"00ff00\"]]",
+          "description": "Array of names and color codes that will be available as bookmark group colors, eg: [[\"red\": \"ff0000\"], [\"green\": \"00ff00\"]]",
           "default": [
             [
               "teal",
@@ -183,7 +183,7 @@
         },
         "labeledBookmarks.unicodeMarkers": {
           "type": "array",
-          "description": "Array of names and unicode characters, eg: [[\"look\": \"👀\"], [\"bug\",\"🐞\"]]",
+          "description": "Array of names and unicode characters that will be available as extra decoration shapes for bookmark groups, eg: [[\"look\": \"👀\"], [\"bug\",\"🐞\"]]",
           "default": [
             [
               "look",
@@ -205,6 +205,7 @@
         },
         "labeledBookmarks.defaultShape": {
           "type": "string",
+          "description":"The default shape for new bookmark groups",
           "default": "bookmark",
           "enum": [
             "bookmark",
@@ -212,6 +213,18 @@
             "heart",
             "label",
             "star"
+          ]
+        },
+        "labeledBookmarks.overviewRulerLane": {
+          "type": "string",
+          "description": "The placement of bookmark markers in the overview ruler (the scrollbar)",
+          "default": "center",
+          "enum": [
+            "center",
+            "full",
+            "left",
+            "right",
+            "none"
           ]
         }
       }

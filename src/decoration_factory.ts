@@ -89,6 +89,7 @@ export class DecorationFactory {
     );
 
     public static svgDir: Uri;
+    public static overviewRulerLane: OverviewRulerLane | undefined;
 
     static async create(shape: string, color: string, text: string): Promise<TextEditorDecorationType> {
         text = text.normalize();
@@ -150,8 +151,10 @@ export class DecorationFactory {
             {
                 gutterIconPath: svgUri,
                 gutterIconSize: 'contain',
-                overviewRulerColor: '#' + color,
-                overviewRulerLane: OverviewRulerLane.Center,
+                overviewRulerColor: (typeof DecorationFactory.overviewRulerLane !== "undefined")
+                    ? '#' + color
+                    : undefined,
+                overviewRulerLane: DecorationFactory.overviewRulerLane,
                 rangeBehavior: DecorationRangeBehavior.ClosedClosed,
             }
         );

@@ -3,6 +3,7 @@ import { Group } from "./group";
 import {
     ExtensionContext,
     FileDeleteEvent, FileRenameEvent,
+    OverviewRulerLane,
     Range, Selection,
     StatusBarItem,
     TextDocument, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType
@@ -29,6 +30,7 @@ export class Main {
     public readonly configKeyColors = "colors";
     public readonly configKeyUnicodeMarkers = "unicodeMarkers";
     public readonly configKeyDefaultShape = "defaultShape";
+    public readonly configOverviewRulerLane = "overviewRulerLane";
 
     public readonly maxGroupNameLength = 40;
 
@@ -60,6 +62,7 @@ export class Main {
     constructor(ctx: ExtensionContext) {
         this.ctx = ctx;
         DecorationFactory.svgDir = this.ctx.globalStorageUri;
+        DecorationFactory.overviewRulerLane = OverviewRulerLane.Center;
 
         this.bookmarks = new Array<Bookmark>();
         this.groups = new Array<Group>();
@@ -955,6 +958,25 @@ export class Main {
             }
         } else {
             this.defaultShape = defaultDefaultShape;
+        }
+
+        let configOverviewRulerLane = (config.get(this.configOverviewRulerLane) as string) ?? "center";
+        let previousOverviewRulerLane = DecorationFactory.overviewRulerLane;
+        let newOverviewRulerLane: OverviewRulerLane | undefined;
+        switch (configOverviewRulerLane) {
+            case "center": newOverviewRulerLane = OverviewRulerLane.Center; break;
+            case "full": newOverviewRulerLane = OverviewRulerLane.Full; break;
+            case "left": newOverviewRulerLane = OverviewRulerLane.Left; break;
+            case "right": newOverviewRulerLane = OverviewRulerLane.Right; break;
+            default:
+                newOverviewRulerLane = undefined;
+        }
+        if (
+            (typeof previousOverviewRulerLane === "undefined") !== (typeof newOverviewRulerLane === "undefined")
+            || previousOverviewRulerLane !== newOverviewRulerLane
+        ) {
+            DecorationFactory.overviewRulerLane = newOverviewRulerLane;
+            this.groups.forEach(group => group.redoDecorations());
         }
     }
 

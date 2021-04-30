@@ -139,6 +139,11 @@ export class Group {
         this.initDecorations();
     }
 
+    public redoDecorations() {
+        this.removeDecorations();
+        this.initDecorations();
+    }
+
     public removeDecorations() {
         this.isInitialized = false;
 
