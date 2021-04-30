@@ -3,7 +3,7 @@ import { Group } from "./group";
 import {
     ExtensionContext,
     FileDeleteEvent, FileRenameEvent,
-    Range,
+    Range, Selection,
     StatusBarItem,
     TextDocument, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType
 } from 'vscode';
@@ -642,6 +642,15 @@ export class Main {
     }
 
     public actionNavigateToBookmark() {
+        let currentEditor = vscode.window.activeTextEditor;
+        let currentDocument: TextDocument;
+        let currentSelection: Selection;
+        if (typeof currentEditor !== "undefined") {
+            currentSelection = currentEditor.selection;
+            currentDocument = currentEditor.document;
+        }
+        let didNavigateBeforeClosing = false;
+
         let pickItems = this.getTempGroupBookmarkList(this.activeGroup).map(
             bookmark => BookmarkPickItem.fromBookmark(bookmark, false)
         );
@@ -651,12 +660,41 @@ export class Main {
             {
                 canPickMany: false,
                 matchOnDescription: true,
-                placeHolder: "navigate to bookmark"
+                placeHolder: "navigate to bookmark",
+                ignoreFocusOut: true,
+                onDidSelectItem: (selected: BookmarkPickItem) => {
+                    didNavigateBeforeClosing = true;
+                    this.jumpToBookmark(selected.bookmark, true);
+                }
             }
         ).then(selected => {
             if (typeof selected !== "undefined") {
                 this.jumpToBookmark(selected.bookmark);
+                return;
             }
+
+            if (!didNavigateBeforeClosing) {
+                return;
+            }
+
+            if (currentDocument === null || currentSelection === null) {
+                return;
+            }
+
+            vscode.window.showTextDocument(currentDocument, { preview: false }).then(
+                textEditor => {
+                    try {
+                        textEditor.selection = currentSelection;
+                        textEditor.revealRange(new Range(currentSelection.start, currentSelection.end));
+                    } catch (e) {
+                        vscode.window.showWarningMessage("Failed to navigate to origin (1): " + e);
+                        return;
+                    }
+                },
+                rejectReason => {
+                    vscode.window.showWarningMessage("Failed to navigate to origin (2): " + rejectReason.message);
+                }
+            );
         });
     }
 
@@ -1163,39 +1201,28 @@ export class Main {
         return text.substring(lastNewLinePos + 1);
     }
 
-    private jumpToBookmark(bookmark: Bookmark) {
-        vscode.workspace.openTextDocument(bookmark.fsPath).then(
-            document => {
-                vscode.window.showTextDocument(document, { preview: false }).then(
-                    textEditor => {
-                        try {
-                            let range = new Range(
-                                bookmark.lineNumber,
-                                bookmark.characterNumber,
-                                bookmark.lineNumber,
-                                bookmark.characterNumber
-                            );
-                            textEditor.selection = new vscode.Selection(range.start, range.start);
-                            textEditor.revealRange(range);
-                        } catch (e) {
-                            bookmark.failedJump = true;
-                            vscode.window.showWarningMessage("Failed to navigate to bookmark (3): " + e);
-                            // this.saveState();
-                            return;
-                        }
-                        bookmark.failedJump = false;
-                    },
-                    rejectReason => {
-                        bookmark.failedJump = true;
-                        // this.saveState();
-                        vscode.window.showWarningMessage("Failed to navigate to bookmark (2): " + rejectReason.message);
-                    }
-                );
+    private jumpToBookmark(bookmark: Bookmark, preview: boolean = false) {
+        vscode.window.showTextDocument(vscode.Uri.file(bookmark.fsPath), { preview: preview, preserveFocus: preview }).then(
+            textEditor => {
+                try {
+                    let range = new Range(
+                        bookmark.lineNumber,
+                        bookmark.characterNumber,
+                        bookmark.lineNumber,
+                        bookmark.characterNumber
+                    );
+                    textEditor.selection = new vscode.Selection(range.start, range.start);
+                    textEditor.revealRange(range);
+                } catch (e) {
+                    bookmark.failedJump = true;
+                    vscode.window.showWarningMessage("Failed to navigate to bookmark (3): " + e);
+                    return;
+                }
+                bookmark.failedJump = false;
             },
             rejectReason => {
                 bookmark.failedJump = true;
-                // this.saveState();
-                vscode.window.showWarningMessage("Failed to navigate to bookmark (1): " + rejectReason.message);
+                vscode.window.showWarningMessage("Failed to navigate to bookmark (2): " + rejectReason.message);
             }
         );
     }
