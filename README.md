@@ -1,18 +1,16 @@
 # vsc-labeled-bookmarks README
 
-Bookmarks with customizable icons, mouse free operation, able to jump to named bookmark directly. Bookmarks are organized into groups where you work with the active group, but can switch to another group any time.
+Bookmarks with customizable icons, organized into groups between which you can switch, keyboard shortcut to most functions.
 
-**Important note on using breakpoints:**  Line decorations seem to interfere with placing breakpoints for debugging. To work around this, you can toggle the decorations on and off using `ctrl+alt+b h`. All operations still work the same when the decorations are hidden.
+**Important note on using breakpoints:**  Line decorations (in general) seem to interfere with placing breakpoints for debugging. To work around this, you can toggle the decorations on and off using `ctrl+alt+b h`. All operations still work the same when the decorations are hidden.
 
 ## Features
 
 ### Bookmarks
 
 * You can set an unnamed bookmark on a line using `ctrl+alt+m`. If there already is a bookmark on the line, it is removed.
-* Labeled bookmarks can be set using `ctrl+alt+l`. A prompt appears where you can type the label for the bookmark. If you have some text selected, that will be the default value of the input box. (The character '@' is replaced with '(a)' in this case, see the next section why.)  
-Labels are unique inside a group, so if you define the same label twice, the first bookmark that beared the label is deleted and only the new one remains.  
-**Tip: you can easily create a labeled bookmark with the current line's text by selecting the line (`ctrl+l` on windows, `cmd+l` on mac) and then using the `ctrl+alt+l` command.**
-* The labeled bookmark creation is multifunctional: it expects the input in the format of "bookmark label" or "bookmark label@group name" or just "@group name. When a group name is specified, the group is created if it does not yet exist and it is set to be the active group. Then, if the label is specified, a new bookmark is created using it.
+* Labeled bookmarks can be set using `ctrl+alt+l`. A prompt appears where you can type the label for the bookmark. If you have some text selected, that will be the default value of the input box. **You can have multiple bookmarks with the same label, but if you use a single character as the label, that label will be kept unique (VIM style relocating the bookmark instead of adding another one.)**
+* The labeled bookmark creation is multifunctional: it expects the input in the format of "bookmark label" or "bookmark label@@group name" or just "@@group name. When a group name is specified, the group is created if it does not yet exist and it is set to be the active group. Then, if the label is specified, a new bookmark is created using it.
 * Delete bookmarks using `ctrl+alt+b d`, or by using the above toggle commands on a line that already has a bookmark (of the active group).
 
 ### Navigation
@@ -22,13 +20,20 @@ Labels are unique inside a group, so if you define the same label twice, the fir
 * Navigate to a bookmark by selecting it from a list: `ctrl+alt+n` A quick pick list appears where the bookmarks are filtered as you type. All bookmarks are displayed in the list, including the unamed ones.
 * Navigate to a bookmark of any group (same as `ctrl+alt+n` but not limited to the active group): `ctrl+alt+b n`
 
+### Expand Selection
+
+* You can expand the current selection to the next bookmark by using `shift+alt+k`
+* To expand the selection to the previous bookmark, use `shift+alt+j`
+
+Both operations work in a double tap fashion: the selection is expanded first up to but not including the bookmarked line, and on a second use it is expanded to include that line as well.
+
 ### Groups
 
 Most operations work on the currently active group's bookmarks. Each group has its own icon shape/color, but the inactive group icons appear semi transparent (or are hidden when `ctrl+alt+b i` is toggled).
 
 Groups were implemented to be able to separate one set of bookmarks (for one topic/bug/branch etc.) from others. You can work with the set that is currently relevant, without other bookmarks littering the forward/backward navigation and and without having to delete them to avoid this.
 
-* You can create a group and switch to it implicitly by using the "@" symbol when creating a labeled bookmark with `ctrl+alt+l`. See the relevant section above for details.
+* You can create a group and switch to it implicitly by using the "@@" when creating a labeled bookmark with `ctrl+alt+l`. See the relevant section above for details.
 * Alternatively, you can create a group using `ctrl+alt+b alt+g`
 * Delete one or multiple groups using `ctrl+alt+b shift+g`
 * Select the active group from a list of the available groups: `ctrl+alt+b g`
@@ -54,6 +59,7 @@ The other display option for group icons is the color.
 * `labeledBookmarks.unicodeMarkers`: list of unicode characters to be made available in the shape selection list. It should be in the form of: `[["astonishing", "😲"], ["bug","🐞"]]`
 * `labeledBookmarks.colors`: list of colors to be made available when creating new bookmark groups or when setting the color of an existing one. It should be in the form of: `[["red", "ff0000"], ["green", "00ff00"]]`
 * `labeledBookmarks.defaultShape`: set which vector icon should be used as the default for new groups
+* `labeledBookmarks.overviewRulerLane`: set how the bookmark should be marked on the overview ruler (scrollbar)
 
 ## Invalid Bookmarks
 

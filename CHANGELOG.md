@@ -2,8 +2,6 @@
 
 All notable changes to the "vsc-labeled-bookmarks" extension will be documented in this file.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
+## [1.0.0] - 2021-05-01
 
 - Initial release

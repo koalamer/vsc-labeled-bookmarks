@@ -1,8 +1,8 @@
 {
   "name": "labeled-bookmarks",
   "displayName": "Labeled Bookmarks",
-  "description": "Bookmarks with labels for quick access, organized into switchable groups",
-  "version": "0.6.2",
+  "description": "Bookmarks, multiple groups, customizable visuals",
+  "version": "0.6.3",
   "publisher": "koalamer",
   "icon": "resources/vsc-labeled-bookmarks-logo.png",
   "repository": {
