@@ -1,6 +1,6 @@
 # vsc-labeled-bookmarks README
 
-Bookmarks with customizable icons, organized into groups between which you can switch, keyboard shortcut to most functions.
+Bookmarks with customizable icons, colors, organized into groups between which you can switch, keyboard shortcut for most functions.
 
 **Important note on using breakpoints:**  Line decorations (in general) seem to interfere with placing breakpoints for debugging. To work around this, you can toggle the decorations on and off using `ctrl+alt+b h`. All operations still work the same when the decorations are hidden.
 

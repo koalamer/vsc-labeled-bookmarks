@@ -986,6 +986,15 @@ export class Main {
     }
 
     public actionDeleteBookmark() {
+        let currentEditor = vscode.window.activeTextEditor;
+        let currentDocument: TextDocument;
+        let currentSelection: Selection;
+        if (typeof currentEditor !== "undefined") {
+            currentSelection = currentEditor.selection;
+            currentDocument = currentEditor.document;
+        }
+        let didNavigateBeforeClosing = false;
+
         let pickItems = this.getTempGroupBookmarkList(this.activeGroup).map(
             bookmark => BookmarkPickItem.fromBookmark(bookmark, false)
         );
@@ -995,7 +1004,12 @@ export class Main {
             {
                 canPickMany: true,
                 matchOnDescription: false,
-                placeHolder: "select bookmarks to be deleted"
+                placeHolder: "select bookmarks to be deleted",
+                ignoreFocusOut: true,
+                onDidSelectItem: (selected: BookmarkPickItem) => {
+                    didNavigateBeforeClosing = true;
+                    this.jumpToBookmark(selected.bookmark, true);
+                }
             }
         ).then(selecteds => {
             if (typeof selecteds !== "undefined") {
@@ -1006,6 +1020,29 @@ export class Main {
                 this.updateDecorations();
                 this.saveState();
             }
+
+            if (!didNavigateBeforeClosing) {
+                return;
+            }
+
+            if (currentDocument === null || currentSelection === null) {
+                return;
+            }
+
+            vscode.window.showTextDocument(currentDocument, { preview: false }).then(
+                textEditor => {
+                    try {
+                        textEditor.selection = currentSelection;
+                        textEditor.revealRange(new Range(currentSelection.start, currentSelection.end));
+                    } catch (e) {
+                        vscode.window.showWarningMessage("Failed to navigate to origin (1): " + e);
+                        return;
+                    }
+                },
+                rejectReason => {
+                    vscode.window.showWarningMessage("Failed to navigate to origin (2): " + rejectReason.message);
+                }
+            );
         });
     }
 
