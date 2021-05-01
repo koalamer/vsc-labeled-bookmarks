@@ -16,6 +16,7 @@ export class Group {
     decoration: TextEditorDecorationType;
     inactiveDecoration: TextEditorDecorationType;
     groupDecorationUpdatedHandler: (group: Group) => void;
+    groupDecorationSwitchedHandler: (group: Group) => void;
     decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
 
     constructor(
@@ -35,6 +36,7 @@ export class Group {
         this.decoration = DecorationFactory.placeholderDecoration;
         this.inactiveDecoration = DecorationFactory.placeholderDecoration;
         this.groupDecorationUpdatedHandler = (group: Group) => { return; };
+        this.groupDecorationSwitchedHandler = (group: Group) => { return; };
         this.decorationRemovedHandler = (decoration: TextEditorDecorationType) => { return; };
     }
 
@@ -48,6 +50,10 @@ export class Group {
 
     public onGroupDecorationUpdated(fn: (group: Group) => void) {
         this.groupDecorationUpdatedHandler = fn;
+    }
+
+    public onGroupDecorationSwitched(fn: (group: Group) => void) {
+        this.groupDecorationSwitchedHandler = fn;
     }
 
     public onDecorationRemoved(fn: (decoration: TextEditorDecorationType) => void) {
@@ -96,7 +102,7 @@ export class Group {
         }
 
         this.isActive = isActive;
-        this.groupDecorationUpdatedHandler(this);
+        this.groupDecorationSwitchedHandler(this);
     }
 
     public setIsVisible(isVisible: boolean) {
@@ -110,7 +116,7 @@ export class Group {
         }
 
         this.isVisible = isVisible;
-        this.groupDecorationUpdatedHandler(this);
+        this.groupDecorationSwitchedHandler(this);
     }
 
     public setShapeAndIconText(shape: string, iconText: string) {

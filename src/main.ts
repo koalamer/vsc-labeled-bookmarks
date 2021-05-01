@@ -125,6 +125,22 @@ export class Main {
 
     public handleGroupDecorationUpdated(group: Group) {
         this.tempDocumentDecorations.clear();
+        this.tempGroupBookmarks.get(group)?.forEach(bookmark => {
+            bookmark.initDecoration();
+        });
+        this.updateDecorations();
+    }
+
+    public handleGroupDecorationSwitched(group: Group) {
+        this.tempDocumentDecorations.clear();
+        this.tempGroupBookmarks.get(group)?.forEach(bookmark => {
+            bookmark.setIsActive();
+        });
+        this.updateDecorations();
+    }
+
+    public handleBookmarkDecorationUpdated(bookmark: Bookmark) {
+        this.tempDocumentDecorations.delete(bookmark.fsPath);
         this.updateDecorations();
     }
 
@@ -518,7 +534,7 @@ export class Main {
                     lineText,
                     this.activeGroup
                 );
-                this.bookmarks.push(bookmark);
+                this.addNewDecoratedBookmark(bookmark);
                 this.bookmarks.sort(Bookmark.sortByLocation);
             }
 
@@ -1181,7 +1197,7 @@ export class Main {
             try {
                 for (let sb of serializedBookmarks) {
                     let bookmark = Bookmark.fromSerializableBookMark(sb, this.getGroupByName.bind(this));
-                    this.bookmarks.push(bookmark);
+                    this.addNewDecoratedBookmark(bookmark);
                 }
 
                 this.bookmarks.sort(Bookmark.sortByLocation);
@@ -1196,9 +1212,17 @@ export class Main {
 
     private addNewGroup(group: Group) {
         group.onGroupDecorationUpdated(this.handleGroupDecorationUpdated.bind(this));
+        group.onGroupDecorationSwitched(this.handleGroupDecorationSwitched.bind(this));
         group.onDecorationRemoved(this.handleDecorationRemoved.bind(this));
         group.initDecorations();
         this.groups.push(group);
+    }
+
+    private addNewDecoratedBookmark(bookmark: Bookmark) {
+        bookmark.onBookmarkDecorationUpdated(this.handleBookmarkDecorationUpdated.bind(this));
+        bookmark.onDecorationRemoved(this.handleDecorationRemoved.bind(this));
+        bookmark.initDecoration();
+        this.bookmarks.push(bookmark);
     }
 
     private activateGroup(name: string) {

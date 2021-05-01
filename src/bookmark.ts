@@ -1,3 +1,4 @@
+import { DecorationFactory } from "./decoration_factory";
 import { TextEditorDecorationType } from "vscode";
 import { SerializableBookmark } from "./serializable_bookmark";
 import { Group } from "./group";
@@ -11,6 +12,10 @@ export class Bookmark {
     failedJump: boolean;
     isLineNumberChanged: boolean;
     group: Group;
+    decoration: TextEditorDecorationType | null;
+    isActive: boolean;
+    bookmarkDecorationUpdatedHandler: (bookmark: Bookmark) => void;
+    decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
 
     constructor(
         fsPath: string,
@@ -28,6 +33,10 @@ export class Bookmark {
         this.failedJump = false;
         this.isLineNumberChanged = false;
         this.group = group;
+        this.decoration = null;
+        this.isActive = false;
+        this.bookmarkDecorationUpdatedHandler = (bookmark: Bookmark) => { return; };
+        this.decorationRemovedHandler = (decoration: TextEditorDecorationType) => { return; };
     }
 
     public static fromSerializableBookMark(
@@ -66,6 +75,58 @@ export class Bookmark {
     }
 
     public getDecoration(): TextEditorDecorationType | null {
+        if (this.isActive) {
+            return this.decoration || this.group.getActiveDecoration();
+        }
+
         return this.group.getActiveDecoration();
+    }
+
+    public onBookmarkDecorationUpdated(fn: (bookmark: Bookmark) => void) {
+        this.bookmarkDecorationUpdatedHandler = fn;
+    }
+
+    public onDecorationRemoved(fn: (decoration: TextEditorDecorationType) => void) {
+        this.decorationRemovedHandler = fn;
+    }
+
+    public async initDecoration() {
+        if (typeof this.label === "undefined") {
+            return;
+        }
+
+        let previousDecoration = this.decoration;
+
+        this.decoration = await DecorationFactory.create(
+            this.group.shape,
+            this.group.color,
+            this.group.iconText,
+            this.label
+        );
+
+        if(previousDecoration !== null){
+            this.decorationRemovedHandler(previousDecoration);
+        }
+        this.bookmarkDecorationUpdatedHandler(this);
+    }
+
+    public setIsActive() {
+        let isActive = this.group.isActive;
+        if (this.isActive === isActive) {
+            return;
+        }
+
+        if (this.decoration === null) {
+            this.isActive = isActive;
+            return;
+        }
+
+        let previousDecoration = this.getDecoration();
+        this.isActive = isActive;
+
+        if (previousDecoration !== null && previousDecoration !== this.getDecoration()) {
+            this.decorationRemovedHandler(previousDecoration);
+        }
+        this.bookmarkDecorationUpdatedHandler(this);
     }
 }
