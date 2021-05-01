@@ -56,7 +56,7 @@ The other display option for group icons is the color.
 
 ## Extension Settings
 
-* `labeledBookmarks.unicodeMarkers`: list of unicode characters to be made available in the shape selection list. It should be in the form of: `[["astonishing", "😲"], ["bug","🐞"]]`
+* `labeledBookmarks.unicodeMarkers`: list of unicode characters to be made available in the shape selection list. It should be in the form of: `[["look", "👀"], ["bug","🐞"]]`
 * `labeledBookmarks.colors`: list of colors to be made available when creating new bookmark groups or when setting the color of an existing one. It should be in the form of: `[["red", "ff0000"], ["green", "00ff00"]]`
 * `labeledBookmarks.defaultShape`: set which vector icon should be used as the default for new groups
 * `labeledBookmarks.overviewRulerLane`: set how the bookmark should be marked on the overview ruler (scrollbar)
@@ -77,8 +77,13 @@ You can remove this broken bookmark flags:
 
 Or you can delete them using `ctrl+alt+b d` and selecting them manually.
 
+## Status Bar
+
+The current active group and the number of bookmarks within it are displayed in the statusbar.
+
 ## Known Issues
 
 * Bookmark icons might interfere with placing breakponts. Use `ctrl+alt+b h` to hide/unhide the bookmark icons to avoid this.
 * On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these conflicting  actions. If you are not using notebooks, there should be no problem.
+* The content of the bookmarked line is stored in the bookmark itself, and is updated when the line changes. If there is an external change to the file, it won't be detected, and the stored line content will be out of sync with the actual.
 * If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a susppiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.

@@ -91,21 +91,21 @@ export class DecorationFactory {
     public static svgDir: Uri;
     public static overviewRulerLane: OverviewRulerLane | undefined;
 
-    static async create(shape: string, color: string, text: string): Promise<TextEditorDecorationType> {
-        text = text.normalize();
+    static async create(shape: string, color: string, iconText: string, lineLabel?: string): Promise<TextEditorDecorationType> {
+        iconText = iconText.normalize();
 
         if (shape !== "unicode") {
-            if (!DecorationFactory.singleCharacterLabelPatern.test(text)) {
-                text = "";
+            if (!DecorationFactory.singleCharacterLabelPatern.test(iconText)) {
+                iconText = "";
             } else {
-                text = text.substring(0, 1).toUpperCase();
+                iconText = iconText.substring(0, 1).toUpperCase();
             }
         }
 
         let fileNamePostfix = '';
         let svg: string;
 
-        if (text === "") {
+        if (iconText === "") {
             switch (shape) {
                 case "circle": svg = svgCircle; break;
                 case "heart": svg = svgHeart; break;
@@ -126,7 +126,7 @@ export class DecorationFactory {
                     svg = svgBookmarkWithText;
                     shape = "bookmark";
             }
-            let codePoint = (text.codePointAt(0) ?? 0).toString(10);
+            let codePoint = (iconText.codePointAt(0) ?? 0).toString(10);
             svg = svg.replace(">Q<", ">&#" + codePoint + ";<");
             fileNamePostfix = codePoint;
         }
@@ -147,17 +147,30 @@ export class DecorationFactory {
             await vscode.workspace.fs.writeFile(svgUri, bytes);
         }
 
-        let result = vscode.window.createTextEditorDecorationType(
-            {
-                gutterIconPath: svgUri,
-                gutterIconSize: 'contain',
-                overviewRulerColor: (typeof DecorationFactory.overviewRulerLane !== "undefined")
-                    ? '#' + color
-                    : undefined,
-                overviewRulerLane: DecorationFactory.overviewRulerLane,
-                rangeBehavior: DecorationRangeBehavior.ClosedClosed,
-            }
-        );
+        let decorationOptions = {
+            gutterIconPath: svgUri,
+            gutterIconSize: 'contain',
+            overviewRulerColor: (typeof DecorationFactory.overviewRulerLane !== "undefined")
+                ? '#' + color
+                : undefined,
+            overviewRulerLane: DecorationFactory.overviewRulerLane,
+            rangeBehavior: DecorationRangeBehavior.ClosedClosed,
+            after: {},
+            isWholeLine: true,
+        };
+
+        if (typeof lineLabel !== "undefined") {
+            decorationOptions.after = {
+                border: "1px solid #" + color,
+                color: "#" + color,
+                // background: "#" + color,
+                // color: new vscode.ThemeColor("editor.background"),
+                contentText: "\u2002" + lineLabel + "\u2002",
+                margin: "0px 0px 0px 10px",
+            };
+        }
+
+        let result = vscode.window.createTextEditorDecorationType(decorationOptions);
 
         return result;
     }
