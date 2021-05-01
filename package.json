@@ -244,6 +244,16 @@
             "right",
             "none"
           ]
+        },
+        "labeledBookmarks.lineEndLabelType": {
+          "type": "string",
+          "description": "The style of how the line end decorations for labeled bookmarks should appear",
+          "default": "bordered",
+          "enum": [
+            "none",
+            "bordered",
+            "inverse"
+          ]
         }
       }
     }

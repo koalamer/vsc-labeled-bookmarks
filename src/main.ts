@@ -31,6 +31,7 @@ export class Main {
     public readonly configKeyUnicodeMarkers = "unicodeMarkers";
     public readonly configKeyDefaultShape = "defaultShape";
     public readonly configOverviewRulerLane = "overviewRulerLane";
+    public readonly configLineEndLabelType = "lineEndLabelType";
 
     public readonly maxGroupNameLength = 40;
 
@@ -63,6 +64,7 @@ export class Main {
         this.ctx = ctx;
         DecorationFactory.svgDir = this.ctx.globalStorageUri;
         DecorationFactory.overviewRulerLane = OverviewRulerLane.Center;
+        DecorationFactory.lineEndLabelType = "bordered";
 
         this.bookmarks = new Array<Bookmark>();
         this.groups = new Array<Group>();
@@ -1085,12 +1087,20 @@ export class Main {
             default:
                 newOverviewRulerLane = undefined;
         }
+
+        let newLineEndLabelType = (config.get(this.configLineEndLabelType) as string) ?? "bordered";
+        let previousLineEndLabelType = DecorationFactory.lineEndLabelType;
+
         if (
             (typeof previousOverviewRulerLane === "undefined") !== (typeof newOverviewRulerLane === "undefined")
             || previousOverviewRulerLane !== newOverviewRulerLane
+            || (typeof previousLineEndLabelType === "undefined") !== (typeof newLineEndLabelType === "undefined")
+            || previousLineEndLabelType !== newLineEndLabelType
         ) {
             DecorationFactory.overviewRulerLane = newOverviewRulerLane;
+            DecorationFactory.lineEndLabelType = newLineEndLabelType;
             this.groups.forEach(group => group.redoDecorations());
+            this.bookmarks.forEach(bookmark => bookmark.initDecoration());
         }
     }
 

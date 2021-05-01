@@ -90,6 +90,7 @@ export class DecorationFactory {
 
     public static svgDir: Uri;
     public static overviewRulerLane: OverviewRulerLane | undefined;
+    public static lineEndLabelType: string;
 
     static async create(shape: string, color: string, iconText: string, lineLabel?: string): Promise<TextEditorDecorationType> {
         iconText = iconText.normalize();
@@ -160,14 +161,24 @@ export class DecorationFactory {
         };
 
         if (typeof lineLabel !== "undefined") {
-            decorationOptions.after = {
-                border: "1px solid #" + color,
-                color: "#" + color,
-                // background: "#" + color,
-                // color: new vscode.ThemeColor("editor.background"),
-                contentText: "\u2002" + lineLabel + "\u2002",
-                margin: "0px 0px 0px 10px",
-            };
+            switch (DecorationFactory.lineEndLabelType) {
+                case "bordered":
+                    decorationOptions.after = {
+                        border: "1px solid #" + color,
+                        color: "#" + color,
+                        contentText: "\u2002" + lineLabel + "\u2002",
+                        margin: "0px 0px 0px 10px",
+                    };
+                    break;
+                case "inverse":
+                    decorationOptions.after = {
+                        backgroundColor: "#" + color,
+                        color: new vscode.ThemeColor("editor.background"),
+                        contentText: "\u2002" + lineLabel + "\u2002",
+                        margin: "0px 0px 0px 10px",
+                    };
+                    break;
+            }
         }
 
         let result = vscode.window.createTextEditorDecorationType(decorationOptions);
