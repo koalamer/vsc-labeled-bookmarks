@@ -42,6 +42,8 @@ Groups were implemented to be able to separate one set of bookmarks (for one top
 
 * Hide / unhide bookmark icons (might be necessary to set a breakpoint on a line that also has a bookmark): `ctrl+alt+b h`
 * Hide / unhide the icons of inactive groups: `ctrl+alt+b i`
+* Setting to control the appearance of overview ruler (scrollbar) decorations
+* Setting to control how the label text for labeled bookmarks should appear at the line's end
 
 ### Customizing Group Icons
 
@@ -60,6 +62,7 @@ The other display option for group icons is the color.
 * `labeledBookmarks.colors`: list of colors to be made available when creating new bookmark groups or when setting the color of an existing one. It should be in the form of: `[["red", "ff0000"], ["green", "00ff00"]]`
 * `labeledBookmarks.defaultShape`: set which vector icon should be used as the default for new groups
 * `labeledBookmarks.overviewRulerLane`: set how the bookmark should be marked on the overview ruler (scrollbar)
+* `labeledBookmarks.lineEndLabelType`: set how the line end labels for labeled bookmarks should be displayed
 
 ## Invalid Bookmarks
 
