@@ -12,8 +12,8 @@ export class Bookmark {
     failedJump: boolean;
     isLineNumberChanged: boolean;
     group: Group;
-    decoration: TextEditorDecorationType | null;
-    isActive: boolean;
+    ownDecoration: TextEditorDecorationType | null;
+    currentDecoration: TextEditorDecorationType | null;
     bookmarkDecorationUpdatedHandler: (bookmark: Bookmark) => void;
     decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
 
@@ -33,8 +33,8 @@ export class Bookmark {
         this.failedJump = false;
         this.isLineNumberChanged = false;
         this.group = group;
-        this.decoration = null;
-        this.isActive = false;
+        this.ownDecoration = null;
+        this.currentDecoration = null;
         this.bookmarkDecorationUpdatedHandler = (bookmark: Bookmark) => { return; };
         this.decorationRemovedHandler = (decoration: TextEditorDecorationType) => { return; };
     }
@@ -75,11 +75,11 @@ export class Bookmark {
     }
 
     public getDecoration(): TextEditorDecorationType | null {
-        if (this.isActive) {
-            return this.decoration || this.group.getActiveDecoration();
+        if (this.group.isActive && this.group.isVisible) {
+            return this.ownDecoration || this.group.getActiveDecoration();
+        } else {
+            return this.group.getActiveDecoration();
         }
-
-        return this.group.getActiveDecoration();
     }
 
     public onBookmarkDecorationUpdated(fn: (bookmark: Bookmark) => void) {
@@ -95,38 +95,28 @@ export class Bookmark {
             return;
         }
 
-        let previousDecoration = this.decoration;
+        let previousDecoration = this.ownDecoration;
 
-        this.decoration = await DecorationFactory.create(
+        this.ownDecoration = await DecorationFactory.create(
             this.group.shape,
             this.group.color,
             this.group.iconText,
             this.label
         );
 
-        if(previousDecoration !== null){
+        if (previousDecoration !== null) {
             this.decorationRemovedHandler(previousDecoration);
         }
+        this.currentDecoration = this.getDecoration();
         this.bookmarkDecorationUpdatedHandler(this);
     }
 
-    public setIsActive() {
-        let isActive = this.group.isActive;
-        if (this.isActive === isActive) {
-            return;
+    public switchDecoration() {
+        let newDecoration = this.getDecoration();
+        if (this.currentDecoration !== null && this.currentDecoration !== newDecoration) {
+            this.decorationRemovedHandler(this.currentDecoration);
         }
-
-        if (this.decoration === null) {
-            this.isActive = isActive;
-            return;
-        }
-
-        let previousDecoration = this.getDecoration();
-        this.isActive = isActive;
-
-        if (previousDecoration !== null && previousDecoration !== this.getDecoration()) {
-            this.decorationRemovedHandler(previousDecoration);
-        }
+        this.currentDecoration = newDecoration;
         this.bookmarkDecorationUpdatedHandler(this);
     }
 }

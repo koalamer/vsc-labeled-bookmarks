@@ -134,7 +134,7 @@ export class Main {
     public handleGroupDecorationSwitched(group: Group) {
         this.tempDocumentDecorations.clear();
         this.tempGroupBookmarks.get(group)?.forEach(bookmark => {
-            bookmark.setIsActive();
+            bookmark.switchDecoration();
         });
         this.updateDecorations();
     }
