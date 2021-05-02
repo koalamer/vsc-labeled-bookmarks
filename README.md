@@ -2,7 +2,7 @@
 
 Bookmarks with customizable icons, colors, organized into groups between which you can switch, keyboard shortcut for most functions.
 
-![Labeled Bookmarks Intro](resources/vsc-labeled-bookmarks-readme-showcase.gif)
+![Screenshot](resources/screenshot.png)
 
 **Important note on using breakpoints:**  Line decorations (in general) seem to interfere with placing breakpoints for debugging. To work around this, you can toggle the decorations on and off using `ctrl+alt+b h`. All operations still work the same when the decorations are hidden.
 
