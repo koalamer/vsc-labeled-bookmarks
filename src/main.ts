@@ -813,7 +813,11 @@ export class Main {
                 return;
             }
 
-            if (currentDocument === null || currentSelection === null) {
+            if (
+                typeof currentDocument === "undefined"
+                || typeof currentSelection === "undefined"
+                || currentDocument === null
+                || currentSelection === null) {
                 return;
             }
 
@@ -1025,7 +1029,11 @@ export class Main {
                 return;
             }
 
-            if (currentDocument === null || currentSelection === null) {
+            if (
+                typeof currentDocument === "undefined"
+                || typeof currentSelection === "undefined"
+                || currentDocument === null
+                || currentSelection === null) {
                 return;
             }
 
