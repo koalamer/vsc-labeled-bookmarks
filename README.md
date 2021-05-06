@@ -1,6 +1,6 @@
 # vsc-labeled-bookmarks README
 
-Bookmarks with customizable icons, colors, organized into groups between which you can switch, keyboard shortcut for most functions.
+Bookmarks with customizable icons, colors and other visuals, organized into groups between which you can switch, keyboard shortcut for most functions.
 
 ![Screenshot](resources/screenshot.png)
 
@@ -12,14 +12,14 @@ Bookmarks with customizable icons, colors, organized into groups between which y
 
 * You can set an unnamed bookmark on a line using `ctrl+alt+m`. If there already is a bookmark on the line, it is removed.
 * Labeled bookmarks can be set using `ctrl+alt+l`. A prompt appears where you can type the label for the bookmark. If you have some text selected, that will be the default value of the input box. **You can have multiple bookmarks with the same label, but if you use a single character as the label, that label will be kept unique (VIM style relocating the bookmark instead of adding another one.)**
-* The labeled bookmark creation is multifunctional: it expects the input in the format of "bookmark label" or "bookmark label@@group name" or just "@@group name. When a group name is specified, the group is created if it does not yet exist and it is set to be the active group. Then, if the label is specified, a new bookmark is created using it.
+* The labeled bookmark creation is multi functional: it expects the input in the format of "bookmark label" or "bookmark label@@group name" or just "@@group name. When a group name is specified, the group is created if it does not yet exist and it is set to be the active group. Then, if the label is specified, a new bookmark is created using it.
 * Delete bookmarks using `ctrl+alt+b d`, or by using the above toggle commands on a line that already has a bookmark (of the active group).
 
 ### Navigation
 
 * Go to the next bookmark: `ctrl+alt+k`
 * Go to the previous bookmark: `ctrl+alt+j`
-* Navigate to a bookmark by selecting it from a list: `ctrl+alt+n` A quick pick list appears where the bookmarks are filtered as you type. All bookmarks are displayed in the list, including the unamed ones.
+* Navigate to a bookmark by selecting it from a list: `ctrl+alt+n` A quick pick list appears where the bookmarks are filtered as you type. All bookmarks are displayed in the list, including the unnamed ones.
 * Navigate to a bookmark of any group (same as `ctrl+alt+n` but not limited to the active group): `ctrl+alt+b n`
 
 ### Expand Selection
@@ -33,7 +33,7 @@ Both operations work in a double tap fashion: the selection is expanded first up
 
 Most operations work on the currently active group's bookmarks. Each group has its own icon shape/color, but the inactive group icons appear semi transparent (or are hidden when `ctrl+alt+b i` is toggled).
 
-Groups were implemented to be able to separate one set of bookmarks (for one topic/bug/branch etc.) from others. You can work with the set that is currently relevant, without other bookmarks littering the forward/backward navigation and and without having to delete them to avoid this.
+Groups were implemented to be able to separate one set of bookmarks (for one topic/bug/branch etc.) from others. You can work with the set that is currently relevant, without other bookmarks littering the forward/backward navigation and without having to delete them to avoid this.
 
 * You can create a group and switch to it implicitly by using the "@@" when creating a labeled bookmark with `ctrl+alt+l`. See the relevant section above for details.
 * Alternatively, you can create a group using `ctrl+alt+b alt+g`
@@ -51,8 +51,8 @@ Groups were implemented to be able to separate one set of bookmarks (for one top
 
 Group icons come in two variants: vector icons (fixed set) and unicode character icons (customizable set).
 
-* Vector icons provide a fixed set of shapes to chose from, and they should appear the same accross all devices. When a new group is created it uses the sape specified as the default shape in the configuration options. If your group has a single character name, and it matches `[a-zA-Z0-9!?+-=\/\$%#]`, then the uppercased character is displayed on the icon.
-* Unicode character icons can be customized using the `labeledBookmarks.unicodeMarkers` configuration option. You can define which unicode cahracters/symbol/emojis you would like to use as the group icon. These can be applied using the shape selection command `ctrl+alt+b s`. If none is defined, a default set is used. (Emojis have their own color and so the color setting remains ineffective on those, but it works as expected on the rest of the unicode alphabets and symbols.)
+* Vector icons provide a fixed set of shapes to chose from, and they should appear the same across all devices. When a new group is created it uses the shape specified as the default shape in the configuration options. If your group has a single character name, and it matches `[a-zA-Z0-9!?+-=\/\$%#]`, then the uppercased character is displayed on the icon.
+* Unicode character icons can be customized using the `labeledBookmarks.unicodeMarkers` configuration option. You can define which unicode characters/symbol/emojis you would like to use as the group icon. These can be applied using the shape selection command `ctrl+alt+b s`. If none is defined, a default set is used. (Emojis have their own color and so the color setting remains ineffective on those, but it works as expected on the rest of the unicode alphabets and symbols.)
 
 The other display option for group icons is the color.
 
@@ -73,7 +73,7 @@ This extension tries to follow file rename and delete actions initiated from wit
 * Upon rename, the bookmark is assigned to the new file name.
 * Upon delete, bookmarks belonging to the file are deleted.
 
-If a bookmark becomes invalid because of other kind of file changes (the file or the line it points to becomes unavailable), then the next time you try (and fail) to navigate to it, it gets flagged as having failed the jump. This is signalled with a warning icon in the navigation list. Such flagged bookmarks are skipped the next time. By repeatedly using the navigate to next/previous bookmark action, you can have all broken bookmarks marked as failing, and then the the navigation works on the rest of the bookmarks normally.
+If a bookmark becomes invalid because of other kind of file changes (the file or the line it points to becomes unavailable), then the next time you try (and fail) to navigate to it, it gets flagged as having failed the jump. This is signaled with a warning icon in the navigation list. Such flagged bookmarks are skipped the next time. By repeatedly using the navigate to next/previous bookmark action, you can have all broken bookmarks marked as failing, and then the navigation works on the rest of the bookmarks normally.
 
 You can remove this broken bookmark flags:
 
@@ -84,11 +84,11 @@ Or you can delete them using `ctrl+alt+b d` and selecting them manually.
 
 ## Status Bar
 
-The current active group and the number of bookmarks within it are displayed in the statusbar.
+The current active group and the number of bookmarks within it are displayed in the status bar.
 
 ## Known Issues
 
-* Bookmark icons might interfere with placing breakponts. Use `ctrl+alt+b h` to hide/unhide the bookmark icons to avoid this.
+* Bookmark icons might interfere with placing breakpoints. Use `ctrl+alt+b h` to hide/unhide the bookmark icons to avoid this.
 * On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these conflicting  actions. If you are not using notebooks, there should be no problem.
 * The content of the bookmarked line is stored in the bookmark itself, and is updated when the line changes. If there is an external change to the file, it won't be detected, and the stored line content will be out of sync with the actual.
-* If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a susppiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.
+* If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a suspiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.

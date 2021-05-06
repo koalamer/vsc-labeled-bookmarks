@@ -27,7 +27,7 @@ export class BookmarkPickItem implements QuickPickItem {
         let label = (typeof bookmark.label !== "undefined" ? "$(tag) " + bookmark.label + "\u2003" : "")
             + bookmark.lineText;
         let description = withGroupName ? "(" + bookmark.group.name + ")" : "";
-        let detail = "line " + (bookmark.lineNumber + 1) + " "
+        let detail = "line " + (bookmark.lineNumber + 1) + " - "
             + workspace.asRelativePath(bookmark.fsPath);
         if (label === "") {
             description = "empty line " + description;
