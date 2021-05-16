@@ -5,7 +5,8 @@ import { BookmarkTreeDataProvider } from './bookmark_tree_data_provider';
 import { Main } from './main';
 
 let main: Main;
-let treeDataProvider: BookmarkTreeDataProvider;
+let treeDataProviderByGroup: BookmarkTreeDataProvider;
+let treeDataProviderByFile: BookmarkTreeDataProvider;
 
 export function activate(context: ExtensionContext) {
 	main = new Main(context);
@@ -119,16 +120,25 @@ export function activate(context: ExtensionContext) {
 		main.readSettings();
 	});
 
-	treeDataProvider = main.getTreeDataProvider();
+	treeDataProviderByGroup = main.getTreeDataProviderByGroup();
+	treeDataProviderByFile = main.getTreeDataProviderByFile();
 
 	vscode.window.registerTreeDataProvider(
 		'bookmarksByGroup',
-		treeDataProvider
+		treeDataProviderByGroup
+	);
+
+	vscode.window.registerTreeDataProvider(
+		'bookmarksByFile',
+		treeDataProviderByFile
 	);
 
 	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.refreshTreeView',
-		() => treeDataProvider.refresh());
+		() => {
+			treeDataProviderByGroup.refresh();
+			treeDataProviderByFile.refresh();
+		});
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand(

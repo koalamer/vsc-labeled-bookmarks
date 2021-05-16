@@ -147,8 +147,12 @@ export class Main {
         this.updateDecorations();
     }
 
-    public getTreeDataProvider(){
-        return new BookmarkTreeDataProvider(this.groups, this.bookmarks);
+    public getTreeDataProviderByGroup() {
+        return new BookmarkTreeDataProvider(this.groups, this.bookmarks, true);
+    }
+
+    public getTreeDataProviderByFile() {
+        return new BookmarkTreeDataProvider(this.groups, this.bookmarks, false);
     }
 
     private updateDecorations() {
