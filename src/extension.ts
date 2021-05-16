@@ -115,6 +115,11 @@ export function activate(context: ExtensionContext) {
 	vscode.workspace.onDidChangeConfiguration(() => {
 		main.readSettings();
 	});
+
+	vscode.window.registerTreeDataProvider(
+		'bookmarksByGroup',
+		main.getTreeDataProvider()
+	);
 }
 
 export function deactivate() {

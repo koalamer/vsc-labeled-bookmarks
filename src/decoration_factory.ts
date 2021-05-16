@@ -81,9 +81,13 @@ const svgUnicodeChar = `<svg xmlns="http://www.w3.org/2000/svg" width="32" heigh
 export class DecorationFactory {
     private static readonly singleCharacterLabelPatern = /^[a-zA-Z0-9!?+-=\/\$%#]$/;
 
+    public static readonly placeholderDecorationUri = Uri.file(
+        path.join(__dirname, "..", "resources", "gutter_icon_bm.svg")
+    );
+
     public static readonly placeholderDecoration = vscode.window.createTextEditorDecorationType(
         {
-            gutterIconPath: path.join(__dirname, "..", "resources", "gutter_icon_bm.svg"),
+            gutterIconPath: DecorationFactory.placeholderDecorationUri.fsPath,
             gutterIconSize: 'contain',
         }
     );
@@ -92,7 +96,7 @@ export class DecorationFactory {
     public static overviewRulerLane: OverviewRulerLane | undefined;
     public static lineEndLabelType: string;
 
-    static async create(shape: string, color: string, iconText: string, lineLabel?: string): Promise<TextEditorDecorationType> {
+    static async create(shape: string, color: string, iconText: string, lineLabel?: string): Promise<[TextEditorDecorationType, Uri]> {
         iconText = iconText.normalize();
 
         if (shape !== "unicode") {
@@ -183,7 +187,7 @@ export class DecorationFactory {
 
         let result = vscode.window.createTextEditorDecorationType(decorationOptions);
 
-        return result;
+        return [result, svgUri];
     }
 
     public static normalizeColorFormat(color: string): string {

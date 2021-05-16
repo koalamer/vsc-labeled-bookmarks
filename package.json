@@ -256,6 +256,29 @@
           ]
         }
       }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "bookmarks",
+          "title": "Bookmarks",
+          "icon": "$(bookmark)"
+        }
+      ]
+    },
+    "views": {
+      "bookmarks": [
+        {
+          "id": "bookmarksByFile",
+          "name": "By File",
+          "icon": "$(file)"
+        },
+        {
+          "id": "bookmarksByGroup",
+          "name": "By Group",
+          "icon": "$(book)"
+        }
+      ]
     }
   },
   "scripts": {

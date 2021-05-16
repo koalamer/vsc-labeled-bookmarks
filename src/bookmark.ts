@@ -1,5 +1,5 @@
 import { DecorationFactory } from "./decoration_factory";
-import { TextEditorDecorationType } from "vscode";
+import { TextEditorDecorationType, Uri } from "vscode";
 import { SerializableBookmark } from "./serializable_bookmark";
 import { Group } from "./group";
 
@@ -96,8 +96,9 @@ export class Bookmark {
         }
 
         let previousDecoration = this.ownDecoration;
+        let tempSvg: Uri;
 
-        this.ownDecoration = await DecorationFactory.create(
+        [this.ownDecoration, tempSvg] = await DecorationFactory.create(
             this.group.shape,
             this.group.color,
             this.group.iconText,

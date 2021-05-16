@@ -16,6 +16,7 @@ import { ColorPickItem } from './color_pick_item';
 import { Bookmark } from "./bookmark";
 import { SerializableGroup } from "./serializable_group";
 import { SerializableBookmark } from "./serializable_bookmark";
+import { BookmarkTreeDataProvider } from './bookmark_tree_data_provider';
 
 export class Main {
     public ctx: ExtensionContext;
@@ -144,6 +145,10 @@ export class Main {
     public handleBookmarkDecorationUpdated(bookmark: Bookmark) {
         this.tempDocumentDecorations.delete(bookmark.fsPath);
         this.updateDecorations();
+    }
+
+    public getTreeDataProvider(){
+        return new BookmarkTreeDataProvider(this.groups, this.bookmarks);
     }
 
     private updateDecorations() {
