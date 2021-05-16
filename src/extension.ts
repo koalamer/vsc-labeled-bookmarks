@@ -1,8 +1,11 @@
 import * as vscode from 'vscode';
 import { ExtensionContext } from 'vscode';
+import { Bookmark } from './bookmark';
+import { BookmarkTreeDataProvider } from './bookmark_tree_data_provider';
 import { Main } from './main';
 
 let main: Main;
+let treeDataProvider: BookmarkTreeDataProvider;
 
 export function activate(context: ExtensionContext) {
 	main = new Main(context);
@@ -116,10 +119,22 @@ export function activate(context: ExtensionContext) {
 		main.readSettings();
 	});
 
+	treeDataProvider = main.getTreeDataProvider();
+
 	vscode.window.registerTreeDataProvider(
 		'bookmarksByGroup',
-		main.getTreeDataProvider()
+		treeDataProvider
 	);
+
+	disposable = vscode.commands.registerCommand(
+		'vsc-labeled-bookmarks.refreshTreeView',
+		() => treeDataProvider.refresh());
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand(
+		'vsc-labeled-bookmarks.jumpToBookmark',
+		(bookmark: Bookmark, preview: boolean) => main.jumpToBookmark(bookmark, preview));
+	context.subscriptions.push(disposable);
 }
 
 export function deactivate() {

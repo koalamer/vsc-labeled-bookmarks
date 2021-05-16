@@ -1403,7 +1403,7 @@ export class Main {
         return text.substring(lastNewLinePos + 1);
     }
 
-    private jumpToBookmark(bookmark: Bookmark, preview: boolean = false) {
+    public jumpToBookmark(bookmark: Bookmark, preview: boolean = false) {
         vscode.window.showTextDocument(vscode.Uri.file(bookmark.fsPath), { preview: preview, preserveFocus: preview }).then(
             textEditor => {
                 try {

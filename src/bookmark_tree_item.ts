@@ -6,12 +6,15 @@ export class BookmarkTreeItem extends TreeItem {
     private base: Bookmark | Group | null = null;
 
     static fromBookmark(bookmark: Bookmark): BookmarkTreeItem {
-        let label = (typeof bookmark.label !== "undefined" ? "$(tag) " + bookmark.label + "\u2003" : "")
-            + bookmark.lineText;
+        let label = (typeof bookmark.label !== "undefined" ? bookmark.label + " - " : "") + "line " + (bookmark.lineNumber + 1);
         let result = new BookmarkTreeItem(label, TreeItemCollapsibleState.None);
-        result.description = "line " + (bookmark.lineNumber + 1) + " - " + workspace.asRelativePath(bookmark.fsPath);
         result.iconPath = bookmark.group.decorationSvg;
         result.base = bookmark;
+        result.command = {
+            "title": "jump to bookmark",
+            "command": "vsc-labeled-bookmarks.jumpToBookmark",
+            "arguments": [bookmark, false]
+        };
         return result;
     }
 

@@ -1,5 +1,5 @@
+import { Event, EventEmitter, TreeDataProvider, TreeItem } from "vscode";
 import * as vscode from 'vscode';
-import { TreeDataProvider, TreeItem } from "vscode";
 import { Bookmark } from './bookmark';
 import { BookmarkTreeItem } from "./bookmark_tree_item";
 import { Group } from './group';
@@ -8,16 +8,19 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     private groups: Array<Group>;
     private bookmarks: Array<Bookmark>;
 
+    private changeEmitter = new EventEmitter<BookmarkTreeItem | undefined | null | void>();
+    readonly onDidChangeTreeData = this.changeEmitter.event;
+
     constructor(groups: Array<Group>, bookmarks: Array<Bookmark>) {
         this.groups = groups;
         this.bookmarks = bookmarks;
     }
 
-    getTreeItem(element: BookmarkTreeItem): TreeItem {
+    public getTreeItem(element: BookmarkTreeItem): TreeItem {
         return element;
     }
 
-    getChildren(element?: BookmarkTreeItem | undefined): Thenable<BookmarkTreeItem[]> {
+    public getChildren(element?: BookmarkTreeItem | undefined): Thenable<BookmarkTreeItem[]> {
         if (!element) {
             return Promise.resolve(this.groups.map(group => BookmarkTreeItem.fromGroup(group)));
         }
@@ -31,5 +34,9 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
         }
 
         return Promise.resolve([]);
+    }
+
+    public refresh() {
+        this.changeEmitter.fire();
     }
 }

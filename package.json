@@ -88,6 +88,15 @@
       {
         "command": "vsc-labeled-bookmarks.expandSelectionToPreviousBookmark",
         "title": "Bookmarks: expand selection to previous bookmark"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.refreshTreeView",
+        "title": "Bookmarks: refresh tree view",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.jumpToBookmark",
+        "title": "Bookmarks: jump to bookmark"
       }
     ],
     "keybindings": [
@@ -277,6 +286,15 @@
           "id": "bookmarksByGroup",
           "name": "By Group",
           "icon": "$(book)"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "vsc-labeled-bookmarks.refreshTreeView",
+          "when": "view == bookmarksByGroup",
+          "group": "navigation"
         }
       ]
     }
