@@ -2,7 +2,7 @@
   "name": "labeled-bookmarks",
   "displayName": "Labeled Bookmarks",
   "description": "Bookmarks, multiple groups, customizable visuals",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "publisher": "koalamer",
   "icon": "resources/vsc-labeled-bookmarks-logo.png",
   "repository": {
@@ -97,6 +97,10 @@
       {
         "command": "vsc-labeled-bookmarks.jumpToBookmark",
         "title": "Bookmarks: jump to bookmark"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.showTreeView",
+        "title": "Bookmarks: show tree view"
       }
     ],
     "keybindings": [
@@ -173,6 +177,10 @@
       {
         "command": "vsc-labeled-bookmarks.clearFailedJumpFlags",
         "key": "ctrl+alt+b f"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.showTreeView",
+        "key": "ctrl+alt+b t"
       }
     ],
     "configuration": {

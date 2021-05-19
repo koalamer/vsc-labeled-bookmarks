@@ -155,6 +155,10 @@ export class Main {
         return new BookmarkTreeDataProvider(this.groups, this.bookmarks, false);
     }
 
+    public getActiveGroup(): Group {
+        return this.activeGroup;
+    }
+
     private updateDecorations() {
         for (let editor of vscode.window.visibleTextEditors) {
             this.updateEditorDecorations(editor);
@@ -1431,5 +1435,50 @@ export class Main {
                 vscode.window.showWarningMessage("Failed to navigate to bookmark (2): " + rejectReason.message);
             }
         );
+    }
+
+    public getNearestBookmark(textEditor: TextEditor): Bookmark | null {
+        if (textEditor.selections.length === 0) {
+            return null;
+        }
+
+        let fsPath = textEditor.document.uri.fsPath;
+        let lineNumber = textEditor.selection.start.line;
+
+        let nearestBeforeLine = -1;
+        let nearestBefore: Bookmark | null = null;
+        let nearestAfterline = Number.MAX_SAFE_INTEGER;
+        let nearestAfter: Bookmark | null = null;
+
+        this.getTempDocumentBookmarkList(fsPath)
+            .forEach(bookmark => {
+                if (bookmark.lineNumber > nearestBeforeLine && bookmark.lineNumber <= lineNumber) {
+                    nearestBeforeLine = bookmark.lineNumber;
+                    nearestBefore = bookmark;
+                }
+
+                if (bookmark.lineNumber < nearestAfterline && bookmark.lineNumber >= lineNumber) {
+                    nearestAfterline = bookmark.lineNumber;
+                    nearestAfter = bookmark;
+                }
+            });
+
+        if (nearestBefore === null && nearestAfter === null) {
+            return null;
+        }
+
+        if (nearestBefore !== null && nearestAfter !== null) {
+            if (lineNumber - nearestBeforeLine < nearestAfterline - lineNumber) {
+                return nearestBefore;
+            }
+
+            return nearestAfter;
+        }
+
+        if (nearestBefore !== null) {
+            return nearestBefore;
+        }
+
+        return nearestAfter;
     }
 }

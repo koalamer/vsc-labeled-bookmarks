@@ -1,4 +1,4 @@
-import { Event, EventEmitter, TreeDataProvider, TreeItem } from "vscode";
+import { EventEmitter, TreeDataProvider, TreeItem } from "vscode";
 import * as vscode from 'vscode';
 import { Bookmark } from './bookmark';
 import { BookmarkTreeItem } from "./bookmark_tree_item";
@@ -9,6 +9,9 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     private bookmarks: Array<Bookmark>;
     private byGroup: boolean;
 
+    private rootElements: Array<BookmarkTreeItem> = [];
+    private childElements: Map<BookmarkTreeItem, Array<BookmarkTreeItem>>;
+
     private changeEmitter = new EventEmitter<BookmarkTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this.changeEmitter.event;
 
@@ -16,6 +19,7 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
         this.groups = groups;
         this.bookmarks = bookmarks;
         this.byGroup = byGroup;
+        this.childElements = new Map();
     }
 
     public getTreeItem(element: BookmarkTreeItem): TreeItem {
@@ -25,11 +29,12 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     public getChildren(element?: BookmarkTreeItem | undefined): Thenable<BookmarkTreeItem[]> {
         if (!element) {
             if (this.byGroup) {
-                return Promise.resolve(this.groups.map(group => BookmarkTreeItem.fromGroup(group)));
+                this.rootElements = this.groups.map(group => BookmarkTreeItem.fromGroup(group));
+                return Promise.resolve(this.rootElements);
             } else {
-                return Promise.resolve(
-                    this.getFiles(this.bookmarks).map(fsPath => BookmarkTreeItem.fromFSPath(fsPath, null))
-                );
+                this.rootElements = this.getFiles(this.bookmarks)
+                    .map(fsPath => BookmarkTreeItem.fromFSPath(fsPath, null));
+                return Promise.resolve(this.rootElements);
             }
         }
 
@@ -37,29 +42,91 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
 
         let baseFSPath = element.getBaseFSPath();
         if (baseFSPath !== null) {
-            let bms = this.bookmarks.filter(bookmark => { return (bookmark.fsPath === baseFSPath); });
+            let bookmarks = this.bookmarks.filter(bookmark => { return (bookmark.fsPath === baseFSPath); });
             if (filterGroup !== null) {
-                bms = bms.filter(bookmark => { return bookmark.group === filterGroup; });
+                bookmarks = bookmarks.filter(bookmark => { return bookmark.group === filterGroup; });
             }
-            return Promise.resolve(bms.map(bookmark => BookmarkTreeItem.fromBookmark(bookmark)));
+
+            let children: Array<BookmarkTreeItem>;
+
+            if (bookmarks.length === 0) {
+                children = [BookmarkTreeItem.fromNone()];
+            } else {
+                children = bookmarks.map(bookmark => BookmarkTreeItem.fromBookmark(bookmark));
+            }
+
+            children.forEach(child => child.setParent(element));
+            this.childElements.set(element, children);
+            return Promise.resolve(children);
         }
 
         let baseGroup = element.getBaseGroup();
         if (baseGroup !== null) {
             let files = this.getFiles(this.bookmarks.filter(bookmark => { return bookmark.group === filterGroup; }));
-            return Promise.resolve(files.map(fsPath => BookmarkTreeItem.fromFSPath(fsPath, filterGroup)));
+
+            let children: Array<BookmarkTreeItem>;
+
+            if (files.length === 0) {
+                children = [BookmarkTreeItem.fromNone()];
+            } else {
+                children = files.map(fsPath => BookmarkTreeItem.fromFSPath(fsPath, filterGroup));
+            }
+
+            children.forEach(child => child.setParent(element));
+            this.childElements.set(element, children);
+            return Promise.resolve(children);
         }
 
-        return Promise.resolve([]);
+        let children = [BookmarkTreeItem.fromNone()];
+        this.childElements.set(element, children);
+        return Promise.resolve(children);
     }
 
     public refresh() {
         this.changeEmitter.fire();
     }
 
+    public getTargetForGroup(group: Group): BookmarkTreeItem | null {
+        if (!this.byGroup) {
+            return null;
+        }
+
+        let parent = this.rootElements.find(element => { return group === element.getBaseGroup(); });
+        if (typeof parent === "undefined") {
+            return null;
+        }
+
+        let children = this.childElements.get(parent);
+        if (typeof children === "undefined") {
+            return null;
+        }
+
+        if (children.length === 0) {
+            return null;
+        }
+
+        return children[0];
+    }
+
+    public getTargetForBookmark(bookmark: Bookmark): BookmarkTreeItem {
+        for (let [parent, children] of this.childElements) {
+            let target = children.find(child => child.getBaseBookmark() === bookmark);
+            if (typeof target !== "undefined") {
+                return target;
+            }
+        }
+
+        return BookmarkTreeItem.fromNone();
+    }
+
+    public getParent(element: BookmarkTreeItem): BookmarkTreeItem | null | undefined {
+        return element.getParent();
+    }
+
     private getFiles(bookmarks: Array<Bookmark>): Array<string> {
         let files = new Array<string>();
         for (let i = 0; i < bookmarks.length; i++) {
+
             if (i === 0 || bookmarks[i].fsPath !== bookmarks[i - 1].fsPath) {
                 files.push(bookmarks[i].fsPath);
             }

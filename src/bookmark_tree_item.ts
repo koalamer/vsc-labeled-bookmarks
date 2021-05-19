@@ -4,7 +4,15 @@ import { Group } from './group';
 
 export class BookmarkTreeItem extends TreeItem {
     private base: Bookmark | Group | string | null = null;
+    private parent: BookmarkTreeItem | null = null;
     private filterGroup: Group | null = null;
+
+    static fromNone(): BookmarkTreeItem {
+        let result = new BookmarkTreeItem(" ", TreeItemCollapsibleState.None);
+        result.description = 'none';
+        result.base = null;
+        return result;
+    }
 
     static fromBookmark(bookmark: Bookmark): BookmarkTreeItem {
         let label = (bookmark.lineNumber + 1) + (typeof bookmark.label !== "undefined" ? ": " + bookmark.label : "");
@@ -15,7 +23,7 @@ export class BookmarkTreeItem extends TreeItem {
         result.command = {
             "title": "jump to bookmark",
             "command": "vsc-labeled-bookmarks.jumpToBookmark",
-            "arguments": [bookmark, false]
+            "arguments": [bookmark, true]
         };
         return result;
     }
@@ -34,6 +42,14 @@ export class BookmarkTreeItem extends TreeItem {
         result.base = fsPath;
         result.filterGroup = filterGroup;
         return result;
+    }
+
+    public setParent(parent: BookmarkTreeItem | null) {
+        this.parent = parent;
+    }
+
+    public getParent(): BookmarkTreeItem | null {
+        return this.parent;
     }
 
     public getBaseBookmark(): Bookmark | null {

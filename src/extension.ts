@@ -1,10 +1,14 @@
+import { type } from 'node:os';
 import * as vscode from 'vscode';
-import { ExtensionContext } from 'vscode';
+import { ExtensionContext, TreeView } from 'vscode';
 import { Bookmark } from './bookmark';
 import { BookmarkTreeDataProvider } from './bookmark_tree_data_provider';
+import { BookmarkTreeItem } from './bookmark_tree_item';
 import { Main } from './main';
 
 let main: Main;
+let treeViewByGroup: TreeView<BookmarkTreeItem>;
+let treeViewByFile: TreeView<BookmarkTreeItem>;
 let treeDataProviderByGroup: BookmarkTreeDataProvider;
 let treeDataProviderByFile: BookmarkTreeDataProvider;
 
@@ -123,15 +127,13 @@ export function activate(context: ExtensionContext) {
 	treeDataProviderByGroup = main.getTreeDataProviderByGroup();
 	treeDataProviderByFile = main.getTreeDataProviderByFile();
 
-	vscode.window.registerTreeDataProvider(
-		'bookmarksByGroup',
-		treeDataProviderByGroup
-	);
+	treeViewByGroup = vscode.window.createTreeView('bookmarksByGroup', {
+		treeDataProvider: treeDataProviderByGroup
+	});
 
-	vscode.window.registerTreeDataProvider(
-		'bookmarksByFile',
-		treeDataProviderByFile
-	);
+	treeViewByFile = vscode.window.createTreeView('bookmarksByFile', {
+		treeDataProvider: treeDataProviderByFile
+	});
 
 	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.refreshTreeView',
@@ -145,6 +147,38 @@ export function activate(context: ExtensionContext) {
 		'vsc-labeled-bookmarks.jumpToBookmark',
 		(bookmark: Bookmark, preview: boolean) => main.jumpToBookmark(bookmark, preview));
 	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand(
+		'vsc-labeled-bookmarks.showTreeView',
+		() => {
+			try {
+				let groupTarget = treeDataProviderByGroup.getTargetForGroup(main.getActiveGroup());
+				if (groupTarget !== null) {
+					treeViewByGroup.reveal(groupTarget);
+				}
+
+				let textEditor = vscode.window.activeTextEditor;
+
+				if (typeof textEditor === "undefined") {
+					return;
+				}
+
+				let nearestBookmark = main.getNearestBookmark(textEditor);
+
+				if (nearestBookmark === null) {
+					return;
+				}
+
+				let target = treeDataProviderByFile.getTargetForBookmark(nearestBookmark);
+				if (target !== null) {
+					treeViewByFile.reveal(target);
+				}
+			} catch (e) {
+				console.log(e);
+			}
+		});
+	context.subscriptions.push(disposable);
+
 }
 
 export function deactivate() {
