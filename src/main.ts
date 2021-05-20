@@ -20,6 +20,7 @@ import { BookmarkTreeDataProvider } from './bookmark_tree_data_provider';
 
 export class Main {
     public ctx: ExtensionContext;
+    private treeViewRefreshCallback = () => { };
 
     public readonly savedBookmarksKey = "vscLabeledBookmarks.bookmarks";
     public readonly savedGroupsKey = "vscLabeledBookmarks.groups";
@@ -61,8 +62,10 @@ export class Main {
     private tempGroupBookmarks: Map<Group, Array<Bookmark>>;
     private tempDocumentDecorations: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
 
-    constructor(ctx: ExtensionContext) {
+    constructor(ctx: ExtensionContext, treeviewRefreshCallback: () => void) {
         this.ctx = ctx;
+        this.treeViewRefreshCallback = treeviewRefreshCallback;
+
         DecorationFactory.svgDir = this.ctx.globalStorageUri;
         DecorationFactory.overviewRulerLane = OverviewRulerLane.Center;
         DecorationFactory.lineEndLabelType = "bordered";

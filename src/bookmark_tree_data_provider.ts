@@ -77,14 +77,27 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
             return Promise.resolve(children);
         }
 
-        let children = [BookmarkTreeItem.fromNone()];
-        this.childElements.set(element, children);
-        return Promise.resolve(children);
+        return Promise.resolve([]);
     }
 
     public refresh() {
         this.changeEmitter.fire();
     }
+
+    public async init() {
+        let nodesToProcess = new Array<BookmarkTreeItem | undefined>();
+        nodesToProcess.push(undefined);
+
+        while (nodesToProcess.length > 0) {
+            let node = nodesToProcess.pop();
+            let moreNodes = await this.getChildren(node);
+            moreNodes.forEach(newNode => {
+                if (typeof newNode !== "undefined") {
+                    nodesToProcess.push(newNode);
+                }
+            });
+        }
+    };
 
     public getTargetForGroup(group: Group): BookmarkTreeItem | null {
         if (!this.byGroup) {

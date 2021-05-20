@@ -1,4 +1,3 @@
-import { type } from 'node:os';
 import * as vscode from 'vscode';
 import { ExtensionContext, TreeView } from 'vscode';
 import { Bookmark } from './bookmark';
@@ -12,8 +11,24 @@ let treeViewByFile: TreeView<BookmarkTreeItem>;
 let treeDataProviderByGroup: BookmarkTreeDataProvider;
 let treeDataProviderByFile: BookmarkTreeDataProvider;
 
+let treeViewRefreshLimiter: NodeJS.Timeout | null = null;
+let treeViewRefreshCallback = () => {
+	if (treeViewRefreshLimiter !== null) {
+		return;
+	}
+
+	treeViewRefreshLimiter = setTimeout(
+		() => {
+			treeViewRefreshLimiter = null;
+			treeDataProviderByGroup.refresh();
+			treeDataProviderByFile.refresh();
+		},
+		300
+	);
+};
+
 export function activate(context: ExtensionContext) {
-	main = new Main(context);
+	main = new Main(context, treeViewRefreshCallback);
 
 	let disposable: vscode.Disposable;
 
@@ -137,10 +152,8 @@ export function activate(context: ExtensionContext) {
 
 	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.refreshTreeView',
-		() => {
-			treeDataProviderByGroup.refresh();
-			treeDataProviderByFile.refresh();
-		});
+		treeViewRefreshCallback
+	);
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand(
@@ -179,6 +192,10 @@ export function activate(context: ExtensionContext) {
 		});
 	context.subscriptions.push(disposable);
 
+	treeDataProviderByGroup.init();
+	treeDataProviderByFile.init();
+
+	treeViewRefreshCallback();
 }
 
 export function deactivate() {
