@@ -166,25 +166,32 @@ export function activate(context: ExtensionContext) {
 		() => {
 			try {
 				let groupTarget = treeDataProviderByGroup.getTargetForGroup(main.getActiveGroup());
-				if (groupTarget !== null) {
-					treeViewByGroup.reveal(groupTarget);
+				if (groupTarget === null) {
+					return;
 				}
 
 				let textEditor = vscode.window.activeTextEditor;
 
 				if (typeof textEditor === "undefined") {
+					treeViewByGroup.reveal(groupTarget);
 					return;
 				}
 
 				let nearestBookmark = main.getNearestBookmark(textEditor);
 
 				if (nearestBookmark === null) {
+					treeViewByGroup.reveal(groupTarget);
 					return;
 				}
 
-				let target = treeDataProviderByFile.getTargetForBookmark(nearestBookmark);
-				if (target !== null) {
-					treeViewByFile.reveal(target);
+				let target1 = treeDataProviderByFile.getTargetForBookmark(nearestBookmark);
+				if (target1 !== null) {
+					treeViewByFile.reveal(target1);
+				}
+
+				let target2 = treeDataProviderByGroup.getTargetForBookmark(nearestBookmark);
+				if (target2 !== null) {
+					treeViewByGroup.reveal(target2);
 				}
 			} catch (e) {
 				console.log(e);
