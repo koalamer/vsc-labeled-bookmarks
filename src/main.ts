@@ -135,6 +135,7 @@ export class Main {
             bookmark.initDecoration();
         });
         this.updateDecorations();
+        this.treeViewRefreshCallback();
     }
 
     public handleGroupDecorationSwitched(group: Group) {
@@ -143,6 +144,7 @@ export class Main {
             bookmark.switchDecoration();
         });
         this.updateDecorations();
+        this.treeViewRefreshCallback();
     }
 
     public handleBookmarkDecorationUpdated(bookmark: Bookmark) {
@@ -225,6 +227,7 @@ export class Main {
                     oldFirstLine,
                     oldLastLine
                 );
+                this.treeViewRefreshCallback();
                 continue;
             }
 
@@ -248,6 +251,7 @@ export class Main {
 
                     if (bookmark.lineNumber >= oldFirstLine && bookmark.lineNumber <= newLastLine) {
                         this.updateBookmarkLineText(event.document, bookmark);
+                        this.treeViewRefreshCallback();
                     }
                 }
                 continue;
@@ -291,6 +295,7 @@ export class Main {
 
                     if (bookmark.lineNumber >= oldFirstLine && bookmark.lineNumber <= newLastLine) {
                         this.updateBookmarkLineText(event.document, bookmark);
+                        this.treeViewRefreshCallback();
                     }
                 }
                 continue;
@@ -301,6 +306,7 @@ export class Main {
             this.tempDocumentDecorations.delete(fsPath);
             this.saveState();
             this.updateDecorations();
+            this.treeViewRefreshCallback();
         }
     }
 
@@ -430,6 +436,7 @@ export class Main {
         }
 
         this.updateDecorations();
+        this.treeViewRefreshCallback();
     }
 
     private toggleBookmark(
@@ -474,6 +481,7 @@ export class Main {
             this.deleteBookmark(existingBookmark);
             this.saveState();
             this.updateDecorations();
+            this.treeViewRefreshCallback();
             return;
         }
 
@@ -561,6 +569,7 @@ export class Main {
             this.tempGroupBookmarks.delete(this.activeGroup);
             this.saveState();
             this.updateDecorations();
+            this.treeViewRefreshCallback();
         });
     }
 
@@ -957,6 +966,7 @@ export class Main {
             this.activateGroup(groupName);
             this.updateDecorations();
             this.saveState();
+            this.treeViewRefreshCallback();
         });
     }
 
@@ -1001,6 +1011,7 @@ export class Main {
 
                 this.updateDecorations();
                 this.saveState();
+                this.treeViewRefreshCallback();
             }
         });
     }
@@ -1039,6 +1050,7 @@ export class Main {
 
                 this.updateDecorations();
                 this.saveState();
+                this.treeViewRefreshCallback();
             }
 
             if (!didNavigateBeforeClosing) {
@@ -1201,6 +1213,7 @@ export class Main {
         if (changedFiles.size > 0) {
             this.saveState();
             this.updateDecorations();
+            this.treeViewRefreshCallback();
         }
     }
 
@@ -1219,6 +1232,7 @@ export class Main {
             if (changesWereMade) {
                 this.saveState();
                 this.updateDecorations();
+                this.treeViewRefreshCallback();
             }
         }
     }
