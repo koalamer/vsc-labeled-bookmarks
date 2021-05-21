@@ -66,6 +66,16 @@ The other display option for group icons is the color.
 * `labeledBookmarks.overviewRulerLane`: set how the bookmark should be marked on the overview ruler (scrollbar)
 * `labeledBookmarks.lineEndLabelType`: set how the line end labels for labeled bookmarks should be displayed
 
+## Tree View in the Activity Bar
+
+There are two views of the bookmarks available in the activity bar under the bookmark icon: one grouping them by files and another grouping them by bookmark group and then by files.
+
+You can directly access this by using `ctrl+alt+b t`. If a text document is active at the time of using this shortcut and it has bookmarks, the nearest bookmark is highlighted in the tree view.
+
+## Status Bar
+
+The current active group and the number of bookmarks within it are displayed in the status bar.
+
 ## Invalid Bookmarks
 
 This extension tries to follow file rename and delete actions initiated from within VSCode.
@@ -81,10 +91,6 @@ You can remove this broken bookmark flags:
 * or by clearing all the flags using `ctrl+alt+b f`
 
 Or you can delete them using `ctrl+alt+b d` and selecting them manually.
-
-## Status Bar
-
-The current active group and the number of bookmarks within it are displayed in the status bar.
 
 ## Known Issues
 
