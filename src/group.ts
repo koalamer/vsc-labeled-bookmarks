@@ -14,7 +14,9 @@ export class Group {
     isVisible: boolean;
     isInitialized: boolean;
     decoration: TextEditorDecorationType;
+    decorationSvg: Uri;
     inactiveDecoration: TextEditorDecorationType;
+    inactiveDecorationSvg: Uri;
     groupDecorationUpdatedHandler: (group: Group) => void;
     groupDecorationSwitchedHandler: (group: Group) => void;
     decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
@@ -34,7 +36,9 @@ export class Group {
         this.isVisible = false;
         this.isInitialized = false;
         this.decoration = DecorationFactory.placeholderDecoration;
+        this.decorationSvg = DecorationFactory.placeholderDecorationUri;
         this.inactiveDecoration = DecorationFactory.placeholderDecoration;
+        this.inactiveDecorationSvg = DecorationFactory.placeholderDecorationUri;
         this.groupDecorationUpdatedHandler = (group: Group) => { return; };
         this.groupDecorationSwitchedHandler = (group: Group) => { return; };
         this.decorationRemovedHandler = (decoration: TextEditorDecorationType) => { return; };
@@ -61,12 +65,12 @@ export class Group {
     }
 
     public async initDecorations() {
-        this.decoration = await DecorationFactory.create(
+        [this.decoration, this.decorationSvg] = await DecorationFactory.create(
             this.shape,
             this.color,
             this.iconText
         );
-        this.inactiveDecoration = await DecorationFactory.create(
+        [this.inactiveDecoration, this.inactiveDecorationSvg] = await DecorationFactory.create(
             this.shape,
             this.inactiveColor,
             this.iconText

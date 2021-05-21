@@ -16,9 +16,11 @@ import { ColorPickItem } from './color_pick_item';
 import { Bookmark } from "./bookmark";
 import { SerializableGroup } from "./serializable_group";
 import { SerializableBookmark } from "./serializable_bookmark";
+import { BookmarkTreeDataProvider } from './bookmark_tree_data_provider';
 
 export class Main {
     public ctx: ExtensionContext;
+    private treeViewRefreshCallback = () => { };
 
     public readonly savedBookmarksKey = "vscLabeledBookmarks.bookmarks";
     public readonly savedGroupsKey = "vscLabeledBookmarks.groups";
@@ -60,8 +62,10 @@ export class Main {
     private tempGroupBookmarks: Map<Group, Array<Bookmark>>;
     private tempDocumentDecorations: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
 
-    constructor(ctx: ExtensionContext) {
+    constructor(ctx: ExtensionContext, treeviewRefreshCallback: () => void) {
         this.ctx = ctx;
+        this.treeViewRefreshCallback = treeviewRefreshCallback;
+
         DecorationFactory.svgDir = this.ctx.globalStorageUri;
         DecorationFactory.overviewRulerLane = OverviewRulerLane.Center;
         DecorationFactory.lineEndLabelType = "bordered";
@@ -131,6 +135,7 @@ export class Main {
             bookmark.initDecoration();
         });
         this.updateDecorations();
+        this.treeViewRefreshCallback();
     }
 
     public handleGroupDecorationSwitched(group: Group) {
@@ -139,11 +144,24 @@ export class Main {
             bookmark.switchDecoration();
         });
         this.updateDecorations();
+        this.treeViewRefreshCallback();
     }
 
     public handleBookmarkDecorationUpdated(bookmark: Bookmark) {
         this.tempDocumentDecorations.delete(bookmark.fsPath);
         this.updateDecorations();
+    }
+
+    public getTreeDataProviderByGroup() {
+        return new BookmarkTreeDataProvider(this.groups, this.bookmarks, true);
+    }
+
+    public getTreeDataProviderByFile() {
+        return new BookmarkTreeDataProvider(this.groups, this.bookmarks, false);
+    }
+
+    public getActiveGroup(): Group {
+        return this.activeGroup;
     }
 
     private updateDecorations() {
@@ -203,12 +221,15 @@ export class Main {
             let oldLineCount = oldLastLine - oldFirstLine;
 
             if (newLineCount === oldLineCount) {
-                this.updateBookmarkLineTextInRange(
+                let updateCount = this.updateBookmarkLineTextInRange(
                     event.document,
                     fileBookmarkList,
                     oldFirstLine,
                     oldLastLine
                 );
+                if (updateCount > 0) {
+                    this.treeViewRefreshCallback();
+                }
                 continue;
             }
 
@@ -232,6 +253,7 @@ export class Main {
 
                     if (bookmark.lineNumber >= oldFirstLine && bookmark.lineNumber <= newLastLine) {
                         this.updateBookmarkLineText(event.document, bookmark);
+                        this.treeViewRefreshCallback();
                     }
                 }
                 continue;
@@ -275,6 +297,7 @@ export class Main {
 
                     if (bookmark.lineNumber >= oldFirstLine && bookmark.lineNumber <= newLastLine) {
                         this.updateBookmarkLineText(event.document, bookmark);
+                        this.treeViewRefreshCallback();
                     }
                 }
                 continue;
@@ -285,6 +308,7 @@ export class Main {
             this.tempDocumentDecorations.delete(fsPath);
             this.saveState();
             this.updateDecorations();
+            this.treeViewRefreshCallback();
         }
     }
 
@@ -362,13 +386,15 @@ export class Main {
         bookmarks: Array<Bookmark>,
         firstLine: number,
         lastLine: number
-    ) {
+    ): number {
+        let updateCount = 0;
         bookmarks.filter(bookmark => {
             return bookmark.lineNumber >= firstLine && bookmark.lineNumber <= lastLine;
         }).forEach(bookmark => {
             this.updateBookmarkLineText(document, bookmark);
+            updateCount++;
         });
-
+        return updateCount;
     }
 
     private updateBookmarkLineText(document: TextDocument, bookmark: Bookmark) {
@@ -414,6 +440,7 @@ export class Main {
         }
 
         this.updateDecorations();
+        this.treeViewRefreshCallback();
     }
 
     private toggleBookmark(
@@ -458,6 +485,7 @@ export class Main {
             this.deleteBookmark(existingBookmark);
             this.saveState();
             this.updateDecorations();
+            this.treeViewRefreshCallback();
             return;
         }
 
@@ -545,6 +573,7 @@ export class Main {
             this.tempGroupBookmarks.delete(this.activeGroup);
             this.saveState();
             this.updateDecorations();
+            this.treeViewRefreshCallback();
         });
     }
 
@@ -941,6 +970,7 @@ export class Main {
             this.activateGroup(groupName);
             this.updateDecorations();
             this.saveState();
+            this.treeViewRefreshCallback();
         });
     }
 
@@ -985,6 +1015,7 @@ export class Main {
 
                 this.updateDecorations();
                 this.saveState();
+                this.treeViewRefreshCallback();
             }
         });
     }
@@ -1023,6 +1054,7 @@ export class Main {
 
                 this.updateDecorations();
                 this.saveState();
+                this.treeViewRefreshCallback();
             }
 
             if (!didNavigateBeforeClosing) {
@@ -1185,6 +1217,7 @@ export class Main {
         if (changedFiles.size > 0) {
             this.saveState();
             this.updateDecorations();
+            this.treeViewRefreshCallback();
         }
     }
 
@@ -1203,6 +1236,7 @@ export class Main {
             if (changesWereMade) {
                 this.saveState();
                 this.updateDecorations();
+                this.treeViewRefreshCallback();
             }
         }
     }
@@ -1398,7 +1432,7 @@ export class Main {
         return text.substring(lastNewLinePos + 1);
     }
 
-    private jumpToBookmark(bookmark: Bookmark, preview: boolean = false) {
+    public jumpToBookmark(bookmark: Bookmark, preview: boolean = false) {
         vscode.window.showTextDocument(vscode.Uri.file(bookmark.fsPath), { preview: preview, preserveFocus: preview }).then(
             textEditor => {
                 try {
@@ -1422,5 +1456,50 @@ export class Main {
                 vscode.window.showWarningMessage("Failed to navigate to bookmark (2): " + rejectReason.message);
             }
         );
+    }
+
+    public getNearestBookmark(textEditor: TextEditor): Bookmark | null {
+        if (textEditor.selections.length === 0) {
+            return null;
+        }
+
+        let fsPath = textEditor.document.uri.fsPath;
+        let lineNumber = textEditor.selection.start.line;
+
+        let nearestBeforeLine = -1;
+        let nearestBefore: Bookmark | null = null;
+        let nearestAfterline = Number.MAX_SAFE_INTEGER;
+        let nearestAfter: Bookmark | null = null;
+
+        this.getTempDocumentBookmarkList(fsPath)
+            .forEach(bookmark => {
+                if (bookmark.lineNumber > nearestBeforeLine && bookmark.lineNumber <= lineNumber) {
+                    nearestBeforeLine = bookmark.lineNumber;
+                    nearestBefore = bookmark;
+                }
+
+                if (bookmark.lineNumber < nearestAfterline && bookmark.lineNumber >= lineNumber) {
+                    nearestAfterline = bookmark.lineNumber;
+                    nearestAfter = bookmark;
+                }
+            });
+
+        if (nearestBefore === null && nearestAfter === null) {
+            return null;
+        }
+
+        if (nearestBefore !== null && nearestAfter !== null) {
+            if (lineNumber - nearestBeforeLine < nearestAfterline - lineNumber) {
+                return nearestBefore;
+            }
+
+            return nearestAfter;
+        }
+
+        if (nearestBefore !== null) {
+            return nearestBefore;
+        }
+
+        return nearestAfter;
     }
 }
