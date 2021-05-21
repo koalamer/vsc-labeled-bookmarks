@@ -221,13 +221,15 @@ export class Main {
             let oldLineCount = oldLastLine - oldFirstLine;
 
             if (newLineCount === oldLineCount) {
-                this.updateBookmarkLineTextInRange(
+                let updateCount = this.updateBookmarkLineTextInRange(
                     event.document,
                     fileBookmarkList,
                     oldFirstLine,
                     oldLastLine
                 );
-                this.treeViewRefreshCallback();
+                if (updateCount > 0) {
+                    this.treeViewRefreshCallback();
+                }
                 continue;
             }
 
@@ -384,13 +386,15 @@ export class Main {
         bookmarks: Array<Bookmark>,
         firstLine: number,
         lastLine: number
-    ) {
+    ): number {
+        let updateCount = 0;
         bookmarks.filter(bookmark => {
             return bookmark.lineNumber >= firstLine && bookmark.lineNumber <= lastLine;
         }).forEach(bookmark => {
             this.updateBookmarkLineText(document, bookmark);
+            updateCount++;
         });
-
+        return updateCount;
     }
 
     private updateBookmarkLineText(document: TextDocument, bookmark: Bookmark) {

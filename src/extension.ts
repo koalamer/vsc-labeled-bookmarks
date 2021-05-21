@@ -12,18 +12,31 @@ let treeDataProviderByGroup: BookmarkTreeDataProvider;
 let treeDataProviderByFile: BookmarkTreeDataProvider;
 
 let treeViewRefreshLimiter: NodeJS.Timeout | null = null;
+let treeViewRefreshRequestCount = 0;
 let treeViewRefreshCallback = () => {
+	treeViewRefreshRequestCount++;
+
 	if (treeViewRefreshLimiter !== null) {
 		return;
+	}
+
+	treeViewRefreshRequestCount = 0;
+	if (typeof treeDataProviderByGroup !== "undefined") {
+		treeDataProviderByGroup.refresh();
+	}
+	if (typeof treeDataProviderByFile !== "undefined") {
+		treeDataProviderByFile.refresh();
 	}
 
 	treeViewRefreshLimiter = setTimeout(
 		() => {
 			treeViewRefreshLimiter = null;
-			treeDataProviderByGroup.refresh();
-			treeDataProviderByFile.refresh();
+			if (treeViewRefreshRequestCount === 0) {
+				return;
+			}
+			treeViewRefreshCallback();
 		},
-		300
+		750
 	);
 };
 
