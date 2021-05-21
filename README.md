@@ -2,7 +2,7 @@
 
 Bookmarks with customizable icons, colors and other visuals, organized into groups between which you can switch, keyboard shortcut for most functions.
 
-![Screenshot](resources/screenshot.png)
+![Editor View](resources/editor.gif)
 
 **Important note on using breakpoints:**  Line decorations (in general) seem to interfere with placing breakpoints for debugging. To work around this, you can toggle the decorations on and off using `ctrl+alt+b h`. All operations still work the same when the decorations are hidden.
 
@@ -72,9 +72,13 @@ There are two views of the bookmarks available in the activity bar under the boo
 
 You can directly access this by using `ctrl+alt+b t`. If a text document is active at the time of using this shortcut and it has bookmarks, the nearest bookmark is highlighted in the tree view.
 
+![Activity Bar](resources/activity_bar.gif)
+
 ## Status Bar
 
 The current active group and the number of bookmarks within it are displayed in the status bar.
+
+![Footer](resources/footer.gif)
 
 ## Invalid Bookmarks
 
