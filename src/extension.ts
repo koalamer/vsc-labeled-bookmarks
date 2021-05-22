@@ -175,6 +175,43 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand(
+		'vsc-labeled-bookmarks.deleteTreeItem',
+		(treeItem: BookmarkTreeItem) => {
+			let bookmark = treeItem.getBaseBookmark();
+			if (bookmark !== null) {
+				main.actionDeleteOneBookmark(bookmark);
+				return;
+			}
+
+			let group = treeItem.getBaseGroup();
+			if (group !== null) {
+				main.actionDeleteOneGroup(group);
+				return;
+			}
+
+			let fsPath = treeItem.getBaseFSPath();
+			if (fsPath !== null) {
+				let dataProvider = (treeItem.getFilterGroup() !== null)
+					? treeDataProviderByGroup
+					: treeDataProviderByFile;
+
+				dataProvider.getChildren(treeItem).then(
+					children => {
+						children.forEach(treeItem => {
+							let bookmark = treeItem.getBaseBookmark();
+							if (bookmark === null) {
+								return;
+							}
+							main.actionDeleteOneBookmark(bookmark);
+						});
+					}
+				);
+			}
+
+		});
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.showTreeView',
 		() => {
 			try {

@@ -403,6 +403,13 @@ export class Main {
         bookmark.lineText = line.text.trim();
     }
 
+    public actionDeleteOneBookmark(bookmark: Bookmark) {
+        this.deleteBookmark(bookmark);
+        this.saveState();
+        this.updateDecorations();
+        this.treeViewRefreshCallback();
+    }
+
     private deleteBookmark(bookmark: Bookmark) {
         let index = this.bookmarks.indexOf(bookmark);
         if (index < 0) {
@@ -988,36 +995,43 @@ export class Main {
             }
         ).then(selecteds => {
             if (typeof selecteds !== "undefined") {
-                let wasActiveGroupDeleted = false;
-
-                for (let selected of selecteds) {
-                    let group = (selected as GroupPickItem).group;
-                    wasActiveGroupDeleted ||= (group === this.activeGroup);
-
-                    this.getTempGroupBookmarkList(group).forEach(bookmark => {
-                        this.deleteBookmark(bookmark);
-                    });
-
-                    let index = this.groups.indexOf(group);
-                    if (index >= 0) {
-                        this.groups.splice(index, 1);
-                    }
-
-                    group.removeDecorations();
-                    this.tempGroupBookmarks.delete(group);
-                }
-
-                if (this.groups.length === 0) {
-                    this.activateGroup(this.defaultGroupName);
-                } else if (wasActiveGroupDeleted) {
-                    this.activateGroup(this.groups[0].name);
-                }
-
-                this.updateDecorations();
-                this.saveState();
-                this.treeViewRefreshCallback();
+                this.deleteGroups(selecteds.map(pickItem => pickItem.group));
             }
         });
+    }
+
+    public actionDeleteOneGroup(group: Group) {
+        this.deleteGroups([group]);
+    }
+
+    private deleteGroups(groups: Array<Group>) {
+        let wasActiveGroupDeleted = false;
+
+        for (let group of groups) {
+            wasActiveGroupDeleted ||= (group === this.activeGroup);
+
+            this.getTempGroupBookmarkList(group).forEach(bookmark => {
+                this.deleteBookmark(bookmark);
+            });
+
+            let index = this.groups.indexOf(group);
+            if (index >= 0) {
+                this.groups.splice(index, 1);
+            }
+
+            group.removeDecorations();
+            this.tempGroupBookmarks.delete(group);
+        }
+
+        if (this.groups.length === 0) {
+            this.activateGroup(this.defaultGroupName);
+        } else if (wasActiveGroupDeleted) {
+            this.activateGroup(this.groups[0].name);
+        }
+
+        this.updateDecorations();
+        this.saveState();
+        this.treeViewRefreshCallback();
     }
 
     public actionDeleteBookmark() {

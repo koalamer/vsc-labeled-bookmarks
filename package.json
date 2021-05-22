@@ -2,7 +2,7 @@
   "name": "labeled-bookmarks",
   "displayName": "Labeled Bookmarks",
   "description": "Bookmarks, multiple groups, customizable visuals",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "koalamer",
   "icon": "resources/vsc-labeled-bookmarks-logo.png",
   "repository": {
@@ -101,6 +101,11 @@
       {
         "command": "vsc-labeled-bookmarks.showTreeView",
         "title": "Bookmarks: show tree view"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.deleteTreeItem",
+        "title": "Bookmarks: delete tree item",
+        "icon": "$(close)"
       }
     ],
     "keybindings": [
@@ -288,21 +293,21 @@
         {
           "id": "bookmarksByFile",
           "name": "By File",
-          "icon": "$(file)"
+          "icon": "$(bookmark)"
         },
         {
           "id": "bookmarksByGroup",
           "name": "By Group",
-          "icon": "$(book)"
+          "icon": "$(bookmark)"
         }
       ]
     },
     "menus": {
-      "view/title": [
+      "view/item/context": [
         {
-          "command": "vsc-labeled-bookmarks.refreshTreeView",
-          "when": "view == bookmarksByGroup",
-          "group": "navigation"
+          "command": "vsc-labeled-bookmarks.deleteTreeItem",
+          "when": "view == bookmarksByFile || view == bookmarksByGroup",
+          "group": "inline"
         }
       ]
     }
