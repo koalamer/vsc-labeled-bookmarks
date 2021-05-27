@@ -108,6 +108,10 @@ export class Bookmark {
         if (previousDecoration !== null) {
             this.decorationRemovedHandler(previousDecoration);
         }
+
+        this.decorationRemovedHandler(this.group.decoration);
+        this.decorationRemovedHandler(this.group.inactiveDecoration);
+
         this.currentDecoration = this.getDecoration();
         this.bookmarkDecorationUpdatedHandler(this);
     }
