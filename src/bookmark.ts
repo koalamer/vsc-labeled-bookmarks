@@ -13,7 +13,6 @@ export class Bookmark {
     isLineNumberChanged: boolean;
     group: Group;
     ownDecoration: TextEditorDecorationType | null;
-    currentDecoration: TextEditorDecorationType | null;
     bookmarkDecorationUpdatedHandler: (bookmark: Bookmark) => void;
     decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
 
@@ -34,7 +33,6 @@ export class Bookmark {
         this.isLineNumberChanged = false;
         this.group = group;
         this.ownDecoration = null;
-        this.currentDecoration = null;
         this.bookmarkDecorationUpdatedHandler = (bookmark: Bookmark) => { return; };
         this.decorationRemovedHandler = (decoration: TextEditorDecorationType) => { return; };
     }
@@ -109,19 +107,14 @@ export class Bookmark {
             this.decorationRemovedHandler(previousDecoration);
         }
 
-        this.decorationRemovedHandler(this.group.decoration);
-        this.decorationRemovedHandler(this.group.inactiveDecoration);
-
-        this.currentDecoration = this.getDecoration();
         this.bookmarkDecorationUpdatedHandler(this);
     }
 
     public switchDecoration() {
-        let newDecoration = this.getDecoration();
-        if (this.currentDecoration !== null && this.currentDecoration !== newDecoration) {
-            this.decorationRemovedHandler(this.currentDecoration);
+        if (this.ownDecoration !== null) {
+            this.decorationRemovedHandler(this.ownDecoration);
         }
-        this.currentDecoration = newDecoration;
+
         this.bookmarkDecorationUpdatedHandler(this);
     }
 }

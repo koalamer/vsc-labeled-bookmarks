@@ -130,19 +130,19 @@ export class Main {
     }
 
     public handleGroupDecorationUpdated(group: Group) {
+        this.tempDocumentDecorations.clear();
         this.tempGroupBookmarks.get(group)?.forEach(bookmark => {
             bookmark.initDecoration();
         });
-        this.tempDocumentDecorations.clear();
         this.updateDecorations();
         this.treeViewRefreshCallback();
     }
 
     public handleGroupDecorationSwitched(group: Group) {
+        this.tempDocumentDecorations.clear();
         this.tempGroupBookmarks.get(group)?.forEach(bookmark => {
             bookmark.switchDecoration();
         });
-        this.tempDocumentDecorations.clear();
         this.updateDecorations();
         this.treeViewRefreshCallback();
     }
@@ -346,14 +346,24 @@ export class Main {
         }
 
         let lineDecorations = new Map<number, TextEditorDecorationType>();
-        this.bookmarks
+        let fileBookmarks = this.bookmarks
             .filter((bookmark) => {
                 return bookmark.fsPath === fsPath && bookmark.getDecoration !== null;
-            })
+            });
+
+        fileBookmarks.filter(bookmark => bookmark.group === this.activeGroup)
+            .forEach(bookmark => {
+                let decoration = bookmark.getDecoration();
+                if (decoration !== null) {
+                    lineDecorations.set(bookmark.lineNumber, decoration);
+                }
+            });
+
+        fileBookmarks.filter(bookmark => bookmark.group !== this.activeGroup)
             .forEach((bookmark) => {
                 let decoration = bookmark.getDecoration();
                 if (decoration !== null) {
-                    if (bookmark.group === this.activeGroup || !lineDecorations.has(bookmark.lineNumber)) {
+                    if (!lineDecorations.has(bookmark.lineNumber)) {
                         lineDecorations.set(bookmark.lineNumber, decoration);
                     } else {
                         this.handleDecorationRemoved(decoration);
@@ -947,8 +957,6 @@ export class Main {
         ).then(selected => {
             if (typeof selected !== "undefined") {
                 this.activateGroup((selected as GroupPickItem).group.name);
-                this.markAllDecorationsAsRemoved();
-                this.tempDocumentDecorations.clear();
                 this.updateDecorations();
                 this.saveState();
             }
@@ -1519,18 +1527,5 @@ export class Main {
         }
 
         return nearestAfter;
-    }
-
-    private markAllDecorationsAsRemoved() {
-        this.groups.forEach(group => {
-            this.handleDecorationRemoved(group.decoration);
-            this.handleDecorationRemoved(group.inactiveDecoration);
-        });
-
-        this.bookmarks.forEach(bookmark => {
-            if (bookmark.ownDecoration !== null) {
-                this.handleDecorationRemoved(bookmark.ownDecoration);
-            }
-        });
     }
 }
