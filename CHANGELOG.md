@@ -2,6 +2,10 @@
 
 All notable changes to the "vsc-labeled-bookmarks" extension will be documented in this file.
 
+## [1.1.3] - 2021-05-28
+
+- Fix decoration refresh bugs even more
+
 ## [1.1.2] - 2021-05-27
 
 - Fix decoration refresh bugs

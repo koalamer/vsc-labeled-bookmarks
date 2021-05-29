@@ -10,8 +10,8 @@ Bookmarks with customizable icons, colors and other visuals, organized into grou
 
 ### Bookmarks
 
-* You can set an unnamed bookmark on a line using `ctrl+alt+m`. If there already is a bookmark on the line, it is removed.
-* Labeled bookmarks can be set using `ctrl+alt+l`. A prompt appears where you can type the label for the bookmark. If you have some text selected, that will be the default value of the input box. **You can have multiple bookmarks with the same label, but if you use a single character as the label, that label will be kept unique (VIM style relocating the bookmark instead of adding another one.)**
+* You can set an unnamed bookmark on a line using `ctrl+alt+m`. If there already is a bookmark on the line, it is removed. If you have a multi line selection, the first line will be bookmarked. If you have multiple selections or multiple cursors, each receives the action.
+* Labeled bookmarks can be set using `ctrl+alt+l`. A prompt appears where you can type the label for the bookmark. If you have some text selected, that will be the default value of the input box. **You can have multiple bookmarks with the same label, but if you use a single character as the label, that label will be kept unique (VIM style relocating the bookmark instead of adding another one.)** This action does not work on multiple cursors, only on (the first) one.
 * The labeled bookmark creation is multi functional: it expects the input in the format of "bookmark label" or "bookmark label@@group name" or just "@@group name. When a group name is specified, the group is created if it does not yet exist and it is set to be the active group. Then, if the label is specified, a new bookmark is created using it.
 * Delete bookmarks using `ctrl+alt+b d`, or by using the above toggle commands on a line that already has a bookmark (of the active group).
 
@@ -101,4 +101,9 @@ Or you can delete them using `ctrl+alt+b d` and selecting them manually.
 * Bookmark icons might interfere with placing breakpoints. Use `ctrl+alt+b h` to hide/unhide the bookmark icons to avoid this.
 * On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these conflicting  actions. If you are not using notebooks, there should be no problem.
 * The content of the bookmarked line is stored in the bookmark itself, and is updated when the line changes. If there is an external change to the file, it won't be detected, and the stored line content will be out of sync with the actual.
+* The tree view does not always appear when using `ctrl+alt+b t`. After the view is revealed once by clicking on the bookmark icon in the activity bar, it works. Unfortunately there is no handle to force the equivalent action programatically, so if the aformentioned keyboard shortcut does not work, you will have to open the view manually.
 * If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a suspiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.
+
+## If You Find Bugs
+
+Raise an issue on GitHub if you find something, but make sure to also provide information on how to reliably reproduce it.
