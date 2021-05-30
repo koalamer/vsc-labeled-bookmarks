@@ -2,6 +2,10 @@
 
 All notable changes to the "vsc-labeled-bookmarks" extension will be documented in this file.
 
+## [1.1.4] - 2021-05-30
+
+- Refactor tree view for better initialization
+
 ## [1.1.3] - 2021-05-28
 
 - Fix decoration refresh bugs even more

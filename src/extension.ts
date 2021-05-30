@@ -1,47 +1,16 @@
 import * as vscode from 'vscode';
-import { ExtensionContext, TreeView } from 'vscode';
+import { ExtensionContext } from 'vscode';
 import { Bookmark } from './bookmark';
-import { BookmarkTreeDataProvider } from './bookmark_tree_data_provider';
-import { BookmarkTreeItem } from './bookmark_tree_item';
 import { Main } from './main';
+import { BookmarkTreeView } from './bookmark_tree_view';
+import { BookmarkTreeItem } from './bookmark_tree_item';
 
 let main: Main;
-let treeViewByGroup: TreeView<BookmarkTreeItem>;
-let treeViewByFile: TreeView<BookmarkTreeItem>;
-let treeDataProviderByGroup: BookmarkTreeDataProvider;
-let treeDataProviderByFile: BookmarkTreeDataProvider;
-
-let treeViewRefreshLimiter: NodeJS.Timeout | null = null;
-let treeViewRefreshRequestCount = 0;
-let treeViewRefreshCallback = () => {
-	treeViewRefreshRequestCount++;
-
-	if (treeViewRefreshLimiter !== null) {
-		return;
-	}
-
-	treeViewRefreshRequestCount = 0;
-	if (typeof treeDataProviderByGroup !== "undefined") {
-		treeDataProviderByGroup.refresh();
-	}
-	if (typeof treeDataProviderByFile !== "undefined") {
-		treeDataProviderByFile.refresh();
-	}
-
-	treeViewRefreshLimiter = setTimeout(
-		() => {
-			treeViewRefreshLimiter = null;
-			if (treeViewRefreshRequestCount === 0) {
-				return;
-			}
-			treeViewRefreshCallback();
-		},
-		750
-	);
-};
+let treeView: BookmarkTreeView;
 
 export function activate(context: ExtensionContext) {
-	main = new Main(context, treeViewRefreshCallback);
+	treeView = new BookmarkTreeView();
+	main = new Main(context, treeView.refreshCallback.bind(treeView));
 
 	let disposable: vscode.Disposable;
 
@@ -132,6 +101,11 @@ export function activate(context: ExtensionContext) {
 		(textEditor) => main.actionExpandSelectionToPreviousBookmark(textEditor));
 	context.subscriptions.push(disposable);
 
+	disposable = vscode.commands.registerCommand(
+		'vsc-labeled-bookmarks.jumpToBookmark',
+		(bookmark: Bookmark, preview: boolean) => main.jumpToBookmark(bookmark, preview));
+	context.subscriptions.push(disposable);
+
 	vscode.window.onDidChangeActiveTextEditor(textEditor => {
 		main.updateEditorDecorations(textEditor);
 	});
@@ -152,107 +126,22 @@ export function activate(context: ExtensionContext) {
 		main.readSettings();
 	});
 
-	treeDataProviderByGroup = main.getTreeDataProviderByGroup();
-	treeDataProviderByFile = main.getTreeDataProviderByFile();
-
-	treeViewByGroup = vscode.window.createTreeView('bookmarksByGroup', {
-		treeDataProvider: treeDataProviderByGroup
-	});
-
-	treeViewByFile = vscode.window.createTreeView('bookmarksByFile', {
-		treeDataProvider: treeDataProviderByFile
-	});
-
 	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.refreshTreeView',
-		treeViewRefreshCallback
-	);
-	context.subscriptions.push(disposable);
-
-	disposable = vscode.commands.registerCommand(
-		'vsc-labeled-bookmarks.jumpToBookmark',
-		(bookmark: Bookmark, preview: boolean) => main.jumpToBookmark(bookmark, preview));
+		() => treeView.refreshCallback());
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.deleteTreeItem',
-		(treeItem: BookmarkTreeItem) => {
-			let bookmark = treeItem.getBaseBookmark();
-			if (bookmark !== null) {
-				main.actionDeleteOneBookmark(bookmark);
-				return;
-			}
-
-			let group = treeItem.getBaseGroup();
-			if (group !== null) {
-				main.actionDeleteOneGroup(group);
-				return;
-			}
-
-			let fsPath = treeItem.getBaseFSPath();
-			if (fsPath !== null) {
-				let dataProvider = (treeItem.getFilterGroup() !== null)
-					? treeDataProviderByGroup
-					: treeDataProviderByFile;
-
-				dataProvider.getChildren(treeItem).then(
-					children => {
-						children.forEach(treeItem => {
-							let bookmark = treeItem.getBaseBookmark();
-							if (bookmark === null) {
-								return;
-							}
-							main.actionDeleteOneBookmark(bookmark);
-						});
-					}
-				);
-			}
-
-		});
+		(item: BookmarkTreeItem) => treeView.deleteItem(item));
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.showTreeView',
-		() => {
-			try {
-				let groupTarget = treeDataProviderByGroup.getTargetForGroup(main.getActiveGroup());
-				if (groupTarget === null) {
-					return;
-				}
-
-				let textEditor = vscode.window.activeTextEditor;
-
-				if (typeof textEditor === "undefined") {
-					treeViewByGroup.reveal(groupTarget);
-					return;
-				}
-
-				let nearestBookmark = main.getNearestBookmark(textEditor);
-
-				if (nearestBookmark === null) {
-					treeViewByGroup.reveal(groupTarget);
-					return;
-				}
-
-				let target1 = treeDataProviderByFile.getTargetForBookmark(nearestBookmark);
-				if (target1 !== null) {
-					treeViewByFile.reveal(target1);
-				}
-
-				let target2 = treeDataProviderByGroup.getTargetForBookmark(nearestBookmark);
-				if (target2 !== null) {
-					treeViewByGroup.reveal(target2);
-				}
-			} catch (e) {
-				console.log(e);
-			}
-		});
+		() => treeView.show());
 	context.subscriptions.push(disposable);
 
-	treeDataProviderByGroup.init();
-	treeDataProviderByFile.init();
-
-	treeViewRefreshCallback();
+	treeView.init(main);
 }
 
 export function deactivate() {
