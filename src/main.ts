@@ -436,6 +436,7 @@ export class Main {
         let bookmarkDecoration = bookmark.getDecoration();
         if (bookmarkDecoration !== null) {
             this.handleDecorationRemoved(bookmarkDecoration);
+            this.handleDecorationRemoved(bookmark.group.decoration);
         }
     }
 
