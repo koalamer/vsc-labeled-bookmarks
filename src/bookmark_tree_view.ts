@@ -86,7 +86,7 @@ export class BookmarkTreeView {
         }
     }
 
-    public show() {
+    public async show() {
         try {
             if (
                 this.main === null

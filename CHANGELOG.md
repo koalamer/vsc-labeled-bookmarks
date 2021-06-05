@@ -2,6 +2,11 @@
 
 All notable changes to the "vsc-labeled-bookmarks" extension will be documented in this file.
 
+## [1.1.5] - 2021-06-05
+
+- Fix gutter icon remaining when labeled bookmark is untoggled
+
+
 ## [1.1.4] - 2021-05-30
 
 - Refactor tree view for better initialization
