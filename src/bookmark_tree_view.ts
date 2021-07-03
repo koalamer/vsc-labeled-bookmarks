@@ -97,15 +97,15 @@ export class BookmarkTreeView {
 
         let bookmark = treeItem.getBaseBookmark();
         if (bookmark !== null) {
-            this.main?.actionEditOneBookmark(bookmark);
+            this.main?.relabelBookmark(bookmark);
             return;
         }
 
-        // let group = treeItem.getBaseGroup();
-        // if (group !== null) {
-        //     this.main.actionEditOneGroup(group);
-        //     return;
-        // }
+        let group = treeItem.getBaseGroup();
+        if (group !== null) {
+            this.main.renameGroup(group);
+            return;
+        }
     }
 
     public async show() {

@@ -422,10 +422,6 @@ export class Main {
         this.treeViewRefreshCallback();
     }
 
-    public actionEditOneBookmark(bookmark: Bookmark) {
-        this.editBookmark(bookmark);
-    }
-
     private deleteBookmark(bookmark: Bookmark) {
         let index = this.bookmarks.indexOf(bookmark);
         if (index < 0) {
@@ -444,12 +440,12 @@ export class Main {
         }
     }
 
-    private editBookmark(bookmark: Bookmark) {
+    public relabelBookmark(bookmark: Bookmark) {
         let defaultQuickInputText = bookmark.label ?? '';
 
         vscode.window.showInputBox({
-            placeHolder: "new label",
-            prompt: "Enter new label",
+            placeHolder: "new bookmark label",
+            prompt: "Enter new bookmark label",
             value: defaultQuickInputText,
             valueSelection: [0, defaultQuickInputText.length],
         }).then(input => {
@@ -500,6 +496,44 @@ export class Main {
             this.saveState();
             this.updateDecorations();
             this.treeViewRefreshCallback();
+        });
+    }
+
+    public renameGroup(group: Group) {
+        let defaultQuickInputText = group.name;
+
+        vscode.window.showInputBox({
+            placeHolder: "new group name",
+            prompt: "Enter new group name",
+            value: defaultQuickInputText,
+            valueSelection: [0, defaultQuickInputText.length],
+        }).then(input => {
+            if (typeof input === "undefined") {
+                return;
+            }
+
+            let newName = input.trim();
+
+            if (newName.length === 0) {
+                return;
+            }
+
+            if (newName === defaultQuickInputText) {
+                return;
+            }
+
+            if (typeof this.groups.find(g => {
+                return g !== group && g.name === newName;
+            }) !== "undefined") {
+                vscode.window.showWarningMessage("The entered bookmark group name is already in use");
+                return;
+            }
+
+            group.name = newName;
+
+            this.saveState();
+            this.treeViewRefreshCallback();
+            this.updateStatusBar();
         });
     }
 
