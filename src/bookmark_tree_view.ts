@@ -139,7 +139,6 @@ export class BookmarkTreeView {
 
             if (nearestBookmark === null) {
                 this.treeViewByGroup.reveal(groupTarget);
-                vscode.window.showErrorMessage("Bookmark tree view init error 4");
                 return;
             }
 
