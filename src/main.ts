@@ -522,10 +522,19 @@ export class Main {
                 return;
             }
 
+            if (newName.length > this.maxGroupNameLength) {
+                vscode.window.showErrorMessage(
+                    "Choose a maximum " +
+                    this.maxGroupNameLength +
+                    " character long group name."
+                );
+                return;
+            }
+
             if (typeof this.groups.find(g => {
                 return g !== group && g.name === newName;
             }) !== "undefined") {
-                vscode.window.showWarningMessage("The entered bookmark group name is already in use");
+                vscode.window.showErrorMessage("The entered bookmark group name is already in use");
                 return;
             }
 
