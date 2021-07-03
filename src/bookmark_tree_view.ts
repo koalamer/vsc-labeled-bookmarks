@@ -117,13 +117,13 @@ export class BookmarkTreeView {
                 || this.treeViewByFile === null
                 || this.treeViewByGroup === null
             ) {
-                vscode.window.showInformationMessage("1");
+                vscode.window.showInformationMessage("Tree view init error 1");
                 return;
             }
 
             let groupTarget = this.treeDataProviderByGroup.getTargetForGroup(this.main.getActiveGroup());
             if (groupTarget === null) {
-                vscode.window.showInformationMessage("2");
+                vscode.window.showInformationMessage("Tree view init error 2");
                 return;
             }
 
@@ -131,7 +131,7 @@ export class BookmarkTreeView {
 
             if (typeof textEditor === "undefined") {
                 this.treeViewByGroup.reveal(groupTarget);
-                vscode.window.showInformationMessage("3");
+                vscode.window.showInformationMessage("Tree view init error 3");
                 return;
             }
 
@@ -139,7 +139,7 @@ export class BookmarkTreeView {
 
             if (nearestBookmark === null) {
                 this.treeViewByGroup.reveal(groupTarget);
-                vscode.window.showInformationMessage("4");
+                vscode.window.showInformationMessage("Tree view init error 4");
                 return;
             }
 
@@ -154,7 +154,7 @@ export class BookmarkTreeView {
             }
         } catch (e) {
             console.log(e);
-            vscode.window.showInformationMessage("6 " + e);
+            vscode.window.showInformationMessage("Tree view init error 6 " + e);
         }
 
     }
