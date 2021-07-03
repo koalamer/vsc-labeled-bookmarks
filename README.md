@@ -39,6 +39,7 @@ Groups were implemented to be able to separate one set of bookmarks (for one top
 * Alternatively, you can create a group using `ctrl+alt+b alt+g`
 * Delete one or multiple groups using `ctrl+alt+b shift+g`
 * Select the active group from a list of the available groups: `ctrl+alt+b g`
+* Move bookmarks from the active group to another one using `ctrl+alt+b m`
 
 ### Display Options
 
@@ -102,6 +103,7 @@ Or you can delete them using `ctrl+alt+b d` and selecting them manually.
 * On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these conflicting  actions. If you are not using notebooks, there should be no problem.
 * The content of the bookmarked line is stored in the bookmark itself, and is updated when the line changes. If there is an external change to the file, it won't be detected, and the stored line content will be out of sync with the actual.
 * If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a suspiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.
+* The tree view sometimes fails to initialize when using `ctrl+alt+b m`. I`m trying to find out why. In such cases you can still click the bookmark icon in the activity bar and that will work.
 
 ## If You Find Bugs
 

@@ -108,14 +108,18 @@
         "title": "Bookmarks: show tree view"
       },
       {
+        "command": "vsc-labeled-bookmarks.moveBookmarksFromActiveGroup",
+        "title": "Bookmarks: move bookmarks"
+      },
+      {
         "command": "vsc-labeled-bookmarks.editTreeItem",
-        "title": "Bookmarks: edit tree item",
+        "title": "Edit bookmark tree item",
         "icon": "$(edit)"
       },
       {
         "command": "vsc-labeled-bookmarks.deleteTreeItem",
-        "title": "Bookmarks: delete tree item",
-        "icon": "$(close)"
+        "title": "Remove bookmark tree item",
+        "icon": "$(remove-close)"
       }
     ],
     "keybindings": [
@@ -196,6 +200,10 @@
       {
         "command": "vsc-labeled-bookmarks.showTreeView",
         "key": "ctrl+alt+b t"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.moveBookmarksFromActiveGroup",
+        "key": "ctrl+alt+b m"
       }
     ],
     "configuration": {

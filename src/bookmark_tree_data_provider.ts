@@ -101,20 +101,24 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
 
     public getTargetForGroup(group: Group): BookmarkTreeItem | null {
         if (!this.byGroup) {
+            vscode.window.showErrorMessage("Bookmark byGroup tree view uninitialized");
             return null;
         }
 
         let parent = this.rootElements.find(element => { return group === element.getBaseGroup(); });
         if (typeof parent === "undefined") {
+            vscode.window.showErrorMessage("Bookmark byGroup tree view group not found");
             return null;
         }
 
         let children = this.childElements.get(parent);
         if (typeof children === "undefined") {
+            vscode.window.showErrorMessage("Bookmark byGroup tree view group has no children");
             return null;
         }
 
         if (children.length === 0) {
+            vscode.window.showErrorMessage("Bookmark byGroup tree view group empty child collection");
             return null;
         }
 

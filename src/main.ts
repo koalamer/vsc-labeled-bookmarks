@@ -1245,6 +1245,73 @@ export class Main {
         this.saveState();
     }
 
+    public actionMoveBookmarksFromActiveGroup() {
+        let pickItems = this.groups.filter(
+            g => g !== this.activeGroup
+        ).map(
+            group => GroupPickItem.fromGroup(group, this.getTempGroupBookmarkList(group).length)
+        );
+
+        if (pickItems.length === 0) {
+            vscode.window.showWarningMessage("There is no other group to move bookmarks into");
+            return;
+        }
+
+        vscode.window.showQuickPick(
+            pickItems,
+            {
+                canPickMany: false,
+                matchOnDescription: false,
+                placeHolder: "select destination group to move bookmarks into"
+            }
+        ).then(selected => {
+            if (typeof selected !== "undefined") {
+                this.moveBookmarksBetween(this.activeGroup, selected.group);
+            }
+        });
+    }
+
+    private moveBookmarksBetween(src: Group, dst: Group) {
+        let pickItems = this.getTempGroupBookmarkList(src).map(
+            bookmark => BookmarkPickItem.fromBookmark(bookmark, false)
+        );
+
+        vscode.window.showQuickPick(
+            pickItems,
+            {
+                canPickMany: true,
+                matchOnDescription: false,
+                placeHolder: "move bookmarks from " + src.name + " into " + dst.name,
+                ignoreFocusOut: true,
+            }
+        ).then(selecteds => {
+            if (typeof selecteds !== "undefined") {
+                for (let selected of selecteds) {
+                    let oldBookmark = selected.bookmark;
+
+                    this.deleteBookmark(oldBookmark);
+
+                    let newBookmark = new Bookmark(
+                        oldBookmark.fsPath,
+                        oldBookmark.lineNumber,
+                        oldBookmark.characterNumber,
+                        oldBookmark.label,
+                        oldBookmark.lineText,
+                        dst
+                    );
+
+                    this.addNewDecoratedBookmark(newBookmark);
+                }
+
+                this.bookmarks.sort(Bookmark.sortByLocation);
+
+                this.saveState();
+                this.updateDecorations();
+                this.treeViewRefreshCallback();
+            }
+        });
+    }
+
     public readSettings() {
         let defaultDefaultShape = "bookmark";
 
