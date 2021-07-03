@@ -86,6 +86,28 @@ export class BookmarkTreeView {
         }
     }
 
+    public editItem(treeItem: BookmarkTreeItem) {
+        if (
+            this.main === null
+            || this.treeDataProviderByFile === null
+            || this.treeDataProviderByGroup === null
+        ) {
+            return;
+        }
+
+        let bookmark = treeItem.getBaseBookmark();
+        if (bookmark !== null) {
+            this.main?.actionEditOneBookmark(bookmark);
+            return;
+        }
+
+        // let group = treeItem.getBaseGroup();
+        // if (group !== null) {
+        //     this.main.actionEditOneGroup(group);
+        //     return;
+        // }
+    }
+
     public async show() {
         try {
             if (
@@ -95,11 +117,13 @@ export class BookmarkTreeView {
                 || this.treeViewByFile === null
                 || this.treeViewByGroup === null
             ) {
+                vscode.window.showInformationMessage("1");
                 return;
             }
 
             let groupTarget = this.treeDataProviderByGroup.getTargetForGroup(this.main.getActiveGroup());
             if (groupTarget === null) {
+                vscode.window.showInformationMessage("2");
                 return;
             }
 
@@ -107,6 +131,7 @@ export class BookmarkTreeView {
 
             if (typeof textEditor === "undefined") {
                 this.treeViewByGroup.reveal(groupTarget);
+                vscode.window.showInformationMessage("3");
                 return;
             }
 
@@ -114,6 +139,7 @@ export class BookmarkTreeView {
 
             if (nearestBookmark === null) {
                 this.treeViewByGroup.reveal(groupTarget);
+                vscode.window.showInformationMessage("4");
                 return;
             }
 
@@ -128,7 +154,9 @@ export class BookmarkTreeView {
             }
         } catch (e) {
             console.log(e);
+            vscode.window.showInformationMessage("6 " + e);
         }
+
     }
 
     private actualRefresh() {

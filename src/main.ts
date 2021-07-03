@@ -422,6 +422,10 @@ export class Main {
         this.treeViewRefreshCallback();
     }
 
+    public actionEditOneBookmark(bookmark: Bookmark) {
+        this.editBookmark(bookmark);
+    }
+
     private deleteBookmark(bookmark: Bookmark) {
         let index = this.bookmarks.indexOf(bookmark);
         if (index < 0) {
@@ -438,6 +442,65 @@ export class Main {
             this.handleDecorationRemoved(bookmarkDecoration);
             this.handleDecorationRemoved(bookmark.group.decoration);
         }
+    }
+
+    private editBookmark(bookmark: Bookmark) {
+        let defaultQuickInputText = bookmark.label ?? '';
+
+        vscode.window.showInputBox({
+            placeHolder: "new label",
+            prompt: "Enter new label",
+            value: defaultQuickInputText,
+            valueSelection: [0, defaultQuickInputText.length],
+        }).then(input => {
+            if (typeof input === "undefined") {
+                return;
+            }
+
+            let newLabel: string | undefined = input.trim();
+
+            if (newLabel === defaultQuickInputText) {
+                return;
+            }
+
+            if (newLabel.length === 1) {
+                let existingBookmark = this.getTempDocumentBookmarkList(bookmark.fsPath)
+                    .find((bm) => {
+                        return bm.group === bookmark.group
+                            && typeof bm.label !== "undefined"
+                            && bm.label === newLabel;
+                    });
+
+                if (typeof existingBookmark !== "undefined") {
+                    this.deleteBookmark(existingBookmark);
+                }
+            }
+
+            if (newLabel.length === 0) {
+                newLabel = undefined;
+            }
+
+            let newBookmark = new Bookmark(
+                bookmark.fsPath,
+                bookmark.lineNumber,
+                bookmark.characterNumber,
+                newLabel,
+                bookmark.lineText,
+                bookmark.group
+            );
+
+            this.deleteBookmark(bookmark);
+
+            this.addNewDecoratedBookmark(newBookmark);
+            this.bookmarks.sort(Bookmark.sortByLocation);
+
+            this.tempDocumentDecorations.delete(bookmark.fsPath);
+            this.tempDocumentBookmarks.delete(bookmark.fsPath);
+            this.tempGroupBookmarks.delete(this.activeGroup);
+            this.saveState();
+            this.updateDecorations();
+            this.treeViewRefreshCallback();
+        });
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {

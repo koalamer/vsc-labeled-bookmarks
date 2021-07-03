@@ -132,6 +132,11 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand(
+		'vsc-labeled-bookmarks.editTreeItem',
+		(item: BookmarkTreeItem) => treeView.editItem(item));
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.deleteTreeItem',
 		(item: BookmarkTreeItem) => treeView.deleteItem(item));
 	context.subscriptions.push(disposable);
