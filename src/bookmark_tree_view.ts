@@ -123,15 +123,17 @@ export class BookmarkTreeView {
 
             let groupTarget = this.treeDataProviderByGroup.getTargetForGroup(this.main.getActiveGroup());
             if (groupTarget === null) {
-                vscode.window.showErrorMessage("Bookmark tree view init error 2");
                 return;
             }
 
             let textEditor = vscode.window.activeTextEditor;
 
+            if (typeof textEditor === "undefined" && vscode.window.visibleTextEditors.length > 0) {
+                textEditor = vscode.window.visibleTextEditors[0];
+            }
+
             if (typeof textEditor === "undefined") {
                 this.treeViewByGroup.reveal(groupTarget);
-                vscode.window.showErrorMessage("Bookmark tree view init error 3");
                 return;
             }
 
@@ -153,7 +155,7 @@ export class BookmarkTreeView {
             }
         } catch (e) {
             console.log(e);
-            vscode.window.showErrorMessage("Bookmark tree view init error 6 " + e);
+            vscode.window.showErrorMessage("Bookmark tree view init error " + e);
         }
 
     }

@@ -2,7 +2,7 @@
   "name": "labeled-bookmarks",
   "displayName": "Labeled Bookmarks",
   "description": "Bookmarks, multiple groups, customizable visuals",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "publisher": "koalamer",
   "icon": "resources/vsc-labeled-bookmarks-logo.png",
   "repository": {

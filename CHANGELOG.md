@@ -2,6 +2,14 @@
 
 All notable changes to the "vsc-labeled-bookmarks" extension will be documented in this file.
 
+## [1.1.8] - 2021-07-06
+
+- Modified the tree view reveal logic a bit
+
+## [1.1.7] - 2021-07-03
+
+- Added group name and bookmark label modification action to the tree view
+
 ## [1.1.6] - 2021-06-12
 
 - Added untrusted workspace support declaration
