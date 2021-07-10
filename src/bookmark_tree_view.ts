@@ -16,7 +16,7 @@ export class BookmarkTreeView {
     private treeViewRefreshRequestCount = 0;
     private proxyRefreshCallback = () => { };
 
-    private readonly refreshInterval = 800;
+    private readonly refreshInterval = 750;
 
     public async init(main: Main) {
         this.main = main;
@@ -121,6 +121,20 @@ export class BookmarkTreeView {
             ) {
                 vscode.window.showErrorMessage("Bookmark tree view init error 1");
                 return;
+            }
+
+            if (!this.treeViewByFile.visible) {
+                let anytarget = this.treeDataProviderByFile.getAnyTarget();
+                if (anytarget !== null) {
+                    this.treeViewByFile.reveal(anytarget);
+                }
+            }
+
+            if (!this.treeViewByGroup.visible) {
+                let anytarget = this.treeDataProviderByGroup.getAnyTarget();
+                if (anytarget !== null) {
+                    this.treeViewByGroup.reveal(anytarget);
+                }
             }
 
             let groupTarget = await this.treeDataProviderByGroup.getTargetForGroup(this.main.getActiveGroup());

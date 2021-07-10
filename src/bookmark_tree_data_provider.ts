@@ -113,6 +113,14 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
         }
     };
 
+    public getAnyTarget(): BookmarkTreeItem | null {
+        if (this.rootElements.length > 0) {
+            return this.rootElements[0];
+        }
+
+        return null;
+    }
+
     public async getTargetForGroup(group: Group): Promise<BookmarkTreeItem | null> {
         if (!this.byGroup) {
             return null;
