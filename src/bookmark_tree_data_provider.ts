@@ -88,14 +88,14 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     public refresh() {
         this.isRefreshPending = true;
         this.changeEmitter.fire();
-        this.rootElements.forEach(element => {
-            this.changeEmitter.fire(element);
-            if (this.byGroup) {
-                this.childElements.get(element)?.forEach(child => {
-                    this.changeEmitter.fire(child);
-                });
-            }
-        });
+        // this.rootElements.forEach(element => {
+        //     this.changeEmitter.fire(element);
+        //     if (this.byGroup) {
+        //         this.childElements.get(element)?.forEach(child => {
+        //             this.changeEmitter.fire(child);
+        //         });
+        //     }
+        // });
     }
 
     public async init() {
