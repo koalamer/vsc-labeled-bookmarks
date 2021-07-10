@@ -16,6 +16,8 @@ export class BookmarkTreeView {
     private treeViewRefreshRequestCount = 0;
     private proxyRefreshCallback = () => { };
 
+    private readonly refreshInterval = 800;
+
     public async init(main: Main) {
         this.main = main;
 
@@ -121,7 +123,7 @@ export class BookmarkTreeView {
                 return;
             }
 
-            let groupTarget = this.treeDataProviderByGroup.getTargetForGroup(this.main.getActiveGroup());
+            let groupTarget = await this.treeDataProviderByGroup.getTargetForGroup(this.main.getActiveGroup());
             if (groupTarget === null) {
                 return;
             }
@@ -144,12 +146,12 @@ export class BookmarkTreeView {
                 return;
             }
 
-            let target1 = this.treeDataProviderByFile.getTargetForBookmark(nearestBookmark);
+            let target1 = await this.treeDataProviderByFile.getTargetForBookmark(nearestBookmark);
             if (target1 !== null) {
                 this.treeViewByFile.reveal(target1);
             }
 
-            let target2 = this.treeDataProviderByGroup.getTargetForBookmark(nearestBookmark);
+            let target2 = await this.treeDataProviderByGroup.getTargetForBookmark(nearestBookmark);
             if (target2 !== null) {
                 this.treeViewByGroup.reveal(target2);
             }
@@ -183,7 +185,7 @@ export class BookmarkTreeView {
                 }
                 this.actualRefresh();
             },
-            750
+            this.refreshInterval
         );
     }
 }

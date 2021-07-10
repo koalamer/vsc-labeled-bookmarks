@@ -15,6 +15,10 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     private changeEmitter = new EventEmitter<BookmarkTreeItem | undefined | null | void>();
     readonly onDidChangeTreeData = this.changeEmitter.event;
 
+    // workaround for tree views not updating when hidden
+    private isRefreshPending = false;
+    private readonly refreshGracePeriod = 100;
+
     constructor(groups: Array<Group>, bookmarks: Array<Bookmark>, byGroup: boolean) {
         this.groups = groups;
         this.bookmarks = bookmarks;
@@ -28,6 +32,7 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
 
     public getChildren(element?: BookmarkTreeItem | undefined): Thenable<BookmarkTreeItem[]> {
         if (!element) {
+            this.isRefreshPending = false;
             if (this.byGroup) {
                 this.rootElements = this.groups.map(group => BookmarkTreeItem.fromGroup(group));
                 return Promise.resolve(this.rootElements);
@@ -81,7 +86,16 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     }
 
     public refresh() {
+        this.isRefreshPending = true;
         this.changeEmitter.fire();
+        this.rootElements.forEach(element => {
+            this.changeEmitter.fire(element);
+            if (this.byGroup) {
+                this.childElements.get(element)?.forEach(child => {
+                    this.changeEmitter.fire(child);
+                });
+            }
+        });
     }
 
     public async init() {
@@ -99,10 +113,12 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
         }
     };
 
-    public getTargetForGroup(group: Group): BookmarkTreeItem | null {
+    public async getTargetForGroup(group: Group): Promise<BookmarkTreeItem | null> {
         if (!this.byGroup) {
             return null;
         }
+
+        await this.handlePendingRefresh();
 
         let parent = this.rootElements.find(element => { return group === element.getBaseGroup(); });
         if (typeof parent === "undefined") {
@@ -121,7 +137,9 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
         return children[0];
     }
 
-    public getTargetForBookmark(bookmark: Bookmark): BookmarkTreeItem {
+    public async getTargetForBookmark(bookmark: Bookmark): Promise<BookmarkTreeItem> {
+        await this.handlePendingRefresh();
+
         for (let [parent, children] of this.childElements) {
             let target = children.find(child => child.getBaseBookmark() === bookmark);
             if (typeof target !== "undefined") {
@@ -145,5 +163,12 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
             }
         }
         return files;
+    }
+
+    private async handlePendingRefresh() {
+        if (this.isRefreshPending) {
+            await this.init();
+            await new Promise(resolve => setTimeout(resolve, this.refreshGracePeriod));
+        }
     }
 }
