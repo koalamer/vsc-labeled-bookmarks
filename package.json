@@ -320,6 +320,16 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "bookmarksByFile",
+        "contents": "Loading..."
+      },
+      {
+        "view": "bookmarksByGroup",
+        "contents": "Loading..."
+      }
+    ],
     "menus": {
       "view/item/context": [
         {
