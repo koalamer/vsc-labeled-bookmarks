@@ -70,8 +70,9 @@ The other display option for group icons is the color.
 ## Tree View in the Activity Bar
 
 There are two views of the bookmarks available in the activity bar under the bookmark icon: one grouping them by files and another grouping them by bookmark group and then by files.
+In both there are action buttons to activate groups, rename items and to delete items.
 
-You can directly access this by using `ctrl+alt+b t`. If a text document is active at the time of using this shortcut and it has bookmarks, the nearest bookmark is highlighted in the tree view.
+You can directly access this by using `ctrl+alt+b t`. If a text document is active at the time of using this shortcut and it has bookmarks, the nearest bookmark is highlighted in the tree view. (This might not always work, as described under 'Known Issues')
 
 ![Activity Bar](resources/activity_bar.gif)
 
@@ -101,9 +102,9 @@ Or you can delete them using `ctrl+alt+b d` and selecting them manually.
 
 * Bookmark icons might interfere with placing breakpoints. Use `ctrl+alt+b h` to hide/unhide the bookmark icons to avoid this.
 * On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these conflicting  actions. If you are not using notebooks, there should be no problem.
-* The content of the bookmarked line is stored in the bookmark itself, and is updated when the line changes. If there is an external change to the file, it won't be detected, and the stored line content will be out of sync with the actual.
+* The content of the bookmarked line is stored within the bookmark itself for display purposes, and it is updated when changes in the file/line trigger a file changed event. However, not all changes to files trigger such an event. Git operations and even source code formatters might cause file changes without triggering a proper update of the bookmarks, and so markings can drift off the originally marked code and the stored line text might get off sync from the actual line content.
 * If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a suspiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.
-* The tree view sometimes fails to initialize when using `ctrl+alt+b m`. I`m trying to find out why. In such cases you can still click the bookmark icon in the activity bar and that will work.
+* Showing the closest bookmark in the tree view using `ctrl+alt+b t` sometimes fails to do its job properly. This is caused by the fact that tree views' inner state is not updated when they are invisible. Unfortunately, focusing on the closest bookmark would require that the tree view already knows about the current state of the bookmarks, even before it is visible. If the tree becomes visible, but does not jump to the closest bookmark, repeating the command should work as intended.
 
 ## If You Find Bugs
 

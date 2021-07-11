@@ -1063,11 +1063,15 @@ export class Main {
             }
         ).then(selected => {
             if (typeof selected !== "undefined") {
-                this.activateGroup((selected as GroupPickItem).group.name);
-                this.updateDecorations();
-                this.saveState();
+                this.setActiveGroup((selected as GroupPickItem).group.name);
             }
         });
+    }
+
+    public setActiveGroup(groupName: string) {
+        this.activateGroup(groupName);
+        this.updateDecorations();
+        this.saveState();
     }
 
     public actionAddGroup() {

@@ -112,6 +112,11 @@
         "title": "Bookmarks: move bookmarks"
       },
       {
+        "command": "vsc-labeled-bookmarks.activateTreeItem",
+        "title": "Activate bookmark tree item",
+        "icon": "$(eye)"
+      },
+      {
         "command": "vsc-labeled-bookmarks.editTreeItem",
         "title": "Edit bookmark tree item",
         "icon": "$(edit)"
@@ -333,13 +338,18 @@
     "menus": {
       "view/item/context": [
         {
+          "command": "vsc-labeled-bookmarks.activateTreeItem",
+          "when": "view == bookmarksByGroup && viewItem == group",
+          "group": "inline"
+        },
+        {
           "command": "vsc-labeled-bookmarks.editTreeItem",
-          "when": "view == bookmarksByFile || view == bookmarksByGroup",
+          "when": "view == bookmarksByFile && viewItem != none && viewItem != file || view == bookmarksByGroup && viewItem != none && viewItem != file",
           "group": "inline"
         },
         {
           "command": "vsc-labeled-bookmarks.deleteTreeItem",
-          "when": "view == bookmarksByFile || view == bookmarksByGroup",
+          "when": "view == bookmarksByFile && viewItem != none || view == bookmarksByGroup && viewItem != none",
           "group": "inline"
         }
       ]

@@ -88,6 +88,24 @@ export class BookmarkTreeView {
         }
     }
 
+
+    public activateItem(treeItem: BookmarkTreeItem) {
+        if (
+            this.main === null
+            || this.treeDataProviderByFile === null
+            || this.treeDataProviderByGroup === null
+        ) {
+            return;
+        }
+
+        let group = treeItem.getBaseGroup();
+        if (group === null) {
+            return;
+        }
+
+        this.main.setActiveGroup(group.name);
+    }
+
     public editItem(treeItem: BookmarkTreeItem) {
         if (
             this.main === null

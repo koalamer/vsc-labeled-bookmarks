@@ -1,4 +1,4 @@
-import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri as string } from 'vscode';
+import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri as string, workspace } from 'vscode';
 import { Bookmark } from './bookmark';
 import { Group } from './group';
 
@@ -9,7 +9,9 @@ export class BookmarkTreeItem extends TreeItem {
 
     static fromNone(): BookmarkTreeItem {
         let result = new BookmarkTreeItem(" ", TreeItemCollapsibleState.None);
-        result.description = 'none';
+        result.contextValue = "none";
+        result.description = "none";
+        result.tooltip = "none";
         result.base = null;
         return result;
     }
@@ -17,9 +19,11 @@ export class BookmarkTreeItem extends TreeItem {
     static fromBookmark(bookmark: Bookmark): BookmarkTreeItem {
         let label = (bookmark.lineNumber + 1) + (typeof bookmark.label !== "undefined" ? ": " + bookmark.label : "");
         let result = new BookmarkTreeItem(label, TreeItemCollapsibleState.None);
+        result.contextValue = "bookmark";
         result.description = bookmark.lineText;
         result.iconPath = bookmark.group.decorationSvg;
         result.base = bookmark;
+        result.tooltip = workspace.asRelativePath(bookmark.fsPath) + ": " + label;
         result.command = {
             "title": "jump to bookmark",
             "command": "vsc-labeled-bookmarks.jumpToBookmark",
@@ -31,17 +35,21 @@ export class BookmarkTreeItem extends TreeItem {
     static fromGroup(group: Group): BookmarkTreeItem {
         let label = group.name;
         let result = new BookmarkTreeItem(label, TreeItemCollapsibleState.Expanded);
+        result.contextValue = "group";
         result.iconPath = group.decorationSvg;
         result.base = group;
         result.filterGroup = group;
+        result.tooltip = "Group '" + group.name + "'";
         return result;
     }
 
     static fromFSPath(fsPath: string, filterGroup: Group | null): BookmarkTreeItem {
         let result = new BookmarkTreeItem(string.file(fsPath), TreeItemCollapsibleState.Expanded);
+        result.contextValue = "file";
         result.iconPath = ThemeIcon.File;
         result.base = fsPath;
         result.filterGroup = filterGroup;
+        result.tooltip = workspace.asRelativePath(fsPath);
         return result;
     }
 
