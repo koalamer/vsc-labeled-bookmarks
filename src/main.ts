@@ -1305,6 +1305,10 @@ export class Main {
                     );
 
                     this.addNewDecoratedBookmark(newBookmark);
+
+                    this.tempDocumentDecorations.delete(newBookmark.fsPath);
+                    this.tempDocumentBookmarks.delete(newBookmark.fsPath);
+                    this.tempGroupBookmarks.delete(newBookmark.group);
                 }
 
                 this.bookmarks.sort(Bookmark.sortByLocation);
