@@ -328,7 +328,7 @@
     "viewsWelcome": [
       {
         "view": "bookmarksByFile",
-        "contents": "Loading..."
+        "contents": ""
       },
       {
         "view": "bookmarksByGroup",
