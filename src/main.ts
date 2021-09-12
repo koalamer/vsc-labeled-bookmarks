@@ -62,18 +62,18 @@ export class Main {
     private tempGroupBookmarks: Map<Group, Array<Bookmark>>;
     private tempDocumentDecorations: Map<string, Map<TextEditorDecorationType, Array<Range>>>;
 
+    private decorationFactory: DecorationFactory;
+
     constructor(ctx: ExtensionContext, treeviewRefreshCallback: () => void) {
         this.ctx = ctx;
         this.treeViewRefreshCallback = treeviewRefreshCallback;
 
-        DecorationFactory.svgDir = this.ctx.globalStorageUri;
-        DecorationFactory.overviewRulerLane = OverviewRulerLane.Center;
-        DecorationFactory.lineEndLabelType = "bordered";
+        this.decorationFactory = new DecorationFactory(this.ctx.globalStorageUri, OverviewRulerLane.Center, "bordered");
 
         this.bookmarks = new Array<Bookmark>();
         this.groups = new Array<Group>();
         this.defaultGroupName = "default";
-        this.activeGroup = new Group(this.defaultGroupName, this.fallbackColor, this.defaultShape, "");
+        this.activeGroup = new Group(this.defaultGroupName, this.fallbackColor, this.defaultShape, "", this.decorationFactory);
 
         this.colors = new Map<string, string>();
         this.unicodeMarkers = new Map<string, string>();
@@ -94,7 +94,7 @@ export class Main {
         this.readSettings();
 
         if (this.colors.size < 1) {
-            this.colors.set(this.fallbackColorName, DecorationFactory.normalizeColorFormat(this.fallbackColor));
+            this.colors.set(this.fallbackColorName, this.decorationFactory.normalizeColorFormat(this.fallbackColor));
         }
 
         this.hideInactiveGroups = false;
@@ -482,7 +482,8 @@ export class Main {
                 bookmark.characterNumber,
                 newLabel,
                 bookmark.lineText,
-                bookmark.group
+                bookmark.group,
+                this.decorationFactory
             );
 
             this.deleteBookmark(bookmark);
@@ -585,7 +586,14 @@ export class Main {
             return;
         }
 
-        let bookmark = new Bookmark(fsPath, lineNumber, characterNumber, undefined, lineText, group);
+        let bookmark = new Bookmark(fsPath,
+            lineNumber,
+            characterNumber,
+            undefined,
+            lineText,
+            group,
+            this.decorationFactory
+        );
         this.bookmarks.push(bookmark);
         this.bookmarks.sort(Bookmark.sortByLocation);
 
@@ -688,7 +696,8 @@ export class Main {
                     characterNumber,
                     label,
                     lineText,
-                    this.activeGroup
+                    this.activeGroup,
+                    this.decorationFactory
                 );
                 this.addNewDecoratedBookmark(bookmark);
                 this.bookmarks.sort(Bookmark.sortByLocation);
@@ -1301,7 +1310,8 @@ export class Main {
                         oldBookmark.characterNumber,
                         oldBookmark.label,
                         oldBookmark.lineText,
-                        dst
+                        dst,
+                        this.decorationFactory
                     );
 
                     this.addNewDecoratedBookmark(newBookmark);
@@ -1330,7 +1340,7 @@ export class Main {
                 let configColors = (config.get(this.configKeyColors) as Array<Array<string>>);
                 this.colors = new Map<string, string>();
                 for (let [index, value] of configColors) {
-                    this.colors.set(index, DecorationFactory.normalizeColorFormat(value));
+                    this.colors.set(index, this.decorationFactory.normalizeColorFormat(value));
                 }
             } catch (e) {
                 vscode.window.showWarningMessage("Error reading bookmark color setting");
@@ -1362,7 +1372,7 @@ export class Main {
         }
 
         let configOverviewRulerLane = (config.get(this.configOverviewRulerLane) as string) ?? "center";
-        let previousOverviewRulerLane = DecorationFactory.overviewRulerLane;
+        let previousOverviewRulerLane = this.decorationFactory.overviewRulerLane;
         let newOverviewRulerLane: OverviewRulerLane | undefined;
         switch (configOverviewRulerLane) {
             case "center": newOverviewRulerLane = OverviewRulerLane.Center; break;
@@ -1374,7 +1384,7 @@ export class Main {
         }
 
         let newLineEndLabelType = (config.get(this.configLineEndLabelType) as string) ?? "bordered";
-        let previousLineEndLabelType = DecorationFactory.lineEndLabelType;
+        let previousLineEndLabelType = this.decorationFactory.lineEndLabelType;
 
         if (
             (typeof previousOverviewRulerLane === "undefined") !== (typeof newOverviewRulerLane === "undefined")
@@ -1382,8 +1392,8 @@ export class Main {
             || (typeof previousLineEndLabelType === "undefined") !== (typeof newLineEndLabelType === "undefined")
             || previousLineEndLabelType !== newLineEndLabelType
         ) {
-            DecorationFactory.overviewRulerLane = newOverviewRulerLane;
-            DecorationFactory.lineEndLabelType = newLineEndLabelType;
+            this.decorationFactory.overviewRulerLane = newOverviewRulerLane;
+            this.decorationFactory.lineEndLabelType = newLineEndLabelType;
             this.groups.forEach(group => group.redoDecorations());
             this.bookmarks.forEach(bookmark => bookmark.initDecoration());
         }
@@ -1478,7 +1488,7 @@ export class Main {
         if (typeof serializedGroups !== "undefined") {
             try {
                 for (let sg of serializedGroups) {
-                    this.addNewGroup(Group.fromSerializableGroup(sg));
+                    this.addNewGroup(Group.fromSerializableGroup(sg, this.decorationFactory));
                 }
 
                 this.groups.sort(Group.sortByName);
@@ -1493,7 +1503,7 @@ export class Main {
         if (typeof serializedBookmarks !== "undefined") {
             try {
                 for (let sb of serializedBookmarks) {
-                    let bookmark = Bookmark.fromSerializableBookMark(sb, this.getGroupByName.bind(this));
+                    let bookmark = Bookmark.fromSerializableBookMark(sb, this.getGroupByName.bind(this), this.decorationFactory);
                     this.addNewDecoratedBookmark(bookmark);
                 }
 
@@ -1552,7 +1562,7 @@ export class Main {
             return group;
         }
 
-        group = new Group(name, this.getLeastUsedColor(), this.defaultShape, name);
+        group = new Group(name, this.getLeastUsedColor(), this.defaultShape, name, this.decorationFactory);
         this.addNewGroup(group);
         this.groups.sort(Group.sortByName);
 

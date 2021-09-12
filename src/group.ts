@@ -5,47 +5,51 @@ import { SerializableGroup } from "./serializable_group";
 export class Group {
     static readonly inactiveTransparency: string = "33";
 
-    name: string;
-    color: string;
-    shape: string;
-    iconText: string;
-    inactiveColor: string;
-    isActive: boolean;
-    isVisible: boolean;
-    isInitialized: boolean;
-    decoration: TextEditorDecorationType;
-    decorationSvg: Uri;
-    inactiveDecoration: TextEditorDecorationType;
-    inactiveDecorationSvg: Uri;
-    groupDecorationUpdatedHandler: (group: Group) => void;
-    groupDecorationSwitchedHandler: (group: Group) => void;
-    decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
+    public name: string;
+    public color: string;
+    public shape: string;
+    public iconText: string;
+    public isActive: boolean;
+    public isVisible: boolean;
+    public decoration: TextEditorDecorationType;
+    public decorationSvg: Uri;
+
+    private decorationFactory: DecorationFactory;
+    private inactiveColor: string;
+    private isInitialized: boolean;
+    private inactiveDecoration: TextEditorDecorationType;
+    private inactiveDecorationSvg: Uri;
+    private groupDecorationUpdatedHandler: (group: Group) => void;
+    private groupDecorationSwitchedHandler: (group: Group) => void;
+    private decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
 
     constructor(
         name: string,
         color: string,
         shape: string,
-        iconText: string
+        iconText: string,
+        decorationFactory: DecorationFactory
     ) {
+        this.decorationFactory = decorationFactory;
         this.name = name;
-        this.color = DecorationFactory.normalizeColorFormat(color);
+        this.color = this.decorationFactory.normalizeColorFormat(color);
         this.shape = shape;
         this.iconText = iconText;
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
         this.isActive = false;
         this.isVisible = false;
         this.isInitialized = false;
-        this.decoration = DecorationFactory.placeholderDecoration;
-        this.decorationSvg = DecorationFactory.placeholderDecorationUri;
-        this.inactiveDecoration = DecorationFactory.placeholderDecoration;
-        this.inactiveDecorationSvg = DecorationFactory.placeholderDecorationUri;
+        this.decoration = this.decorationFactory.placeholderDecoration;
+        this.decorationSvg = this.decorationFactory.placeholderDecorationUri;
+        this.inactiveDecoration = this.decorationFactory.placeholderDecoration;
+        this.inactiveDecorationSvg = this.decorationFactory.placeholderDecorationUri;
         this.groupDecorationUpdatedHandler = (group: Group) => { return; };
         this.groupDecorationSwitchedHandler = (group: Group) => { return; };
         this.decorationRemovedHandler = (decoration: TextEditorDecorationType) => { return; };
     }
 
-    public static fromSerializableGroup(sg: SerializableGroup): Group {
-        return new Group(sg.name, sg.color, sg.shape, sg.iconText);
+    public static fromSerializableGroup(sg: SerializableGroup, decorationFactory: DecorationFactory): Group {
+        return new Group(sg.name, sg.color, sg.shape, sg.iconText, decorationFactory);
     }
 
     public static sortByName(a: Group, b: Group): number {
@@ -65,12 +69,12 @@ export class Group {
     }
 
     public async initDecorations() {
-        [this.decoration, this.decorationSvg] = await DecorationFactory.create(
+        [this.decoration, this.decorationSvg] = await this.decorationFactory.create(
             this.shape,
             this.color,
             this.iconText
         );
-        [this.inactiveDecoration, this.inactiveDecorationSvg] = await DecorationFactory.create(
+        [this.inactiveDecoration, this.inactiveDecorationSvg] = await this.decorationFactory.create(
             this.shape,
             this.inactiveColor,
             this.iconText
@@ -143,7 +147,7 @@ export class Group {
 
         this.removeDecorations();
 
-        this.color = DecorationFactory.normalizeColorFormat(color);
+        this.color = this.decorationFactory.normalizeColorFormat(color);
         this.inactiveColor = this.color.substring(0, 6) + Group.inactiveTransparency;
 
         this.initDecorations();

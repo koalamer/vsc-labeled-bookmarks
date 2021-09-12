@@ -4,17 +4,19 @@ import { SerializableBookmark } from "./serializable_bookmark";
 import { Group } from "./group";
 
 export class Bookmark {
-    fsPath: string;
-    lineNumber: number;
-    characterNumber: number;
-    label?: string;
-    lineText: string;
-    failedJump: boolean;
-    isLineNumberChanged: boolean;
-    group: Group;
-    ownDecoration: TextEditorDecorationType | null;
-    bookmarkDecorationUpdatedHandler: (bookmark: Bookmark) => void;
-    decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
+    public fsPath: string;
+    public lineNumber: number;
+    public characterNumber: number;
+    public label?: string;
+    public lineText: string;
+    public failedJump: boolean;
+    public isLineNumberChanged: boolean;
+    public group: Group;
+    public decorationFactory: DecorationFactory;
+
+    private ownDecoration: TextEditorDecorationType | null;
+    private bookmarkDecorationUpdatedHandler: (bookmark: Bookmark) => void;
+    private decorationRemovedHandler: (decoration: TextEditorDecorationType) => void;
 
     constructor(
         fsPath: string,
@@ -22,7 +24,8 @@ export class Bookmark {
         characterNumber: number,
         label: string | undefined,
         lineText: string,
-        group: Group
+        group: Group,
+        decorationFactory: DecorationFactory
     ) {
         this.fsPath = fsPath;
         this.lineNumber = lineNumber;
@@ -32,6 +35,7 @@ export class Bookmark {
         this.failedJump = false;
         this.isLineNumberChanged = false;
         this.group = group;
+        this.decorationFactory = decorationFactory;
         this.ownDecoration = null;
         this.bookmarkDecorationUpdatedHandler = (bookmark: Bookmark) => { return; };
         this.decorationRemovedHandler = (decoration: TextEditorDecorationType) => { return; };
@@ -39,7 +43,8 @@ export class Bookmark {
 
     public static fromSerializableBookMark(
         serialized: SerializableBookmark,
-        groupGetter: (groupName: string) => Group
+        groupGetter: (groupName: string) => Group,
+        decorationFactory: DecorationFactory
     ): Bookmark {
         return new Bookmark(
             serialized.fsPath,
@@ -47,7 +52,8 @@ export class Bookmark {
             serialized.characterNumber,
             serialized.label,
             serialized.lineText,
-            groupGetter(serialized.groupName)
+            groupGetter(serialized.groupName),
+            decorationFactory
         );
     }
 
@@ -96,7 +102,7 @@ export class Bookmark {
         let previousDecoration = this.ownDecoration;
         let tempSvg: Uri;
 
-        [this.ownDecoration, tempSvg] = await DecorationFactory.create(
+        [this.ownDecoration, tempSvg] = await this.decorationFactory.create(
             this.group.shape,
             this.group.color,
             this.group.iconText,

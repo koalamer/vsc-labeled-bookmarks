@@ -79,28 +79,34 @@ const svgUnicodeChar = `<svg xmlns="http://www.w3.org/2000/svg" width="32" heigh
 </svg>`;
 
 export class DecorationFactory {
-    private static readonly singleCharacterLabelPatern = /^[a-zA-Z0-9!?+-=\/\$%#]$/;
+    private readonly singleCharacterLabelPatern = /^[a-zA-Z0-9!?+-=\/\$%#]$/;
 
-    public static readonly placeholderDecorationUri = Uri.file(
+    public readonly placeholderDecorationUri = Uri.file(
         path.join(__dirname, "..", "resources", "gutter_icon_bm.svg")
     );
 
-    public static readonly placeholderDecoration = vscode.window.createTextEditorDecorationType(
+    public readonly placeholderDecoration = vscode.window.createTextEditorDecorationType(
         {
-            gutterIconPath: DecorationFactory.placeholderDecorationUri.fsPath,
+            gutterIconPath: this.placeholderDecorationUri.fsPath,
             gutterIconSize: 'contain',
         }
     );
 
-    public static svgDir: Uri;
-    public static overviewRulerLane: OverviewRulerLane | undefined;
-    public static lineEndLabelType: string;
+    public svgDir: Uri;
+    public overviewRulerLane: OverviewRulerLane | undefined;
+    public lineEndLabelType: string;
 
-    static async create(shape: string, color: string, iconText: string, lineLabel?: string): Promise<[TextEditorDecorationType, Uri]> {
+    constructor(svgDir: Uri, overviewRulerLane: OverviewRulerLane | undefined, lineEndLabelType: string) {
+        this.svgDir = svgDir;
+        this.overviewRulerLane = overviewRulerLane;
+        this.lineEndLabelType = lineEndLabelType;
+    }
+
+    async create(shape: string, color: string, iconText: string, lineLabel?: string): Promise<[TextEditorDecorationType, Uri]> {
         iconText = iconText.normalize();
 
         if (shape !== "unicode") {
-            if (!DecorationFactory.singleCharacterLabelPatern.test(iconText)) {
+            if (!this.singleCharacterLabelPatern.test(iconText)) {
                 iconText = "";
             } else {
                 iconText = iconText.substring(0, 1).toUpperCase();
@@ -136,12 +142,12 @@ export class DecorationFactory {
             fileNamePostfix = codePoint;
         }
 
-        color = DecorationFactory.normalizeColorFormat(color);
+        color = this.normalizeColorFormat(color);
         svg = svg.replace("888888ff", color);
 
         let fileName = shape + "_" + color + "_" + fileNamePostfix + ".svg";
         let bytes = Uint8Array.from(svg.split("").map(c => { return c.charCodeAt(0); }));
-        let svgUri = Uri.joinPath(DecorationFactory.svgDir, fileName);
+        let svgUri = Uri.joinPath(this.svgDir, fileName);
 
         try {
             let stat = await vscode.workspace.fs.stat(svgUri);
@@ -155,17 +161,17 @@ export class DecorationFactory {
         let decorationOptions = {
             gutterIconPath: svgUri,
             gutterIconSize: 'contain',
-            overviewRulerColor: (typeof DecorationFactory.overviewRulerLane !== "undefined")
+            overviewRulerColor: (typeof this.overviewRulerLane !== "undefined")
                 ? '#' + color
                 : undefined,
-            overviewRulerLane: DecorationFactory.overviewRulerLane,
+            overviewRulerLane: this.overviewRulerLane,
             rangeBehavior: DecorationRangeBehavior.ClosedClosed,
             after: {},
             isWholeLine: true,
         };
 
         if (typeof lineLabel !== "undefined") {
-            switch (DecorationFactory.lineEndLabelType) {
+            switch (this.lineEndLabelType) {
                 case "bordered":
                     decorationOptions.after = {
                         border: "1px solid #" + color,
@@ -190,7 +196,7 @@ export class DecorationFactory {
         return [result, svgUri];
     }
 
-    public static normalizeColorFormat(color: string): string {
+    public normalizeColorFormat(color: string): string {
         if (color.match(/^#?[0-9a-f]+$/i) === null) {
             return "888888ff";
         }
