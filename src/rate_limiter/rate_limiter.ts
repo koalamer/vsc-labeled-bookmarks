@@ -20,8 +20,7 @@ export class RateLimiter {
         this.initialTimeout = null;
         this.repeatTimeout = null;
 
-        this.debugLogger = new Logger("rateLimiter");
-        this.debugLogger.isEnabled = false;
+        this.debugLogger = new Logger("rateLimiter", false);
     }
 
     public fire(repeated: boolean = false) {
