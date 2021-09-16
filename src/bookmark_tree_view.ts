@@ -3,6 +3,7 @@ import { TreeView } from 'vscode';
 import { Main } from './main';
 import { BookmarkTreeDataProvider } from './bookmark_tree_data_provider';
 import { BookmarkTreeItem } from './bookmark_tree_item';
+import { RateLimiter } from './rate_limiter/rate_limiter';
 
 export class BookmarkTreeView {
     private main: Main | null = null;
@@ -12,11 +13,8 @@ export class BookmarkTreeView {
     private treeDataProviderByGroup: BookmarkTreeDataProvider | null = null;
     private treeDataProviderByFile: BookmarkTreeDataProvider | null = null;
 
-    private treeViewRefreshLimiter: NodeJS.Timeout | null = null;
-    private treeViewRefreshRequestCount = 0;
     private proxyRefreshCallback = () => { };
-
-    private readonly refreshInterval = 750;
+    private refreshLimiter: RateLimiter = new RateLimiter(() => { }, 0, 1000);
 
     public async init(main: Main) {
         this.main = main;
@@ -35,7 +33,12 @@ export class BookmarkTreeView {
         await this.treeDataProviderByGroup.init();
         await this.treeDataProviderByFile.init();
 
-        this.proxyRefreshCallback = this.actualRefresh;
+        this.refreshLimiter = new RateLimiter(
+            this.actualRefresh.bind(this),
+            50,
+            800
+        );
+        this.proxyRefreshCallback = this.refreshLimiter.fire.bind(this.refreshLimiter);
 
         this.refreshCallback();
     }
@@ -195,29 +198,11 @@ export class BookmarkTreeView {
     }
 
     private actualRefresh() {
-        this.treeViewRefreshRequestCount++;
-
-        if (this.treeViewRefreshLimiter !== null) {
-            return;
-        }
-
-        this.treeViewRefreshRequestCount = 0;
         if (this.treeDataProviderByGroup !== null) {
             this.treeDataProviderByGroup.refresh();
         }
         if (this.treeDataProviderByFile !== null) {
             this.treeDataProviderByFile.refresh();
         }
-
-        this.treeViewRefreshLimiter = setTimeout(
-            () => {
-                this.treeViewRefreshLimiter = null;
-                if (this.treeViewRefreshRequestCount === 0) {
-                    return;
-                }
-                this.actualRefresh();
-            },
-            this.refreshInterval
-        );
     }
 }
