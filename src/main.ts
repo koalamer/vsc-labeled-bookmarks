@@ -10,7 +10,7 @@ import {
 } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
-import { BookmarkPickItem } from './tree_view/bookmark_pick_item';
+import { BookmarkPickItem } from './bookmark_pick_item';
 import { ShapePickItem } from './shape_pick_item';
 import { ColorPickItem } from './color_pick_item';
 import { Bookmark } from "./bookmark";

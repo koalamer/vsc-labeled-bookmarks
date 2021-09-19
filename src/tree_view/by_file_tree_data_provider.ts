@@ -8,11 +8,13 @@ export class ByFileTreeDataProvider extends BookmarkTreeDataProvider {
 
     constructor(bookmarkDataProvider: BookmarkDataProvider) {
         super(bookmarkDataProvider);
+        this.collapseGroupNodes = true;
+        this.collapseFileNodes = true;
     }
 
     protected setRootElements() {
         this.rootElements = this.getFiles(this.bookmarkDataProvider.getBookmarks())
-            .map(fsPath => BookmarkTreeItem.fromFSPath(fsPath, null));
+            .map(fsPath => BookmarkTreeItem.fromFSPath(fsPath, null, this.collapseFileNodes));
     }
 
     public async getTargetForGroup(group: Group): Promise<BookmarkTreeItem | null> {

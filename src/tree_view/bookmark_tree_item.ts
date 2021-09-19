@@ -16,7 +16,7 @@ export class BookmarkTreeItem extends TreeItem {
         return result;
     }
 
-    static fromBookmark(bookmark: Bookmark): BookmarkTreeItem {
+    static fromBookmark(bookmark: Bookmark, collapse: boolean): BookmarkTreeItem {
         let label = (bookmark.lineNumber + 1) + (typeof bookmark.label !== "undefined" ? ": " + bookmark.label : "");
         let result = new BookmarkTreeItem(label, TreeItemCollapsibleState.None);
         result.contextValue = "bookmark";
@@ -29,10 +29,11 @@ export class BookmarkTreeItem extends TreeItem {
             "command": "vsc-labeled-bookmarks.jumpToBookmark",
             "arguments": [bookmark, true]
         };
+        result.collapsibleState = collapse ? TreeItemCollapsibleState.Collapsed : TreeItemCollapsibleState.Expanded;
         return result;
     }
 
-    static fromGroup(group: Group): BookmarkTreeItem {
+    static fromGroup(group: Group, collapse: boolean): BookmarkTreeItem {
         let label = group.name;
         let result = new BookmarkTreeItem(label, TreeItemCollapsibleState.Expanded);
         result.contextValue = "group";
@@ -40,16 +41,18 @@ export class BookmarkTreeItem extends TreeItem {
         result.base = group;
         result.filterGroup = group;
         result.tooltip = "Group '" + group.name + "'";
+        result.collapsibleState = collapse ? TreeItemCollapsibleState.Collapsed : TreeItemCollapsibleState.Expanded;
         return result;
     }
 
-    static fromFSPath(fsPath: string, filterGroup: Group | null): BookmarkTreeItem {
+    static fromFSPath(fsPath: string, filterGroup: Group | null, collapse: boolean): BookmarkTreeItem {
         let result = new BookmarkTreeItem(string.file(fsPath), TreeItemCollapsibleState.Expanded);
         result.contextValue = "file";
         result.iconPath = ThemeIcon.File;
         result.base = fsPath;
         result.filterGroup = filterGroup;
         result.tooltip = workspace.asRelativePath(fsPath);
+        result.collapsibleState = collapse ? TreeItemCollapsibleState.Collapsed : TreeItemCollapsibleState.Expanded;
         return result;
     }
 

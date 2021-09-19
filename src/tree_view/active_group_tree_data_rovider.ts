@@ -8,6 +8,8 @@ export class ActiveGroupTreeDataProvider extends BookmarkTreeDataProvider {
 
     constructor(bookmarkDataProvider: BookmarkDataProvider) {
         super(bookmarkDataProvider);
+        this.collapseGroupNodes = false;
+        this.collapseFileNodes = false;
     }
 
     protected setRootElements() {
@@ -15,7 +17,7 @@ export class ActiveGroupTreeDataProvider extends BookmarkTreeDataProvider {
 
         this.rootElements = this.bookmarkDataProvider.getGroups()
             .filter(g => { return g === activeGroup; })
-            .map(group => BookmarkTreeItem.fromGroup(group));
+            .map(group => BookmarkTreeItem.fromGroup(group, this.collapseGroupNodes));
     }
 
     public getAnyTarget(): BookmarkTreeItem | null {

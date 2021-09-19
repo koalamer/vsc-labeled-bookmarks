@@ -18,6 +18,9 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     protected isRefreshPending = false;
     protected readonly refreshGracePeriod = 100;
 
+    protected collapseGroupNodes = false;
+    protected collapseFileNodes = false;
+
     protected debugLogger = new Logger('lb_tree_data_provider', true);
 
     constructor(bookmarkDataProvider: BookmarkDataProvider) {
@@ -53,7 +56,7 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
             if (bookmarks.length === 0) {
                 children = [BookmarkTreeItem.fromNone()];
             } else {
-                children = bookmarks.map(bookmark => BookmarkTreeItem.fromBookmark(bookmark));
+                children = bookmarks.map(bookmark => BookmarkTreeItem.fromBookmark(bookmark, this.collapseFileNodes));
             }
 
             children.forEach(child => child.setParent(element));
@@ -70,7 +73,7 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
             if (files.length === 0) {
                 children = [BookmarkTreeItem.fromNone()];
             } else {
-                children = files.map(fsPath => BookmarkTreeItem.fromFSPath(fsPath, filterGroup));
+                children = files.map(fsPath => BookmarkTreeItem.fromFSPath(fsPath, filterGroup, this.collapseFileNodes));
             }
 
             children.forEach(child => child.setParent(element));
