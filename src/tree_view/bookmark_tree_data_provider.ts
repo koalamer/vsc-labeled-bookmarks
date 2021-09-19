@@ -3,6 +3,7 @@ import { Bookmark } from '../bookmark';
 import { BookmarkTreeItem } from "./bookmark_tree_item";
 import { Group } from "../group";
 import { BookmarkDataProvider } from "../interface/bookmark_data_provider";
+import { Logger } from "../logger/logger";
 
 export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeItem> {
     protected bookmarkDataProvider: BookmarkDataProvider;
@@ -11,10 +12,13 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     protected childElements: Map<BookmarkTreeItem, Array<BookmarkTreeItem>>;
 
     protected changeEmitter = new EventEmitter<BookmarkTreeItem | undefined | null | void>();
+    readonly onDidChangeTreeData = this.changeEmitter.event;
 
     // workaround for tree views not updating when hidden
     protected isRefreshPending = false;
     protected readonly refreshGracePeriod = 100;
+
+    protected debugLogger = new Logger('lb_tree_data_provider', true);
 
     constructor(bookmarkDataProvider: BookmarkDataProvider) {
         this.bookmarkDataProvider = bookmarkDataProvider;
@@ -27,10 +31,13 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
 
     public getChildren(element?: BookmarkTreeItem | undefined): Thenable<BookmarkTreeItem[]> {
         if (!element) {
+            this.debugLogger.log('get root items');
             this.isRefreshPending = false;
             this.setRootElements();
             return Promise.resolve(this.rootElements);
         }
+
+        this.debugLogger.log('get non root items');
 
         let filterGroup = element.getFilterGroup();
 
