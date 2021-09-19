@@ -2,7 +2,7 @@
   "name": "labeled-bookmarks",
   "displayName": "Labeled Bookmarks",
   "description": "Bookmarks, multiple groups, customizable visuals",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "publisher": "koalamer",
   "icon": "resources/vsc-labeled-bookmarks-logo.png",
   "repository": {
@@ -305,33 +305,34 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "bookmarks",
-          "title": "Bookmarks",
+          "id": "labeled-bookmarks-tree-view",
+          "title": "Labeled Bookmarks",
           "icon": "$(bookmark)"
         }
       ]
     },
     "views": {
-      "bookmarks": [
+      "labeled-bookmarks-tree-view": [
         {
-          "id": "bookmarksByFile",
-          "name": "By File",
+          "id": "bookmarksByActiveGroup",
+          "name": "Active Group",
           "icon": "$(bookmark)"
         },
         {
-          "id": "bookmarksByGroup",
-          "name": "By Group",
+          "id": "bookmarksByInactiveGroups",
+          "name": "Inactive Groups",
+          "icon": "$(bookmark)"
+        },
+        {
+          "id": "bookmarksByFile",
+          "name": "By File",
           "icon": "$(bookmark)"
         }
       ]
     },
     "viewsWelcome": [
       {
-        "view": "bookmarksByFile",
-        "contents": ""
-      },
-      {
-        "view": "bookmarksByGroup",
+        "view": "bookmarksByActiveGroup",
         "contents": "Loading..."
       }
     ],
@@ -339,17 +340,17 @@
       "view/item/context": [
         {
           "command": "vsc-labeled-bookmarks.activateTreeItem",
-          "when": "view == bookmarksByGroup && viewItem == group",
+          "when": "view == bookmarksByInactiveGroups && viewItem == group",
           "group": "inline"
         },
         {
           "command": "vsc-labeled-bookmarks.editTreeItem",
-          "when": "view == bookmarksByFile && viewItem != none && viewItem != file || view == bookmarksByGroup && viewItem != none && viewItem != file",
+          "when": "view == bookmarksByActiveGroup && viewItem != none && viewItem != file || view == bookmarksByInactiveGroups && viewItem != none && viewItem != file || view == bookmarksByFile && viewItem != none && viewItem != file",
           "group": "inline"
         },
         {
           "command": "vsc-labeled-bookmarks.deleteTreeItem",
-          "when": "view == bookmarksByFile && viewItem != none || view == bookmarksByGroup && viewItem != none",
+          "when": "view == bookmarksByActiveGroup && viewItem != none || view == bookmarksByInactiveGroups && viewItem != none || view == bookmarksByFile && viewItem != none ",
           "group": "inline"
         }
       ]

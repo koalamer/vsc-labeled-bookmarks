@@ -1,5 +1,5 @@
 import { QuickPickItem, workspace } from 'vscode';
-import { Bookmark } from "./bookmark";
+import { Bookmark } from "../bookmark";
 
 export class BookmarkPickItem implements QuickPickItem {
     bookmark: Bookmark;

@@ -1,28 +1,23 @@
 import { EventEmitter, TreeDataProvider, TreeItem } from "vscode";
-import * as vscode from 'vscode';
-import { Bookmark } from './bookmark';
+import { Bookmark } from '../bookmark';
 import { BookmarkTreeItem } from "./bookmark_tree_item";
-import { Group } from './group';
+import { Group } from "../group";
+import { BookmarkDataProvider } from "../interface/bookmark_data_provider";
 
 export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeItem> {
-    private groups: Array<Group>;
-    private bookmarks: Array<Bookmark>;
-    private byGroup: boolean;
+    protected bookmarkDataProvider: BookmarkDataProvider;
 
-    private rootElements: Array<BookmarkTreeItem> = [];
-    private childElements: Map<BookmarkTreeItem, Array<BookmarkTreeItem>>;
+    protected rootElements: Array<BookmarkTreeItem> = [];
+    protected childElements: Map<BookmarkTreeItem, Array<BookmarkTreeItem>>;
 
-    private changeEmitter = new EventEmitter<BookmarkTreeItem | undefined | null | void>();
-    readonly onDidChangeTreeData = this.changeEmitter.event;
+    protected changeEmitter = new EventEmitter<BookmarkTreeItem | undefined | null | void>();
 
     // workaround for tree views not updating when hidden
-    private isRefreshPending = false;
-    private readonly refreshGracePeriod = 100;
+    protected isRefreshPending = false;
+    protected readonly refreshGracePeriod = 100;
 
-    constructor(groups: Array<Group>, bookmarks: Array<Bookmark>, byGroup: boolean) {
-        this.groups = groups;
-        this.bookmarks = bookmarks;
-        this.byGroup = byGroup;
+    constructor(bookmarkDataProvider: BookmarkDataProvider) {
+        this.bookmarkDataProvider = bookmarkDataProvider;
         this.childElements = new Map();
     }
 
@@ -33,21 +28,15 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     public getChildren(element?: BookmarkTreeItem | undefined): Thenable<BookmarkTreeItem[]> {
         if (!element) {
             this.isRefreshPending = false;
-            if (this.byGroup) {
-                this.rootElements = this.groups.map(group => BookmarkTreeItem.fromGroup(group));
-                return Promise.resolve(this.rootElements);
-            } else {
-                this.rootElements = this.getFiles(this.bookmarks)
-                    .map(fsPath => BookmarkTreeItem.fromFSPath(fsPath, null));
-                return Promise.resolve(this.rootElements);
-            }
+            this.setRootElements();
+            return Promise.resolve(this.rootElements);
         }
 
         let filterGroup = element.getFilterGroup();
 
         let baseFSPath = element.getBaseFSPath();
         if (baseFSPath !== null) {
-            let bookmarks = this.bookmarks.filter(bookmark => { return (bookmark.fsPath === baseFSPath); });
+            let bookmarks = this.bookmarkDataProvider.getBookmarks().filter(bookmark => { return (bookmark.fsPath === baseFSPath); });
             if (filterGroup !== null) {
                 bookmarks = bookmarks.filter(bookmark => { return bookmark.group === filterGroup; });
             }
@@ -67,7 +56,7 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
 
         let baseGroup = element.getBaseGroup();
         if (baseGroup !== null) {
-            let files = this.getFiles(this.bookmarks.filter(bookmark => { return bookmark.group === filterGroup; }));
+            let files = this.getFiles(this.bookmarkDataProvider.getBookmarks().filter(bookmark => { return bookmark.group === filterGroup; }));
 
             let children: Array<BookmarkTreeItem>;
 
@@ -85,17 +74,13 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
         return Promise.resolve([]);
     }
 
+    protected setRootElements() {
+        this.rootElements = [];
+    }
+
     public refresh() {
         this.isRefreshPending = true;
         this.changeEmitter.fire();
-        // this.rootElements.forEach(element => {
-        //     this.changeEmitter.fire(element);
-        //     if (this.byGroup) {
-        //         this.childElements.get(element)?.forEach(child => {
-        //             this.changeEmitter.fire(child);
-        //         });
-        //     }
-        // });
     }
 
     public async init() {
@@ -113,56 +98,11 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
         }
     };
 
-    public getAnyTarget(): BookmarkTreeItem | null {
-        if (this.rootElements.length > 0) {
-            return this.rootElements[0];
-        }
-
-        return null;
-    }
-
-    public async getTargetForGroup(group: Group): Promise<BookmarkTreeItem | null> {
-        if (!this.byGroup) {
-            return null;
-        }
-
-        await this.handlePendingRefresh();
-
-        let parent = this.rootElements.find(element => { return group === element.getBaseGroup(); });
-        if (typeof parent === "undefined") {
-            return null;
-        }
-
-        let children = this.childElements.get(parent);
-        if (typeof children === "undefined") {
-            return null;
-        }
-
-        if (children.length === 0) {
-            return null;
-        }
-
-        return children[0];
-    }
-
-    public async getTargetForBookmark(bookmark: Bookmark): Promise<BookmarkTreeItem> {
-        await this.handlePendingRefresh();
-
-        for (let [parent, children] of this.childElements) {
-            let target = children.find(child => child.getBaseBookmark() === bookmark);
-            if (typeof target !== "undefined") {
-                return target;
-            }
-        }
-
-        return BookmarkTreeItem.fromNone();
-    }
-
     public getParent(element: BookmarkTreeItem): BookmarkTreeItem | null | undefined {
         return element.getParent();
     }
 
-    private getFiles(bookmarks: Array<Bookmark>): Array<string> {
+    protected getFiles(bookmarks: Array<Bookmark>): Array<string> {
         let files = new Array<string>();
         for (let i = 0; i < bookmarks.length; i++) {
 
@@ -173,7 +113,7 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
         return files;
     }
 
-    private async handlePendingRefresh() {
+    protected async handlePendingRefresh() {
         if (this.isRefreshPending) {
             await this.init();
             await new Promise(resolve => setTimeout(resolve, this.refreshGracePeriod));

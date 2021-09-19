@@ -10,15 +10,16 @@ import {
 } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
-import { BookmarkPickItem } from './bookmark_pick_item';
+import { BookmarkPickItem } from './tree_view/bookmark_pick_item';
 import { ShapePickItem } from './shape_pick_item';
 import { ColorPickItem } from './color_pick_item';
 import { Bookmark } from "./bookmark";
 import { SerializableGroup } from "./serializable_group";
 import { SerializableBookmark } from "./serializable_bookmark";
-import { BookmarkTreeDataProvider } from './bookmark_tree_data_provider';
+import { BookmarkDataProvider } from './interface/bookmark_data_provider';
+import { BookmarManager } from './interface/bookmark_manager';
 
-export class Main {
+export class Main implements BookmarkDataProvider, BookmarManager {
     public ctx: ExtensionContext;
     private treeViewRefreshCallback = () => { };
 
@@ -152,12 +153,12 @@ export class Main {
         this.updateDecorations();
     }
 
-    public getTreeDataProviderByGroup() {
-        return new BookmarkTreeDataProvider(this.groups, this.bookmarks, true);
+    public getGroups(): Array<Group> {
+        return this.groups;
     }
 
-    public getTreeDataProviderByFile() {
-        return new BookmarkTreeDataProvider(this.groups, this.bookmarks, false);
+    public getBookmarks(): Array<Bookmark> {
+        return this.bookmarks;
     }
 
     public getActiveGroup(): Group {
@@ -417,6 +418,15 @@ export class Main {
 
     public actionDeleteOneBookmark(bookmark: Bookmark) {
         this.deleteBookmark(bookmark);
+        this.saveState();
+        this.updateDecorations();
+        this.treeViewRefreshCallback();
+    }
+
+    public deleteBookmarksOfFile(fsPath: string, group: Group | null) {
+        this.bookmarks
+            .filter(b => (b.fsPath === fsPath && (group === null || group === b.group)))
+            .forEach(b => this.deleteBookmark(b));
         this.saveState();
         this.updateDecorations();
         this.treeViewRefreshCallback();
@@ -1676,7 +1686,7 @@ export class Main {
         );
     }
 
-    public getNearestBookmark(textEditor: TextEditor): Bookmark | null {
+    public getNearestBookmark(textEditor: TextEditor, group: Group | null): Bookmark | null {
         if (textEditor.selections.length === 0) {
             return null;
         }
@@ -1690,6 +1700,7 @@ export class Main {
         let nearestAfter: Bookmark | null = null;
 
         this.getTempDocumentBookmarkList(fsPath)
+            .filter(g => (group === null || g.group === group))
             .forEach(bookmark => {
                 if (bookmark.lineNumber > nearestBeforeLine && bookmark.lineNumber <= lineNumber) {
                     nearestBeforeLine = bookmark.lineNumber;

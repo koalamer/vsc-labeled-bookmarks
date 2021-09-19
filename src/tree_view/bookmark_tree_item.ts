@@ -1,6 +1,6 @@
 import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri as string, workspace } from 'vscode';
-import { Bookmark } from './bookmark';
-import { Group } from './group';
+import { Bookmark } from '../bookmark';
+import { Group } from '../group';
 
 export class BookmarkTreeItem extends TreeItem {
     private base: Bookmark | Group | string | null = null;

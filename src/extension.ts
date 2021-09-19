@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import { ExtensionContext } from 'vscode';
 import { Bookmark } from './bookmark';
 import { Main } from './main';
-import { BookmarkTreeView } from './bookmark_tree_view';
-import { BookmarkTreeItem } from './bookmark_tree_item';
+import { BookmarkTreeView } from './tree_view/bookmark_tree_view';
+import { BookmarkTreeItem } from './tree_view/bookmark_tree_item';
 
 let main: Main;
 let treeView: BookmarkTreeView;
