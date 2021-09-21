@@ -74,10 +74,10 @@ The other display option for group icons is the color.
 There are three views of the bookmarks available in the activity bar under the bookmark icon:
 
 * one for the active group
-* one grouping the inactive groups
+* one for the inactive groups
 * one that shows all bookmarks grouped by files
 
-There are action buttons to activate groups, rename items and to delete items.
+There are action buttons to activate groups, to rename items and to delete items.
 
 You can directly access this by using `ctrl+alt+b t`. If a text document is active at the time of using this shortcut and it has bookmarks, the nearest bookmark of the active group is highlighted in the tree view.
 
