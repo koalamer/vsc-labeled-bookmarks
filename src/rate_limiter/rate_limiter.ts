@@ -1,5 +1,3 @@
-import { Logger } from "../logger/logger";
-
 export class RateLimiter {
     private limitedFunc: () => void;
     private pendingCallCount: number;
@@ -9,8 +7,6 @@ export class RateLimiter {
     private initialTimeout: NodeJS.Timeout | null;
     private repeatTimeout: NodeJS.Timeout | null;
 
-    private debugLogger: Logger;
-
     constructor(limitedFunc: () => void, initialDelay: number, repeatInterval: number) {
         this.limitedFunc = limitedFunc;
         this.pendingCallCount = 0;
@@ -19,8 +15,6 @@ export class RateLimiter {
         this.repeatInterval = repeatInterval;
         this.initialTimeout = null;
         this.repeatTimeout = null;
-
-        this.debugLogger = new Logger("rateLimiter", false);
     }
 
     public fire(repeated: boolean = false) {
@@ -34,7 +28,6 @@ export class RateLimiter {
                     return;
                 }
 
-                this.debugLogger.log("start initial timeout");
                 this.startInitialTimeout();
                 return;
             }
@@ -46,7 +39,6 @@ export class RateLimiter {
             return;
         }
 
-        this.debugLogger.log("execute limitedFunc with " + this.pendingCallCount + " pending call count");
         this.pendingCallCount = 0;
         this.limitedFunc();
 
@@ -54,7 +46,6 @@ export class RateLimiter {
             () => {
                 this.repeatTimeout = null;
                 if (this.pendingCallCount === 0) {
-                    this.debugLogger.log("reset");
                     this.reset();
                     return;
                 }

@@ -1,9 +1,7 @@
 import { EventEmitter, TreeDataProvider, TreeItem } from "vscode";
 import { Bookmark } from '../bookmark';
 import { BookmarkTreeItem } from "./bookmark_tree_item";
-import { Group } from "../group";
 import { BookmarkDataProvider } from "../interface/bookmark_data_provider";
-import { Logger } from "../logger/logger";
 
 export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeItem> {
     protected bookmarkDataProvider: BookmarkDataProvider;
@@ -21,8 +19,6 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     protected collapseGroupNodes = false;
     protected collapseFileNodes = false;
 
-    protected debugLogger = new Logger('lb_tree_data_provider', true);
-
     constructor(bookmarkDataProvider: BookmarkDataProvider) {
         this.bookmarkDataProvider = bookmarkDataProvider;
         this.childElements = new Map();
@@ -34,13 +30,10 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
 
     public getChildren(element?: BookmarkTreeItem | undefined): Thenable<BookmarkTreeItem[]> {
         if (!element) {
-            this.debugLogger.log('get root items');
             this.isRefreshPending = false;
             this.setRootElements();
             return Promise.resolve(this.rootElements);
         }
-
-        this.debugLogger.log('get non root items');
 
         let filterGroup = element.getFilterGroup();
 

@@ -6,7 +6,6 @@ import { RateLimiter } from '../rate_limiter/rate_limiter';
 import { ActiveGroupTreeDataProvider } from './active_group_tree_data_rovider';
 import { InactiveGroupsTreeDataProvider } from './inactive_groups_tree_data_provider';
 import { ByFileTreeDataProvider } from './by_file_tree_data_provider';
-import { Logger } from '../logger/logger';
 
 export class BookmarkTreeView {
     private main: Main | null = null;
@@ -23,7 +22,6 @@ export class BookmarkTreeView {
     private refreshLimiter: RateLimiter = new RateLimiter(() => { }, 0, 1000);
 
     private isInitDone: boolean = false;
-    private debugLogger = new Logger('lb_tree_view', true);
 
     public async init(main: Main) {
         this.main = main;
@@ -61,7 +59,6 @@ export class BookmarkTreeView {
     }
 
     public refreshCallback() {
-        this.debugLogger.log('refreshCallback');
         this.proxyRefreshCallback();
     }
 
@@ -163,7 +160,6 @@ export class BookmarkTreeView {
     }
 
     private actualRefresh() {
-        this.debugLogger.log("actualRefresh");
         this.treeDataProviderByActiveGroup?.refresh();
         this.treeDataProviderByInactiveGroups?.refresh();
         this.treeDataProviderByFile?.refresh();

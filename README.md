@@ -71,10 +71,15 @@ The other display option for group icons is the color.
 
 ## Tree View in the Activity Bar
 
-There are two views of the bookmarks available in the activity bar under the bookmark icon: one grouping them by files and another grouping them by bookmark group and then by files.
-In both there are action buttons to activate groups, rename items and to delete items.
+There are three views of the bookmarks available in the activity bar under the bookmark icon:
 
-You can directly access this by using `ctrl+alt+b t`. If a text document is active at the time of using this shortcut and it has bookmarks, the nearest bookmark is highlighted in the tree view. (This might not always work, as described under 'Known Issues')
+* one for the active group
+* one grouping the inactive groups
+* one that shows all bookmarks grouped by files
+
+There are action buttons to activate groups, rename items and to delete items.
+
+You can directly access this by using `ctrl+alt+b t`. If a text document is active at the time of using this shortcut and it has bookmarks, the nearest bookmark of the active group is highlighted in the tree view.
 
 ![Activity Bar](resources/activity_bar.gif)
 
