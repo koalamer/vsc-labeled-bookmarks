@@ -143,7 +143,7 @@ export class BookmarkTreeView {
                 return;
             }
 
-            let nearestBookmarkInFile = this.main.getNearestBookmark(textEditor, this.main.getActiveGroup());
+            let nearestBookmarkInFile = this.main.getNearestActiveBookmarkInFile(textEditor, this.main.getActiveGroup());
 
             if (nearestBookmarkInFile === null) {
                 return;

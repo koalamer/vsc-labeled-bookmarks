@@ -1686,7 +1686,7 @@ export class Main implements BookmarkDataProvider, BookmarManager {
         );
     }
 
-    public getNearestBookmark(textEditor: TextEditor, group: Group | null): Bookmark | null {
+    public getNearestActiveBookmarkInFile(textEditor: TextEditor, group: Group | null): Bookmark | null {
         if (textEditor.selections.length === 0) {
             return null;
         }
