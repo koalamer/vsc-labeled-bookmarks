@@ -29,13 +29,12 @@ export class BookmarkTreeItem extends TreeItem {
             "command": "vsc-labeled-bookmarks.jumpToBookmark",
             "arguments": [bookmark, true]
         };
-        result.collapsibleState = collapse ? TreeItemCollapsibleState.Collapsed : TreeItemCollapsibleState.Expanded;
         return result;
     }
 
     static fromGroup(group: Group, collapse: boolean): BookmarkTreeItem {
         let label = group.name;
-        let result = new BookmarkTreeItem(label, TreeItemCollapsibleState.Expanded);
+        let result = new BookmarkTreeItem(label);
         result.contextValue = "group";
         result.iconPath = group.decorationSvg;
         result.base = group;
@@ -46,7 +45,7 @@ export class BookmarkTreeItem extends TreeItem {
     }
 
     static fromFSPath(fsPath: string, filterGroup: Group | null, collapse: boolean): BookmarkTreeItem {
-        let result = new BookmarkTreeItem(string.file(fsPath), TreeItemCollapsibleState.Expanded);
+        let result = new BookmarkTreeItem(string.file(fsPath));
         result.contextValue = "file";
         result.iconPath = ThemeIcon.File;
         result.base = fsPath;
