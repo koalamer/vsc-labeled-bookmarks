@@ -2,6 +2,10 @@
 
 All notable changes to the "vsc-labeled-bookmarks" extension will be documented in this file.
 
+## [1.1.10] - 2021-09-26
+
+- Split the 'By Group' tree view into active and inactive group views
+
 ## [1.1.9] - 2021-07-11
 
 - More tree view fine tuning
