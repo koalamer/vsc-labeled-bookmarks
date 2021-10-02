@@ -17,9 +17,9 @@ import { Bookmark } from "./bookmark";
 import { SerializableGroup } from "./serializable_group";
 import { SerializableBookmark } from "./serializable_bookmark";
 import { BookmarkDataProvider } from './interface/bookmark_data_provider';
-import { BookmarManager } from './interface/bookmark_manager';
+import { BookmarkManager } from './interface/bookmark_manager';
 
-export class Main implements BookmarkDataProvider, BookmarManager {
+export class Main implements BookmarkDataProvider, BookmarkManager {
     public ctx: ExtensionContext;
     private treeViewRefreshCallback = () => { };
 

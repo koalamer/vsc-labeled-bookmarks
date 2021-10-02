@@ -2,7 +2,7 @@ import { Bookmark } from '../bookmark';
 import { Group } from '../group';
 import { TextEditor } from 'vscode';
 
-export interface BookmarManager {
+export interface BookmarkManager {
     actionDeleteOneBookmark(bookmark: Bookmark): void;
     actionDeleteOneGroup(group: Group): void;
     deleteBookmarksOfFile(fsPath: string, group: Group | null): void;
