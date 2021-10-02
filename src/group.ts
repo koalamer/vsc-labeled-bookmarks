@@ -1,6 +1,6 @@
 import { TextEditorDecorationType, Uri } from 'vscode';
 import { DecorationFactory } from "./decoration_factory";
-import { SerializableGroup } from "./serializable_group";
+import { SerializableGroup } from "./storage/serializable_group";
 
 export class Group {
     static readonly inactiveTransparency: string = "33";

@@ -1,6 +1,6 @@
 import { DecorationFactory } from "./decoration_factory";
 import { TextEditorDecorationType, Uri } from "vscode";
-import { SerializableBookmark } from "./serializable_bookmark";
+import { SerializableBookmark } from "./storage/serializable_bookmark";
 import { Group } from "./group";
 
 export class Bookmark {

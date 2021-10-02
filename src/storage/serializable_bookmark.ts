@@ -1,4 +1,4 @@
-import { Bookmark } from "./bookmark";
+import { Bookmark } from "../bookmark";
 
 export class SerializableBookmark {
     fsPath: string;

@@ -14,8 +14,8 @@ import { BookmarkPickItem } from './bookmark_pick_item';
 import { ShapePickItem } from './shape_pick_item';
 import { ColorPickItem } from './color_pick_item';
 import { Bookmark } from "./bookmark";
-import { SerializableGroup } from "./serializable_group";
-import { SerializableBookmark } from "./serializable_bookmark";
+import { SerializableGroup } from "./storage/serializable_group";
+import { SerializableBookmark } from "./storage/serializable_bookmark";
 import { BookmarkDataProvider } from './interface/bookmark_data_provider';
 import { BookmarkManager } from './interface/bookmark_manager';
 
