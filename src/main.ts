@@ -102,12 +102,14 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.hideAll = false;
 
         this.loadBookmarkData();
+        this.loadLocalState();
 
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
         this.statusBarItem.command = 'vsc-labeled-bookmarks.selectGroup';
         this.statusBarItem.show();
 
         this.saveBookmarkData();
+        this.saveLocalState();
 
         this.updateDecorations();
     }
@@ -119,6 +121,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         let serializedBookmarks = this.bookmarks.map(bookmark => SerializableBookmark.fromBookmark(bookmark));
         this.ctx.workspaceState.update(this.savedBookmarksKey, serializedBookmarks);
 
+        this.updateStatusBar();
+    }
+
+    public saveLocalState() {
         this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroup.name);
         this.ctx.workspaceState.update(this.savedHideInactiveGroupsKey, this.hideInactiveGroups);
         this.ctx.workspaceState.update(this.savedHideAllKey, this.hideAll);
@@ -1486,13 +1492,17 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.statusBarItem.tooltip = this.groups.length + " group(s)" + hideStatus;
     }
 
-    private loadBookmarkData() {
+    private loadLocalState() {
         this.hideInactiveGroups = this.ctx.workspaceState.get(this.savedHideInactiveGroupsKey) ?? false;
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
 
         let activeGroupName: string = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
 
+        this.activateGroup(activeGroupName);
+    }
+
+    private loadBookmarkData() {
         let serializedGroups: Array<SerializableGroup> | undefined = this.ctx.workspaceState.get(this.savedGroupsKey);
         this.groups = new Array<Group>();
         if (typeof serializedGroups !== "undefined") {
@@ -1524,7 +1534,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         }
 
         this.resetTempLists();
-        this.activateGroup(activeGroupName);
     }
 
     private addNewGroup(group: Group) {
