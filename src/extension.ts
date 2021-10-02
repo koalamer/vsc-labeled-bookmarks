@@ -160,5 +160,5 @@ export function activate(context: ExtensionContext) {
 }
 
 export function deactivate() {
-	main.saveState();
+	main.saveBookmarkData();
 }

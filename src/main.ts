@@ -101,18 +101,18 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.hideInactiveGroups = false;
         this.hideAll = false;
 
-        this.restoreSavedState();
+        this.loadBookmarkData();
 
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
         this.statusBarItem.command = 'vsc-labeled-bookmarks.selectGroup';
         this.statusBarItem.show();
 
-        this.saveState();
+        this.saveBookmarkData();
 
         this.updateDecorations();
     }
 
-    public saveState() {
+    public saveBookmarkData() {
         let serializedGroups = this.groups.map(group => SerializableGroup.fromGroup(group));
         this.ctx.workspaceState.update(this.savedGroupsKey, serializedGroups);
 
@@ -307,7 +307,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
         if (bookmarksChanged) {
             this.tempDocumentDecorations.delete(fsPath);
-            this.saveState();
+            this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
         }
@@ -418,7 +418,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
     public actionDeleteOneBookmark(bookmark: Bookmark) {
         this.deleteBookmark(bookmark);
-        this.saveState();
+        this.saveBookmarkData();
         this.updateDecorations();
         this.treeViewRefreshCallback();
     }
@@ -427,7 +427,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.bookmarks
             .filter(b => (b.fsPath === fsPath && (group === null || group === b.group)))
             .forEach(b => this.deleteBookmark(b));
-        this.saveState();
+        this.saveBookmarkData();
         this.updateDecorations();
         this.treeViewRefreshCallback();
     }
@@ -504,7 +504,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             this.tempDocumentDecorations.delete(bookmark.fsPath);
             this.tempDocumentBookmarks.delete(bookmark.fsPath);
             this.tempGroupBookmarks.delete(this.activeGroup);
-            this.saveState();
+            this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
         });
@@ -551,7 +551,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
             group.name = newName;
 
-            this.saveState();
+            this.saveBookmarkData();
             this.treeViewRefreshCallback();
             this.updateStatusBar();
         });
@@ -592,7 +592,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
         if (typeof existingBookmark !== "undefined") {
             this.deleteBookmark(existingBookmark);
-            this.saveState();
+            this.saveBookmarkData();
             return;
         }
 
@@ -611,7 +611,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.tempDocumentDecorations.delete(fsPath);
         this.tempGroupBookmarks.delete(group);
 
-        this.saveState();
+        this.saveBookmarkData();
     }
 
     public editorActionToggleLabeledBookmark(textEditor: TextEditor) {
@@ -627,7 +627,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
         if (typeof existingBookmark !== "undefined") {
             this.deleteBookmark(existingBookmark);
-            this.saveState();
+            this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
             return;
@@ -716,7 +716,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             this.tempDocumentDecorations.delete(fsPath);
             this.tempDocumentBookmarks.delete(fsPath);
             this.tempGroupBookmarks.delete(this.activeGroup);
-            this.saveState();
+            this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
         });
@@ -1039,7 +1039,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                 let shape = (selected as ShapePickItem).shape;
                 let iconText = (selected as ShapePickItem).iconText;
                 this.activeGroup.setShapeAndIconText(shape, iconText);
-                this.saveState();
+                this.saveBookmarkData();
             }
         });
     }
@@ -1063,7 +1063,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             if (typeof selected !== "undefined") {
                 let color = (selected as ColorPickItem).color;
                 this.activeGroup.setColor(color);
-                this.saveState();
+                this.saveBookmarkData();
             }
         });
     }
@@ -1090,7 +1090,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
     public setActiveGroup(groupName: string) {
         this.activateGroup(groupName);
         this.updateDecorations();
-        this.saveState();
+        this.saveBookmarkData();
     }
 
     public actionAddGroup() {
@@ -1118,7 +1118,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
             this.activateGroup(groupName);
             this.updateDecorations();
-            this.saveState();
+            this.saveBookmarkData();
             this.treeViewRefreshCallback();
         });
     }
@@ -1172,7 +1172,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         }
 
         this.updateDecorations();
-        this.saveState();
+        this.saveBookmarkData();
         this.treeViewRefreshCallback();
     }
 
@@ -1209,7 +1209,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                 }
 
                 this.updateDecorations();
-                this.saveState();
+                this.saveBookmarkData();
                 this.treeViewRefreshCallback();
             }
 
@@ -1245,13 +1245,13 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
     public actionToggleHideAll() {
         this.setHideAll(!this.hideAll);
         this.updateDecorations();
-        this.saveState();
+        this.saveBookmarkData();
     }
 
     public actionToggleHideInactiveGroups() {
         this.setHideInactiveGroups(!this.hideInactiveGroups);
         this.updateDecorations();
-        this.saveState();
+        this.saveBookmarkData();
     }
 
     public actionClearFailedJumpFlags() {
@@ -1265,7 +1265,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         }
 
         vscode.window.showInformationMessage("Cleared broken bookmark flags: " + clearedFlagCount);
-        this.saveState();
+        this.saveBookmarkData();
     }
 
     public actionMoveBookmarksFromActiveGroup() {
@@ -1333,7 +1333,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
                 this.bookmarks.sort(Bookmark.sortByLocation);
 
-                this.saveState();
+                this.saveBookmarkData();
                 this.updateDecorations();
                 this.treeViewRefreshCallback();
             }
@@ -1443,7 +1443,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         }
 
         if (changedFiles.size > 0) {
-            this.saveState();
+            this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
         }
@@ -1462,7 +1462,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             }
 
             if (changesWereMade) {
-                this.saveState();
+                this.saveBookmarkData();
                 this.updateDecorations();
                 this.treeViewRefreshCallback();
             }
@@ -1486,7 +1486,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.statusBarItem.tooltip = this.groups.length + " group(s)" + hideStatus;
     }
 
-    private restoreSavedState() {
+    private loadBookmarkData() {
         this.hideInactiveGroups = this.ctx.workspaceState.get(this.savedHideInactiveGroupsKey) ?? false;
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
