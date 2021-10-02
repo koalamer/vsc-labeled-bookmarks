@@ -558,6 +558,11 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             group.name = newName;
 
             this.saveBookmarkData();
+
+            if (group === this.activeGroup) {
+                this.saveLocalState();
+            }
+
             this.treeViewRefreshCallback();
             this.updateStatusBar();
         });
@@ -1251,13 +1256,13 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
     public actionToggleHideAll() {
         this.setHideAll(!this.hideAll);
         this.updateDecorations();
-        this.saveBookmarkData();
+        this.saveLocalState();
     }
 
     public actionToggleHideInactiveGroups() {
         this.setHideInactiveGroups(!this.hideInactiveGroups);
         this.updateDecorations();
-        this.saveBookmarkData();
+        this.saveLocalState();
     }
 
     public actionClearFailedJumpFlags() {
@@ -1499,7 +1504,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
         let activeGroupName: string = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
 
-        this.activateGroup(activeGroupName);
+        this.activateGroup(activeGroupName, false);
     }
 
     private loadBookmarkData() {
@@ -1551,7 +1556,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.bookmarks.push(bookmark);
     }
 
-    private activateGroup(name: string) {
+    private activateGroup(name: string, saveState: boolean = true) {
         let newActiveGroup = this.ensureGroup(name);
         if (newActiveGroup === this.activeGroup) {
             return;
@@ -1563,6 +1568,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
         this.setGroupVisibilities();
         this.tempDocumentDecorations.clear();
+
+        if (saveState) {
+            this.saveLocalState();
+        }
     }
 
     private setGroupVisibilities() {
