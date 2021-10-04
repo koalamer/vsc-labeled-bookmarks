@@ -46,13 +46,16 @@ export class BookmarkTreeItem extends TreeItem {
 
     static fromFSPath(fsPath: string, filterGroup: Group | null, collapse: boolean): BookmarkTreeItem {
         let dirName: string = "";
-        let fileName = workspace.asRelativePath(fsPath);
-        let lastSepPos = fileName.lastIndexOf("/");
-        if (lastSepPos === 0) {
+        let fileName: string = "";
+        let relativePath = workspace.asRelativePath(fsPath);
+        let lastSepPos = relativePath.lastIndexOf("/");
+        if (lastSepPos > 0) {
+            dirName = relativePath.substring(0, lastSepPos);
+            fileName = relativePath.substring(lastSepPos + 1);
+        } else if (lastSepPos < 0) {
+            fileName = relativePath;
+        } else {
             fileName = fileName.substring(1);
-        } else if (lastSepPos > 0) {
-            dirName = fileName.substring(0, lastSepPos);
-            fileName = fileName.substring(lastSepPos + 1);
         }
         let result = new BookmarkTreeItem(fileName);
         result.description = dirName;
@@ -60,7 +63,7 @@ export class BookmarkTreeItem extends TreeItem {
         result.iconPath = ThemeIcon.File;
         result.base = fsPath;
         result.filterGroup = filterGroup;
-        result.tooltip = workspace.asRelativePath(fsPath);
+        result.tooltip = relativePath;
         result.collapsibleState = collapse ? TreeItemCollapsibleState.Collapsed : TreeItemCollapsibleState.Expanded;
         return result;
     }
