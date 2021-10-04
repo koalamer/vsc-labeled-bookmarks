@@ -1,4 +1,4 @@
-import { ThemeIcon, TreeItem, TreeItemCollapsibleState, Uri as string, workspace } from 'vscode';
+import { ThemeIcon, TreeItem, TreeItemCollapsibleState, workspace } from 'vscode';
 import { Bookmark } from '../bookmark';
 import { Group } from '../group';
 
@@ -45,7 +45,17 @@ export class BookmarkTreeItem extends TreeItem {
     }
 
     static fromFSPath(fsPath: string, filterGroup: Group | null, collapse: boolean): BookmarkTreeItem {
-        let result = new BookmarkTreeItem(string.file(fsPath));
+        let dirName: string = "";
+        let fileName = workspace.asRelativePath(fsPath);
+        let lastSepPos = fileName.lastIndexOf("/");
+        if (lastSepPos === 0) {
+            fileName = fileName.substring(1);
+        } else if (lastSepPos > 0) {
+            dirName = fileName.substring(0, lastSepPos);
+            fileName = fileName.substring(lastSepPos + 1);
+        }
+        let result = new BookmarkTreeItem(fileName);
+        result.description = dirName;
         result.contextValue = "file";
         result.iconPath = ThemeIcon.File;
         result.base = fsPath;

@@ -5,6 +5,7 @@ All notable changes to the "vsc-labeled-bookmarks" extension will be documented 
 ## [1.1.11] - 2021-10-04
 
 - Fix single letter labeled bookmark uniqueness
+- Add dir name as description to tree view file items
 
 ## [1.1.10] - 2021-09-26
 
