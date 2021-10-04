@@ -695,16 +695,14 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             }
 
             if (label.length === 1) {
-                let existingLabeledBookmark = this.getTempDocumentBookmarkList(fsPath)
-                    .find((bookmark) => {
-                        return bookmark.group === this.activeGroup
-                            && typeof bookmark.label !== "undefined"
-                            && bookmark.label === label;
-                    });
 
-                if (typeof existingLabeledBookmark !== "undefined") {
-                    this.deleteBookmark(existingLabeledBookmark);
-                }
+                this.getTempGroupBookmarkList(this.activeGroup)
+                    .filter((bookmark) => {
+                        return typeof bookmark.label !== "undefined"
+                            && bookmark.label === label;
+                    }).forEach((bookmark) => {
+                        this.deleteBookmark(bookmark);
+                    });
             }
 
             if (label !== "") {
