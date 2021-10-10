@@ -27,6 +27,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "vsc-labeled-bookmarks.runDevAction",
+        "title": "Bookmarks: run dev action"
+      },
+      {
         "command": "vsc-labeled-bookmarks.toggleBookmark",
         "title": "Bookmarks: toggle bookmark"
       },

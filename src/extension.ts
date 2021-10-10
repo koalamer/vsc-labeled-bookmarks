@@ -15,6 +15,12 @@ export function activate(context: ExtensionContext) {
 	let disposable: vscode.Disposable;
 
 	disposable = vscode.commands.registerTextEditorCommand(
+		'vsc-labeled-bookmarks.runDevAction',
+		(textEditor) => main.editorActionRunDevAction(textEditor)
+	);
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerTextEditorCommand(
 		'vsc-labeled-bookmarks.toggleBookmark',
 		(textEditor) => main.editorActionToggleBookmark(textEditor)
 	);

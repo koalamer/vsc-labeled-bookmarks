@@ -464,7 +464,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             prompt: "Enter new bookmark label",
             value: defaultQuickInputText,
             valueSelection: [0, defaultQuickInputText.length],
-        }).then(input => {
+        }).then((input: string | undefined) => {
             if (typeof input === "undefined") {
                 return;
             }
@@ -524,7 +524,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             prompt: "Enter new group name",
             value: defaultQuickInputText,
             valueSelection: [0, defaultQuickInputText.length],
-        }).then(input => {
+        }).then((input: string | undefined) => {
             if (typeof input === "undefined") {
                 return;
             }
@@ -566,6 +566,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             this.treeViewRefreshCallback();
             this.updateStatusBar();
         });
+    }
+
+    public editorActionRunDevAction(textEditor: TextEditor) {
+        vscode.window.showInformationMessage("Dev Action");
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
@@ -656,7 +660,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             prompt: "Enter label and/or group to be created",
             value: selectedText,
             valueSelection: [0, selectedText.length],
-        }).then(input => {
+        }).then((input: string | undefined) => {
             if (typeof input === "undefined") {
                 return;
             }
@@ -986,7 +990,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                     this.jumpToBookmark(selected.bookmark, true);
                 }
             }
-        ).then(selected => {
+        ).then((selected: BookmarkPickItem | undefined) => {
             if (typeof selected !== "undefined") {
                 this.jumpToBookmark(selected.bookmark);
                 return;
@@ -1015,7 +1019,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                     }
                 },
                 rejectReason => {
-                    vscode.window.showWarningMessage("Failed to navigate to origin (2): " + rejectReason.message);
+                    vscode.window.showWarningMessage("Failed to navigate to origin (4): " + rejectReason.message);
                 }
             );
         });
@@ -1043,7 +1047,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                 matchOnDescription: false,
                 placeHolder: "select bookmark group icon shape"
             }
-        ).then(selected => {
+        ).then((selected: ShapePickItem | undefined) => {
             if (typeof selected !== "undefined") {
                 let shape = (selected as ShapePickItem).shape;
                 let iconText = (selected as ShapePickItem).iconText;
@@ -1068,7 +1072,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                 matchOnDescription: false,
                 placeHolder: "select bookmark group icon color"
             }
-        ).then(selected => {
+        ).then((selected: ColorPickItem | undefined) => {
             if (typeof selected !== "undefined") {
                 let color = (selected as ColorPickItem).color;
                 this.activeGroup.setColor(color);
@@ -1089,7 +1093,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                 matchOnDescription: false,
                 placeHolder: "select bookmark group"
             }
-        ).then(selected => {
+        ).then((selected: GroupPickItem | undefined) => {
             if (typeof selected !== "undefined") {
                 this.setActiveGroup((selected as GroupPickItem).group.name);
             }
@@ -1106,7 +1110,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         vscode.window.showInputBox({
             placeHolder: "group name",
             prompt: "Enter group name to create or switch to"
-        }).then(groupName => {
+        }).then((groupName: string | undefined) => {
             if (typeof groupName === "undefined") {
                 return;
             }
@@ -1144,7 +1148,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                 matchOnDescription: false,
                 placeHolder: "select bookmark groups to be deleted"
             }
-        ).then(selecteds => {
+        ).then((selecteds: GroupPickItem[] | undefined) => {
             if (typeof selecteds !== "undefined") {
                 this.deleteGroups(selecteds.map(pickItem => pickItem.group));
             }
@@ -1211,7 +1215,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                     this.jumpToBookmark(selected.bookmark, true);
                 }
             }
-        ).then(selecteds => {
+        ).then((selecteds: BookmarkPickItem[] | undefined) => {
             if (typeof selecteds !== "undefined") {
                 for (let selected of selecteds) {
                     this.deleteBookmark(selected.bookmark);
@@ -1244,7 +1248,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                         return;
                     }
                 },
-                rejectReason => {
+                (rejectReason: any) => {
                     vscode.window.showWarningMessage("Failed to navigate to origin (2): " + rejectReason.message);
                 }
             );
