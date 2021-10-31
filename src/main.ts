@@ -569,7 +569,28 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
-        vscode.window.showInformationMessage("Dev Action");
+        let workspaceFolders = vscode.workspace.workspaceFolders;
+        if (typeof workspaceFolders === "undefined") {
+            return;
+        }
+
+
+        let mainFolder = workspaceFolders[0];
+
+        let vscDir = vscode.Uri.joinPath(mainFolder.uri, ".vscode");
+        vscode.window.showInformationMessage(vscDir.toString());
+
+        vscode.workspace.fs.stat(vscDir).then(
+            (stat: vscode.FileStat) => {
+                vscode.window.showInformationMessage(stat.type.toString());
+            },
+            () => {
+                vscode.window.showInformationMessage("failed");
+                vscode.workspace.fs.createDirectory(vscDir);
+            }
+        );
+
+        let bookmarkStorageFile = vscode.Uri.joinPath(vscDir, "labeledBookmarks.json");
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
