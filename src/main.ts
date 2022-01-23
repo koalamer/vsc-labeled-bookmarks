@@ -19,6 +19,7 @@ import { SerializableBookmark } from "./storage/serializable_bookmark";
 import { BookmarkDataProvider } from './interface/bookmark_data_provider';
 import { BookmarkManager } from './interface/bookmark_manager';
 import { BookmarkDataStorage } from './interface/bookmark_data_storage';
+import { BookmarkStorageDummy } from './storage/bookmark_storage_dummy';
 
 export class Main implements BookmarkDataProvider, BookmarkManager {
     public ctx: ExtensionContext;
@@ -26,6 +27,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
     public readonly savedBookmarksKey = "vscLabeledBookmarks.bookmarks";
     public readonly savedGroupsKey = "vscLabeledBookmarks.groups";
+    public readonly savedBookmarkTimestampKey = "vscodeLabeledBookmarks.bookmarkTimestamp";
     public readonly savedActiveGroupKey = "vscLabeledBookmarks.activeGroup";
     public readonly savedHideInactiveGroupsKey = "vscLabeledBookmarks.hideInactiveGroups";
     public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
@@ -57,6 +59,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
     public groups: Array<Group>;
     private bookmarks: Array<Bookmark>;
+    private bookmarkTimestamp: number;
 
     public activeGroup: Group;
     public fallbackColor: string = "00ddddff";
@@ -86,8 +89,12 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
         this.decorationFactory = new DecorationFactory(this.ctx.globalStorageUri, OverviewRulerLane.Center, "bordered");
 
+        this.persistentStorage = new BookmarkStorageDummy(this.decorationFactory);
+
         this.bookmarks = new Array<Bookmark>();
         this.groups = new Array<Group>();
+        this.bookmarkTimestamp = Date.now();
+
         this.defaultGroupName = "default";
         this.activeGroup = new Group(this.defaultGroupName, this.fallbackColor, this.defaultShape, "", this.decorationFactory);
 
@@ -133,6 +140,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
     }
 
     public saveBookmarkData() {
+        this.ctx.workspaceState.update(this.savedBookmarkTimestampKey, this.bookmarkTimestamp);
+
         let serializedGroups = this.groups.map(group => SerializableGroup.fromGroup(group));
         this.ctx.workspaceState.update(this.savedGroupsKey, serializedGroups);
 
@@ -331,6 +340,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
         if (bookmarksChanged) {
             this.tempDocumentDecorations.delete(fsPath);
+            this.updateBookmarkTimestamp();
             this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
@@ -442,6 +452,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
     public actionDeleteOneBookmark(bookmark: Bookmark) {
         this.deleteBookmark(bookmark);
+        this.updateBookmarkTimestamp();
         this.saveBookmarkData();
         this.updateDecorations();
         this.treeViewRefreshCallback();
@@ -451,6 +462,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.bookmarks
             .filter(b => (b.fsPath === fsPath && (group === null || group === b.group)))
             .forEach(b => this.deleteBookmark(b));
+        this.updateBookmarkTimestamp();
         this.saveBookmarkData();
         this.updateDecorations();
         this.treeViewRefreshCallback();
@@ -528,6 +540,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             this.tempDocumentDecorations.delete(bookmark.fsPath);
             this.tempDocumentBookmarks.delete(bookmark.fsPath);
             this.tempGroupBookmarks.delete(this.activeGroup);
+            this.updateBookmarkTimestamp();
             this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
@@ -575,6 +588,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
             group.name = newName;
 
+            this.updateBookmarkTimestamp();
             this.saveBookmarkData();
 
             if (group === this.activeGroup) {
@@ -646,6 +660,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
         if (typeof existingBookmark !== "undefined") {
             this.deleteBookmark(existingBookmark);
+            this.updateBookmarkTimestamp();
             this.saveBookmarkData();
             return;
         }
@@ -665,6 +680,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.tempDocumentDecorations.delete(fsPath);
         this.tempGroupBookmarks.delete(group);
 
+        this.updateBookmarkTimestamp();
         this.saveBookmarkData();
     }
 
@@ -681,6 +697,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
         if (typeof existingBookmark !== "undefined") {
             this.deleteBookmark(existingBookmark);
+            this.updateBookmarkTimestamp();
             this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
@@ -768,6 +785,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             this.tempDocumentDecorations.delete(fsPath);
             this.tempDocumentBookmarks.delete(fsPath);
             this.tempGroupBookmarks.delete(this.activeGroup);
+            this.updateBookmarkTimestamp();
             this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
@@ -1091,6 +1109,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                 let shape = (selected as ShapePickItem).shape;
                 let iconText = (selected as ShapePickItem).iconText;
                 this.activeGroup.setShapeAndIconText(shape, iconText);
+                this.updateBookmarkTimestamp();
                 this.saveBookmarkData();
             }
         });
@@ -1115,6 +1134,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             if (typeof selected !== "undefined") {
                 let color = (selected as ColorPickItem).color;
                 this.activeGroup.setColor(color);
+                this.updateBookmarkTimestamp();
                 this.saveBookmarkData();
             }
         });
@@ -1170,6 +1190,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
             this.activateGroup(groupName);
             this.updateDecorations();
+            this.updateBookmarkTimestamp();
             this.saveBookmarkData();
             this.treeViewRefreshCallback();
         });
@@ -1224,6 +1245,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         }
 
         this.updateDecorations();
+        this.updateBookmarkTimestamp();
         this.saveBookmarkData();
         this.treeViewRefreshCallback();
     }
@@ -1261,6 +1283,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
                 }
 
                 this.updateDecorations();
+                this.updateBookmarkTimestamp();
                 this.saveBookmarkData();
                 this.treeViewRefreshCallback();
             }
@@ -1385,6 +1408,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
                 this.bookmarks.sort(Bookmark.sortByLocation);
 
+                this.updateBookmarkTimestamp();
                 this.saveBookmarkData();
                 this.updateDecorations();
                 this.treeViewRefreshCallback();
@@ -1455,7 +1479,14 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             }
         }
 
-        // TODO initialize and/or apply storage setting changes
+        // TODO initialize storage into temp var
+
+        if (!(this.persistentStorage instanceof BookmarkStorageDummy)) {
+            // persist a last time and close
+        }
+
+
+        // if timestamp mismatches ask which one to discard
 
         let configOverviewRulerLane = (config.get(this.configOverviewRulerLane) as string) ?? "center";
         let previousOverviewRulerLane = this.decorationFactory.overviewRulerLane;
@@ -1519,6 +1550,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         }
 
         if (changedFiles.size > 0) {
+            this.updateBookmarkTimestamp();
             this.saveBookmarkData();
             this.updateDecorations();
             this.treeViewRefreshCallback();
@@ -1538,6 +1570,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
             }
 
             if (changesWereMade) {
+                this.updateBookmarkTimestamp();
                 this.saveBookmarkData();
                 this.updateDecorations();
                 this.treeViewRefreshCallback();
@@ -1573,6 +1606,13 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
     }
 
     private loadBookmarkData() {
+        let bookmarkTimestamp: number | undefined = this.ctx.workspaceState.get(this.savedBookmarkTimestampKey);
+        if (typeof bookmarkTimestamp !== "undefined") {
+            this.bookmarkTimestamp = bookmarkTimestamp;
+        } else {
+            this.bookmarkTimestamp = Date.now();
+        }
+
         let serializedGroups: Array<SerializableGroup> | undefined = this.ctx.workspaceState.get(this.savedGroupsKey);
         this.groups = new Array<Group>();
         if (typeof serializedGroups !== "undefined") {
@@ -1813,5 +1853,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         }
 
         return nearestAfter;
+    }
+
+    private updateBookmarkTimestamp() {
+        this.bookmarkTimestamp = Date.now();
     }
 }

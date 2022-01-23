@@ -26,6 +26,11 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         return new Group("uninitialized", "", "", "", this.decorationFactory);
     }
 
+    public getTimestamp(): number {
+        this.showError();
+        return 0;
+    }
+
     public setBookmarks(bookmarks: Array<Bookmark>): void {
         this.showError();
     }
@@ -35,6 +40,10 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
     }
 
     public setActiveGroup(group: Group): void {
+        this.showError();
+    }
+
+    public setTimestamp(timestamp: number): void {
         this.showError();
     }
 
