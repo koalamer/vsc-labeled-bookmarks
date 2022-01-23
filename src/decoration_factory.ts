@@ -4,7 +4,7 @@ import { DecorationRangeBehavior, OverviewRulerLane, Uri } from "vscode";
 import { TextEditorDecorationType } from "vscode";
 
 const svgBookmark = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-<path d="M7 30 L7 8 Q7 2 13 2 L19 2 Q25 2 25 8 L25 30 L16 23 Z" fill="#888888ff" />
+<path d="M7 30 L7 5 Q7 2 10 2 L22 2 Q25 2 25 5 L25 30 L16 23 Z" fill="#888888ff" />
 </svg>`;
 
 const svgBookmarkWithText = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
@@ -13,7 +13,7 @@ const svgBookmarkWithText = `<svg xmlns="http://www.w3.org/2000/svg" width="32" 
     <text x="16" y="18" text-anchor="middle" fill="black"
         style="font-size: 16; font-family: sans-serif; alignment-baseline: bottom; font-weight:bold;">Q</text>
 </mask>
-<path mask="url(#x)" d="M7 30 L7 8 Q7 2 13 2 L19 2 Q25 2 25 8 L25 30 L16 23 Z" fill="#888888ff" />
+<path mask="url(#x)" d="M7 30 L7 5 Q7 2 10 2 L22 2 Q25 2 25 5 L25 30 L16 23 Z" fill="#888888ff" />
 </svg>`;
 
 const svgCircle = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">

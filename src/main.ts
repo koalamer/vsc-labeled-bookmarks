@@ -18,6 +18,7 @@ import { SerializableGroup } from "./storage/serializable_group";
 import { SerializableBookmark } from "./storage/serializable_bookmark";
 import { BookmarkDataProvider } from './interface/bookmark_data_provider';
 import { BookmarkManager } from './interface/bookmark_manager';
+import { BookmarkDataStorage } from './interface/bookmark_data_storage';
 
 export class Main implements BookmarkDataProvider, BookmarkManager {
     public ctx: ExtensionContext;
@@ -35,6 +36,20 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
     public readonly configKeyDefaultShape = "defaultShape";
     public readonly configOverviewRulerLane = "overviewRulerLane";
     public readonly configLineEndLabelType = "lineEndLabelType";
+
+    public readonly configKeyPersistentStorageType = "persistentStorageType";
+    public readonly configKeyPersistToFilePath = "persistToFilePath";
+
+    public readonly persistentStorageTypeOptions = ["workspaceState", "file"];
+    public readonly defaultPersistentStorageType = "workspaceState";
+
+    public readonly defaultPersistToFilePath = "./.vscode/labeled_bookmarks.json";
+
+    public persistentStorageType: string;
+    public persistToFilePath: string;
+
+    private persistentStorage: BookmarkDataStorage;
+    // TODO init this to the internal storage? Or a dummy one?
 
     public readonly maxGroupNameLength = 40;
 
@@ -91,6 +106,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         this.tempDocumentBookmarks = new Map<string, Array<Bookmark>>();
         this.tempGroupBookmarks = new Map<Group, Array<Bookmark>>();
         this.tempDocumentDecorations = new Map<string, Map<TextEditorDecorationType, Array<Range>>>();
+
+        this.persistentStorageType = this.defaultPersistentStorageType;
+        this.persistToFilePath = this.defaultPersistToFilePath;
 
         this.readSettings();
 
@@ -1414,6 +1432,30 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
         } else {
             this.defaultShape = defaultDefaultShape;
         }
+
+        if (config.has(this.configKeyPersistentStorageType)) {
+            try {
+                let configPersistentStorageType = (config.get(this.configKeyPersistentStorageType) as string) ?? "";
+                if (this.persistentStorageTypeOptions.indexOf(configPersistentStorageType) > -1) {
+                    this.persistentStorageType = configPersistentStorageType;
+                } else {
+                    this.persistentStorageType = this.defaultPersistentStorageType;
+                }
+            } catch (e) {
+                vscode.window.showWarningMessage("Error reading bookmark persistent storage type setting");
+            }
+        }
+
+        if (config.has(this.configKeyPersistToFilePath)) {
+            try {
+                let configPersistToFilePath = (config.get(this.configKeyPersistToFilePath) as string) ?? "";
+                this.persistentStorageType = configPersistToFilePath;
+            } catch (e) {
+                vscode.window.showWarningMessage("Error reading bookmark persistent storage file path setting");
+            }
+        }
+
+        // TODO initialize and/or apply storage setting changes
 
         let configOverviewRulerLane = (config.get(this.configOverviewRulerLane) as string) ?? "center";
         let previousOverviewRulerLane = this.decorationFactory.overviewRulerLane;

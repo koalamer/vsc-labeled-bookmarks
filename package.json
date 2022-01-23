@@ -303,6 +303,20 @@
             "bordered",
             "inverse"
           ]
+        },
+        "labeledBookmarks.persistentStorageType": {
+          "type": "string",
+          "description": "Where to store bookmark data. The option 'workspaceState' is the VSCode built in storage, persisted somewhere in the user home directory. The alternative is to write it into a file. The file name is specified by the persistToFilePath option.",
+          "default": "workspaceState",
+          "enum": [
+            "workspaceState",
+            "file"
+          ]
+        },
+        "labeledBookmarks.persistToFilePath": {
+          "type": "string",
+          "description": "File name where the bookmark data should be stored when file storage is selected in the persistentStorageType option.",
+          "default": "./.vscode/labeled_bookmarks.json"
         }
       }
     },
