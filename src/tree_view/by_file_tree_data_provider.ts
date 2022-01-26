@@ -3,11 +3,12 @@ import { BookmarkTreeItem } from "./bookmark_tree_item";
 import { Group } from "../group";
 import { BookmarkDataProvider } from "../interface/bookmark_data_provider";
 import { BookmarkTreeDataProvider } from "./bookmark_tree_data_provider";
+import { ActiveGroupProvider } from '../interface/active_group_provider';
 
 export class ByFileTreeDataProvider extends BookmarkTreeDataProvider {
 
-    constructor(bookmarkDataProvider: BookmarkDataProvider) {
-        super(bookmarkDataProvider);
+    constructor(bookmarkDataProvider: BookmarkDataProvider, activeGroupProvider: ActiveGroupProvider) {
+        super(bookmarkDataProvider, activeGroupProvider);
         this.collapseGroupNodes = true;
         this.collapseFileNodes = true;
     }

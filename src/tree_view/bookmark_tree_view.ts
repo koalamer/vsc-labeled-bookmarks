@@ -26,9 +26,9 @@ export class BookmarkTreeView {
     public async init(main: Main) {
         this.main = main;
 
-        this.treeDataProviderByActiveGroup = new ActiveGroupTreeDataProvider(this.main);
-        this.treeDataProviderByInactiveGroups = new InactiveGroupsTreeDataProvider(this.main);
-        this.treeDataProviderByFile = new ByFileTreeDataProvider(this.main);
+        this.treeDataProviderByActiveGroup = new ActiveGroupTreeDataProvider(this.main, this.main);
+        this.treeDataProviderByInactiveGroups = new InactiveGroupsTreeDataProvider(this.main, this.main);
+        this.treeDataProviderByFile = new ByFileTreeDataProvider(this.main, this.main);
 
         this.treeViewByActiveGroup = vscode.window.createTreeView('bookmarksByActiveGroup', {
             treeDataProvider: this.treeDataProviderByActiveGroup

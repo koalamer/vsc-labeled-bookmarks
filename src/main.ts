@@ -20,8 +20,9 @@ import { BookmarkDataProvider } from './interface/bookmark_data_provider';
 import { BookmarkManager } from './interface/bookmark_manager';
 import { BookmarkDataStorage } from './interface/bookmark_data_storage';
 import { BookmarkStorageDummy } from './storage/bookmark_storage_dummy';
+import { ActiveGroupProvider } from './interface/active_group_provider';
 
-export class Main implements BookmarkDataProvider, BookmarkManager {
+export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupProvider {
     public ctx: ExtensionContext;
     private treeViewRefreshCallback = () => { };
 
@@ -196,6 +197,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager {
 
     public getActiveGroup(): Group {
         return this.activeGroup;
+    }
+
+    public getTimestamp(): number {
+        return this.bookmarkTimestamp;
     }
 
     private updateDecorations() {

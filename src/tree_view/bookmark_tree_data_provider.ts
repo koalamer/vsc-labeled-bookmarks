@@ -2,9 +2,11 @@ import { EventEmitter, TreeDataProvider, TreeItem } from "vscode";
 import { Bookmark } from '../bookmark';
 import { BookmarkTreeItem } from "./bookmark_tree_item";
 import { BookmarkDataProvider } from "../interface/bookmark_data_provider";
+import { ActiveGroupProvider } from "../interface/active_group_provider";
 
 export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeItem> {
     protected bookmarkDataProvider: BookmarkDataProvider;
+    protected activeGroupProvider: ActiveGroupProvider;
 
     protected rootElements: Array<BookmarkTreeItem> = [];
     protected childElements: Map<BookmarkTreeItem, Array<BookmarkTreeItem>>;
@@ -19,8 +21,9 @@ export class BookmarkTreeDataProvider implements TreeDataProvider<BookmarkTreeIt
     protected collapseGroupNodes = false;
     protected collapseFileNodes = false;
 
-    constructor(bookmarkDataProvider: BookmarkDataProvider) {
+    constructor(bookmarkDataProvider: BookmarkDataProvider, activeGroupProvider: ActiveGroupProvider) {
         this.bookmarkDataProvider = bookmarkDataProvider;
+        this.activeGroupProvider = activeGroupProvider;
         this.childElements = new Map();
     }
 
