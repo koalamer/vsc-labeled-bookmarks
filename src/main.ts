@@ -616,43 +616,43 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
-        let workspaceFolders = vscode.workspace.workspaceFolders;
-        if (typeof workspaceFolders === "undefined") {
-            return;
-        }
-        let mainFolder = workspaceFolders[0];
+        // let workspaceFolders = vscode.workspace.workspaceFolders;
+        // if (typeof workspaceFolders === "undefined") {
+        //     return;
+        // }
+        // let mainFolder = workspaceFolders[0];
 
-        let vscDir = vscode.Uri.joinPath(mainFolder.uri, ".vscode");
-        // vscode.window.showInformationMessage(vscDir.toString());
+        // let vscDir = vscode.Uri.joinPath(mainFolder.uri, ".vscode");
+        // // vscode.window.showInformationMessage(vscDir.toString());
 
-        // FileType.Directory = 2
-        // vscode.workspace.fs.stat(vscDir).then(
-        //     (stat: vscode.FileStat) => {
-        //         vscode.window.showInformationMessage("stat: " + stat.type.toString());
-        //     },
+        // // FileType.Directory = 2
+        // // vscode.workspace.fs.stat(vscDir).then(
+        // //     (stat: vscode.FileStat) => {
+        // //         vscode.window.showInformationMessage("stat: " + stat.type.toString());
+        // //     },
+        // //     () => {
+        // //         vscode.window.showInformationMessage("failed");
+        // //         vscode.workspace.fs.createDirectory(vscDir);
+        // //     }
+        // // );
+
+        // vscode.workspace.fs.writeFile(vscode.Uri.file(vscDir.fsPath + "/labeled_bookmarks.json"), new Uint8Array()).then(
         //     () => {
-        //         vscode.window.showInformationMessage("failed");
-        //         vscode.workspace.fs.createDirectory(vscDir);
+        //         vscode.window.showInformationMessage("writing file success");
+        //     },
+        //     (reason) => {
+        //         vscode.window.showErrorMessage("write failure: " + reason);
         //     }
         // );
 
-        vscode.workspace.fs.writeFile(vscode.Uri.file(vscDir.fsPath + "/labeled_bookmarks.json"), new Uint8Array()).then(
-            () => {
-                vscode.window.showInformationMessage("writing file success");
-            },
-            (reason) => {
-                vscode.window.showErrorMessage("write failure: " + reason);
-            }
-        );
-
-        let bookmarkStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "");
-        let readBookmarks = bookmarkStorage.getBookmarks();
+        // let bookmarkStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "");
+        // let readBookmarks = bookmarkStorage.getBookmarks();
         // vscode.window.showInformationMessage(typeof readBookmarks);
 
-        let fileStorage = new BookmarkStorageInFile(vscode.Uri.file(".vscode/labeled_bookmarks.json"), (bms) => {
-            vscode.window.showInformationMessage('file read');
-        });
-        // let bookmarkStorageFile = vscode.Uri.joinPath(vscDir, "labeledBookmarks.json");
+        // let fileStorage = new BookmarkStorageInFile(vscode.Uri.file(".vscode/labeled_bookmarks.json"), (bms) => {
+        //     vscode.window.showInformationMessage('file read');
+        // });
+        // // let bookmarkStorageFile = vscode.Uri.joinPath(vscDir, "labeledBookmarks.json");
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
@@ -1656,9 +1656,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
 
-        let activeGroupName: string = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
-
-        this.activateGroup(activeGroupName, false);
+        let groupToActivate: string = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
+        groupToActivate = this.getSomeExistingGroupName(groupToActivate);
+        this.activateGroup(groupToActivate, false);
     }
 
     private loadBookmarkData() {
@@ -1733,6 +1733,19 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         if (saveState) {
             this.saveLocalState();
         }
+    }
+
+    private getSomeExistingGroupName(preferredName: string): string {
+        if (this.groups.length === 0) {
+            return preferredName;
+        }
+
+        let group = this.groups.find((g: Group) => { return g.name === preferredName; });
+        if (typeof group !== "undefined") {
+            return group.name;
+        }
+
+        return this.groups[0].name;
     }
 
     private setGroupVisibilities() {
