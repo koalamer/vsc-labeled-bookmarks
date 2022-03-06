@@ -73,6 +73,11 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand(
+		'vsc-labeled-bookmarks.actionSetCustomIconText',
+		() => main.actionSetCustomIconText());
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.setGroupIconColor',
 		() => main.actionSetGroupIconColor());
 	context.subscriptions.push(disposable);

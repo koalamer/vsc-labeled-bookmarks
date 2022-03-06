@@ -63,6 +63,10 @@
         "title": "Bookmarks: set group icon shape"
       },
       {
+        "command": "vsc-labeled-bookmarks.actionSetCustomIconText",
+        "title": "Bookmarks: set group icon text character"
+      },
+      {
         "command": "vsc-labeled-bookmarks.setGroupIconColor",
         "title": "Bookmarks: set group icon color"
       },

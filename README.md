@@ -57,9 +57,10 @@ Group icons come in two variants: vector icons (fixed set) and unicode character
 * Vector icons provide a fixed set of shapes to chose from, and they should appear the same across all devices. When a new group is created it uses the shape specified as the default shape in the configuration options. If your group has a single character name, and it matches `[a-zA-Z0-9!?+-=\/\$%#]`, then the uppercased character is displayed on the icon.
 * Unicode character icons can be customized using the `labeledBookmarks.unicodeMarkers` configuration option. You can define which unicode characters/symbol/emojis you would like to use as the group icon. These can be applied using the shape selection command `ctrl+alt+b s`. If none is defined, a default set is used. (Emojis have their own color and so the color setting remains ineffective on those, but it works as expected on the rest of the unicode alphabets and symbols.)
 
-The other display option for group icons is the color.
+The icon can be customized after creation.
 
 * The icon color can be chosen selected from a list using `ctrl+alt+b c`. You can define the elements of this list with the configuration option `labeledBookmarks.colors`. If it is not defined a default color set is used.
+* The vector icon letter / unicode icon character can be set via the `Bookmarks: set group icon text character` action which does not have an action key assignment by default. The restrictions on accepted vector icon letters do apply but unicode icons can be set freely. The preferred way to have regularly used icons is to set the `labeledBookmarks.unicodeMarkers` option as needed and use the shape selection action as described above.
 
 ## Extension Settings
 
@@ -72,7 +73,7 @@ The other display option for group icons is the color.
 * `labeledBookmarks.persistToFilePath`: the file path to be used when `persistentStorageType` is set to file
 * `labeledBookmarks.homingMarginTop`: how many lines on code should be visible above the bookmark when navigating
 * `labeledBookmarks.homingMarginBottom`: how namy lines of code should be visible below the bookmark when navigating
-* `labeledBookmarks.homingSteps`: the above margin settings are emulated by revealing smaller and smaller regions using above margin settings. This setting controls how many iterations should be done before directly junping to the boookmarked position, so `0` means it is disabled
+* `labeledBookmarks.homingSteps`: the above margin settings are emulated by revealing smaller and smaller regions using above margin settings. This setting controls how many iterations should be done before directly jumping to the boookmarked position, so `0` means it is disabled
 
 ## Tree View in the Activity Bar
 

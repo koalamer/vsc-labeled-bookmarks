@@ -1148,6 +1148,26 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         });
     }
 
+    public actionSetCustomIconText() {
+        let unicodeChar = this.activeGroup.iconText;
+        let shape = this.activeGroup.shape;
+
+        vscode.window.showInputBox({
+            placeHolder: "character for icon",
+            prompt: "Enter character for icon",
+            value: unicodeChar,
+        }).then((input: string | undefined) => {
+            if (typeof input === "undefined" || input.trim() === "") {
+                return;
+            }
+
+            unicodeChar = input.trim();
+            this.activeGroup.setShapeAndIconText(shape, unicodeChar);
+            this.updateBookmarkTimestamp();
+            this.saveBookmarkData();
+        });
+    }
+
     public actionSetGroupIconColor() {
         let colorPickItems = new Array<ColorPickItem>();
         for (let [name, color] of this.colors) {
