@@ -68,6 +68,11 @@ The other display option for group icons is the color.
 * `labeledBookmarks.defaultShape`: set which vector icon should be used as the default for new groups
 * `labeledBookmarks.overviewRulerLane`: set how the bookmark should be marked on the overview ruler (scrollbar)
 * `labeledBookmarks.lineEndLabelType`: set how the line end labels for labeled bookmarks should be displayed
+* `labeledBookmarks.persistentStorageType`: where to store the bookmark data: in the workspace state or in a file
+* `labeledBookmarks.persistToFilePath`: the file path to be used when `persistentStorageType` is set to file
+* `labeledBookmarks.homingMarginTop`: how many lines on code should be visible above the bookmark when navigating
+* `labeledBookmarks.homingMarginBottom`: how namy lines of code should be visible below the bookmark when navigating
+* `labeledBookmarks.homingSteps`: the above margin settings are emulated by revealing smaller and smaller regions using above margin settings. This setting controls how many iterations should be done before directly junping to the boookmarked position, so `0` means it is disabled
 
 ## Tree View in the Activity Bar
 
@@ -112,6 +117,7 @@ Or you can delete them using `ctrl+alt+b d` and selecting them manually.
 * The content of the bookmarked line is stored within the bookmark itself for display purposes, and it is updated when changes in the file/line trigger a file changed event. However, not all changes to files trigger such an event. Git operations and even source code formatters might cause file changes without triggering a proper update of the bookmarks, and so markings can drift off the originally marked code and the stored line text might get off sync from the actual line content.
 * If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a suspiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.
 * Showing the closest bookmark in the tree view using `ctrl+alt+b t` sometimes fails to do its job properly. This is caused by the fact that tree views' inner state is not updated when they are invisible. Unfortunately, focusing on the closest bookmark would require that the tree view already knows about the current state of the bookmarks, even before it is visible. If the tree becomes visible, but does not jump to the closest bookmark, repeating the command should work as intended.
+* The homing margin functionality for the navigation is only an approximation due to the fact that I cannot retreive how many viewport lines a source code line actually takes up on the sreen. If you are working with wrapped lines that take up many viewport lines, using `homingSteps` will probably cause flickering during bavigating to a bookmark, so in this case it might be better to set it to `0`.
 
 ## If You Find Bugs
 

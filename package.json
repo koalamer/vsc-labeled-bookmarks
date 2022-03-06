@@ -317,6 +317,27 @@
           "type": "string",
           "description": "File name where the bookmark data should be stored when file storage is selected in the persistentStorageType option.",
           "default": "./.vscode/labeled_bookmarks.json"
+        },
+        "labeledBookmarks.homingMarginTop": {
+          "type": "number",
+          "description": "How many lines apart the bookmark should be kept from the vieport's top when navigating.",
+          "default": 6,
+          "minimum": 0,
+          "maximum": 200
+        },
+        "labeledBookmarks.homingMarginBottom": {
+          "type": "number",
+          "description": "How many lines apart the bookmark should be kept from the viewport's bottom when navigating.",
+          "default": 30,
+          "minimum": 0,
+          "maximum": 200
+        },
+        "labeledBookmarks.homingSteps": {
+          "type": "number",
+          "description": "To approximate the homing margin functionality, in how many steps the navigation should close in on the bookmark using the top and bottom homing margin settings. The value 0 means disabled.",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 5
         }
       }
     },

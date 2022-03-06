@@ -41,8 +41,11 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public readonly configKeyColors = "colors";
     public readonly configKeyUnicodeMarkers = "unicodeMarkers";
     public readonly configKeyDefaultShape = "defaultShape";
-    public readonly configOverviewRulerLane = "overviewRulerLane";
-    public readonly configLineEndLabelType = "lineEndLabelType";
+    public readonly configKeyOverviewRulerLane = "overviewRulerLane";
+    public readonly configKeyLineEndLabelType = "lineEndLabelType";
+    public readonly configKeyHomingMarginTop = "homingMarginTop";
+    public readonly configKeyHomingMarginBottom = "homingMarginBottom";
+    public readonly configKeyHomingSteps = "homingSteps";
 
     public readonly configKeyPersistentStorageType = "persistentStorageType";
     public readonly configKeyPersistToFilePath = "persistToFilePath";
@@ -74,6 +77,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public unicodeMarkers: Map<string, string>;
     public readonly shapes: Map<string, string>;
     public defaultShape = "bookmark";
+    public homingMarginTop = 6;
+    public homingMarginBottom = 30;
+    public homingSteps = 0;
 
     public hideInactiveGroups: boolean;
     public hideAll: boolean;
@@ -1497,6 +1503,30 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             }
         }
 
+        if (config.has(this.configKeyHomingMarginTop)) {
+            try {
+                this.homingMarginTop = (config.get(this.configKeyHomingMarginTop) as number) ?? 0;
+            } catch (e) {
+                vscode.window.showWarningMessage("Error reading homing top margin setting");
+            }
+        }
+
+        if (config.has(this.configKeyHomingMarginBottom)) {
+            try {
+                this.homingMarginBottom = (config.get(this.configKeyHomingMarginBottom) as number) ?? 0;
+            } catch (e) {
+                vscode.window.showWarningMessage("Error reading homing bottom margin setting");
+            }
+        }
+
+        if (config.has(this.configKeyHomingSteps)) {
+            try {
+                this.homingSteps = (config.get(this.configKeyHomingSteps) as number) ?? 0;
+            } catch (e) {
+                vscode.window.showWarningMessage("Error reading homing steps setting");
+            }
+        }
+
         if (config.has(this.configKeyPersistToFilePath)) {
             try {
                 let configPersistToFilePath = (config.get(this.configKeyPersistToFilePath) as string) ?? "";
@@ -1514,7 +1544,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
         // if timestamp mismatches ask which one to discard
 
-        let configOverviewRulerLane = (config.get(this.configOverviewRulerLane) as string) ?? "center";
+        let configOverviewRulerLane = (config.get(this.configKeyOverviewRulerLane) as string) ?? "center";
         let previousOverviewRulerLane = this.decorationFactory.overviewRulerLane;
         let newOverviewRulerLane: OverviewRulerLane | undefined;
         switch (configOverviewRulerLane) {
@@ -1526,7 +1556,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 newOverviewRulerLane = undefined;
         }
 
-        let newLineEndLabelType = (config.get(this.configLineEndLabelType) as string) ?? "bordered";
+        let newLineEndLabelType = (config.get(this.configKeyLineEndLabelType) as string) ?? "bordered";
         let previousLineEndLabelType = this.decorationFactory.lineEndLabelType;
 
         if (
@@ -1819,13 +1849,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                         throw Error('bookmark is past EOF');
                     }
 
-                    // TODO make these config values
-                    let marginTop: number = 10;
-                    let marginBottom: number = 50;
-                    let homingSteps = 3;
+                    let homingSteps = this.homingSteps;
 
-                    let marginTopStep = marginTop / homingSteps;
-                    let marginBottomStep = marginBottom / homingSteps;
+                    let marginTopStep = this.homingMarginTop / homingSteps;
+                    let marginBottomStep = this.homingMarginBottom / homingSteps;
 
                     while (homingSteps > 0) {
                         let approximateRange = new Range(
