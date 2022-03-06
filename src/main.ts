@@ -1813,6 +1813,33 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         vscode.window.showTextDocument(vscode.Uri.file(bookmark.fsPath), { preview: preview, preserveFocus: preview }).then(
             textEditor => {
                 try {
+
+                    let lineCount = textEditor.document.lineCount;
+                    if (lineCount < bookmark.lineNumber) {
+                        throw Error('bookmark is past EOF');
+                    }
+
+                    // TODO make these config values
+                    let marginTop: number = 10;
+                    let marginBottom: number = 50;
+                    let homingSteps = 3;
+
+                    let marginTopStep = marginTop / homingSteps;
+                    let marginBottomStep = marginBottom / homingSteps;
+
+                    while (homingSteps > 0) {
+                        let approximateRange = new Range(
+                            Math.max(0, bookmark.lineNumber - Math.round(marginTopStep * homingSteps)),
+                            0,
+                            Math.min(lineCount, bookmark.lineNumber + Math.round(marginBottomStep * homingSteps)),
+                            0
+                        );
+                        textEditor.selection = new vscode.Selection(approximateRange.start, approximateRange.start);
+                        textEditor.revealRange(approximateRange);
+
+                        homingSteps--;
+                    }
+
                     let range = new Range(
                         bookmark.lineNumber,
                         bookmark.characterNumber,
