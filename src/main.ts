@@ -6,13 +6,15 @@ import {
     OverviewRulerLane,
     Range, Selection,
     StatusBarItem,
-    TextDocument, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType
+    TextDocument, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
+    QuickPickItem
 } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
 import { BookmarkPickItem } from './bookmark_pick_item';
 import { ShapePickItem } from './shape_pick_item';
 import { ColorPickItem } from './color_pick_item';
+import { QuickPickSeparator } from './quick_pick_separator';
 import { Bookmark } from "./bookmark";
 import { SerializableGroup } from "./storage/serializable_group";
 import { SerializableBookmark } from "./storage/serializable_bookmark";
@@ -21,14 +23,16 @@ import { BookmarkManager } from './interface/bookmark_manager';
 import { BookmarkDataStorage } from './interface/bookmark_data_storage';
 import { BookmarkStorageDummy } from './storage/bookmark_storage_dummy';
 import { ActiveGroupProvider } from './interface/active_group_provider';
+import { BookmarkStorageInWorkspaceState } from './storage/bookmark_storage_in_workspace_state';
+import { BookmarkStorageInFile } from './storage/bookmark_storage_in_file';
 
 export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupProvider {
     public ctx: ExtensionContext;
     private treeViewRefreshCallback = () => { };
 
-    public readonly savedBookmarksKey = "vscLabeledBookmarks.bookmarks";
-    public readonly savedGroupsKey = "vscLabeledBookmarks.groups";
-    public readonly savedBookmarkTimestampKey = "vscodeLabeledBookmarks.bookmarkTimestamp";
+    public readonly savedBookmarksKey = "vscLabeledBookmarks.bookmarks"; // todo moved to storage impl
+    public readonly savedGroupsKey = "vscLabeledBookmarks.groups"; // todo moved to storage impl
+    public readonly savedBookmarkTimestampKey = "vscodeLabeledBookmarks.bookmarkTimestamp"; // todo moved to storage impl
     public readonly savedActiveGroupKey = "vscLabeledBookmarks.activeGroup";
     public readonly savedHideInactiveGroupsKey = "vscLabeledBookmarks.hideInactiveGroups";
     public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
@@ -47,7 +51,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public readonly defaultPersistentStorageType = "workspaceState";
 
     public readonly defaultPersistToFilePath = "./.vscode/labeled_bookmarks.json";
-
+    // TODO git branch sensitive file name?
     public persistentStorageType: string;
     public persistToFilePath: string;
 
@@ -90,7 +94,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
         this.decorationFactory = new DecorationFactory(this.ctx.globalStorageUri, OverviewRulerLane.Center, "bordered");
 
-        this.persistentStorage = new BookmarkStorageDummy(this.decorationFactory);
+        this.persistentStorage = new BookmarkStorageDummy();
 
         this.bookmarks = new Array<Bookmark>();
         this.groups = new Array<Group>();
@@ -610,24 +614,39 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         if (typeof workspaceFolders === "undefined") {
             return;
         }
-
-
         let mainFolder = workspaceFolders[0];
 
         let vscDir = vscode.Uri.joinPath(mainFolder.uri, ".vscode");
-        vscode.window.showInformationMessage(vscDir.toString());
+        // vscode.window.showInformationMessage(vscDir.toString());
 
-        vscode.workspace.fs.stat(vscDir).then(
-            (stat: vscode.FileStat) => {
-                vscode.window.showInformationMessage(stat.type.toString());
-            },
+        // FileType.Directory = 2
+        // vscode.workspace.fs.stat(vscDir).then(
+        //     (stat: vscode.FileStat) => {
+        //         vscode.window.showInformationMessage("stat: " + stat.type.toString());
+        //     },
+        //     () => {
+        //         vscode.window.showInformationMessage("failed");
+        //         vscode.workspace.fs.createDirectory(vscDir);
+        //     }
+        // );
+
+        vscode.workspace.fs.writeFile(vscode.Uri.file(vscDir.fsPath + "/labeled_bookmarks.json"), new Uint8Array()).then(
             () => {
-                vscode.window.showInformationMessage("failed");
-                vscode.workspace.fs.createDirectory(vscDir);
+                vscode.window.showInformationMessage("writing file success");
+            },
+            (reason) => {
+                vscode.window.showErrorMessage("write failure: " + reason);
             }
         );
 
-        let bookmarkStorageFile = vscode.Uri.joinPath(vscDir, "labeledBookmarks.json");
+        let bookmarkStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "");
+        let readBookmarks = bookmarkStorage.getBookmarks();
+        // vscode.window.showInformationMessage(typeof readBookmarks);
+
+        let fileStorage = new BookmarkStorageInFile(vscode.Uri.file(".vscode/labeled_bookmarks.json"), (bms) => {
+            vscode.window.showInformationMessage('file read');
+        });
+        // let bookmarkStorageFile = vscode.Uri.joinPath(vscDir, "labeledBookmarks.json");
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
@@ -1090,16 +1109,19 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public actionSetGroupIconShape() {
         let iconText = this.activeGroup.iconText;
 
-        let shapePickItems = new Array<ShapePickItem>();
+        let shapePickItems = new Array<ShapePickItem | QuickPickSeparator>();
+
+        shapePickItems.push(new QuickPickSeparator("vector"));
         for (let [label, id] of this.shapes) {
             label = (this.activeGroup.shape === id ? "● " : "◌ ") + label;
-            shapePickItems.push(new ShapePickItem(id, iconText, label, "vector", ""));
+            shapePickItems.push(new ShapePickItem(id, iconText, label, "", ""));
         }
 
+        shapePickItems.push(new QuickPickSeparator("unicode"));
         for (let [name, marker] of this.unicodeMarkers) {
             let label = (this.activeGroup.shape === "unicode" && this.activeGroup.iconText === marker ? "● " : "◌ ");
             label += marker + " " + name;
-            shapePickItems.push(new ShapePickItem("unicode", marker, label, "unicode", ""));
+            shapePickItems.push(new ShapePickItem("unicode", marker, label, "", ""));
         }
 
         vscode.window.showQuickPick(
@@ -1109,8 +1131,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 matchOnDescription: false,
                 placeHolder: "select bookmark group icon shape"
             }
-        ).then((selected: ShapePickItem | undefined) => {
-            if (typeof selected !== "undefined") {
+        ).then((selected: ShapePickItem | QuickPickSeparator | undefined) => {
+            if (typeof selected !== "undefined" && selected.kind === vscode.QuickPickItemKind.Default) {
                 let shape = (selected as ShapePickItem).shape;
                 let iconText = (selected as ShapePickItem).iconText;
                 this.activeGroup.setShapeAndIconText(shape, iconText);
@@ -1486,10 +1508,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
         // TODO initialize storage into temp var
 
-        if (!(this.persistentStorage instanceof BookmarkStorageDummy)) {
-            // persist a last time and close
-        }
-
+        // if (!(this.persistentStorage instanceof BookmarkStorageDummy)) {
+        //     // persist a last time and close
+        // }
 
         // if timestamp mismatches ask which one to discard
 

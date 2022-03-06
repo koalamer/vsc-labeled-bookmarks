@@ -1,5 +1,13 @@
-import { BookmarkDataProvider } from "./bookmark_data_provider";
-import { BookmarkDataPersister } from "./bookmark_data_persister";
+import { SerializableBookmark } from "../storage/serializable_bookmark";
+import { SerializableGroup } from "../storage/serializable_group";
 
-export interface BookmarkDataStorage extends BookmarkDataProvider, BookmarkDataPersister {
+export interface BookmarkDataStorage {
+    getBookmarks(): Array<SerializableBookmark>;
+    getGroups(): Array<SerializableGroup>;
+    getTimestamp(): number;
+
+    setBookmarks(serializableBookmarks: Array<SerializableBookmark>): void;
+    setGroups(serializableGroups: Array<SerializableGroup>): void;
+    setTimestamp(timestamp: number): void;
+    persist(): void;
 }

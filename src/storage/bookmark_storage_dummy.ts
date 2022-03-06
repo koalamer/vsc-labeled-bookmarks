@@ -1,29 +1,18 @@
 import * as vscode from 'vscode';
 import { BookmarkDataStorage } from "../interface/bookmark_data_storage";
-import { Bookmark } from "../bookmark";
-import { Group } from "../group";
-import { DecorationFactory } from '../decoration_factory';
+import { SerializableBookmark } from "./serializable_bookmark";
+import { SerializableGroup } from "./serializable_group";
 
 export class BookmarkStorageDummy implements BookmarkDataStorage {
-    private decorationFactory: DecorationFactory;
 
-    constructor(decorationFactory: DecorationFactory) {
-        this.decorationFactory = decorationFactory;
+    public getBookmarks(): Array<SerializableBookmark> {
+        this.showError();
+        return new Array<SerializableBookmark>();
     }
 
-    public getBookmarks(): Array<Bookmark> {
+    public getGroups(): Array<SerializableGroup> {
         this.showError();
-        return new Array<Bookmark>();
-    }
-
-    public getGroups(): Array<Group> {
-        this.showError();
-        return new Array<Group>();
-    }
-
-    public getActiveGroup(): Group {
-        this.showError();
-        return new Group("uninitialized", "", "", "", this.decorationFactory);
+        return new Array<SerializableGroup>();
     }
 
     public getTimestamp(): number {
@@ -31,15 +20,11 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         return 0;
     }
 
-    public setBookmarks(bookmarks: Array<Bookmark>): void {
+    public setBookmarks(serializableBookmarks: Array<SerializableBookmark>): void {
         this.showError();
     }
 
-    public setGroups(groups: Array<Group>): void {
-        this.showError();
-    }
-
-    public setActiveGroup(group: Group): void {
+    public setGroups(serializableGroups: Array<SerializableGroup>): void {
         this.showError();
     }
 

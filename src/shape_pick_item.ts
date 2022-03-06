@@ -1,4 +1,4 @@
-import { QuickPickItem } from 'vscode';
+import { QuickPickItem, QuickPickItemKind } from 'vscode';
 
 export class ShapePickItem implements QuickPickItem {
     shape: string;
@@ -6,6 +6,7 @@ export class ShapePickItem implements QuickPickItem {
     label: string;
     description: string;
     detail: string;
+    kind: QuickPickItemKind;
 
     constructor(shape: string, iconText: string, label: string, description: string, detail: string) {
         this.shape = shape;
@@ -13,5 +14,6 @@ export class ShapePickItem implements QuickPickItem {
         this.label = label;
         this.description = description;
         this.detail = detail;
+        this.kind = QuickPickItemKind.Default;
     }
 }
