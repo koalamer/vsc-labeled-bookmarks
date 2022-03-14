@@ -12,6 +12,16 @@ export function activate(context: ExtensionContext) {
 	treeView = new BookmarkTreeView();
 	main = new Main(context, treeView.refreshCallback.bind(treeView));
 
+	main.initPhase2().then(
+		() => {
+			activatePhase2(context);
+		},
+		(reason) => {
+			vscode.window.showErrorMessage('Labeled Bookmarks failed to initialize: ' + reason);
+		});
+}
+
+function activatePhase2(context: ExtensionContext): void {
 	let disposable: vscode.Disposable;
 
 	disposable = vscode.commands.registerTextEditorCommand(

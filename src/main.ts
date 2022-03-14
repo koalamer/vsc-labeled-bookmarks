@@ -137,6 +137,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.hideInactiveGroups = false;
         this.hideAll = false;
 
+        this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
+    }
+
+    public async initPhase2() {
         try {
             this.persistentStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "", true);
         } catch (e) {
