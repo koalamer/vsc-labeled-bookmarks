@@ -141,11 +141,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public async initPhase2() {
-        try {
-            this.persistentStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "", true);
-        } catch (e) {
-            vscode.window.showErrorMessage("Failed to initialize persistent bookmark data storage: " + e);
-        }
+        this.persistentStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "", true);
 
         this.loadBookmarkData();
         this.loadLocalState();
