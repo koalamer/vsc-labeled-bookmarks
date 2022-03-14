@@ -104,7 +104,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
         this.bookmarks = new Array<Bookmark>();
         this.groups = new Array<Group>();
-        this.bookmarkTimestamp = Date.now();
+        this.bookmarkTimestamp = 0;
 
         this.defaultGroupName = "default";
         this.activeGroup = new Group(this.defaultGroupName, this.fallbackColor, this.defaultShape, "", this.decorationFactory);
@@ -137,6 +137,12 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.hideInactiveGroups = false;
         this.hideAll = false;
 
+        try {
+            this.persistentStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "", true);
+        } catch (e) {
+            vscode.window.showErrorMessage("Failed to initialize persistent bookmark data storage: " + e);
+        }
+
         this.loadBookmarkData();
         this.loadLocalState();
 
@@ -144,20 +150,21 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.statusBarItem.command = 'vsc-labeled-bookmarks.selectGroup';
         this.statusBarItem.show();
 
-        this.saveBookmarkData();
         this.saveLocalState();
 
         this.updateDecorations();
     }
 
     public saveBookmarkData() {
-        this.ctx.workspaceState.update(this.savedBookmarkTimestampKey, this.bookmarkTimestamp);
+        this.persistentStorage.setTimestamp(this.bookmarkTimestamp);
 
         let serializedGroups = this.groups.map(group => SerializableGroup.fromGroup(group));
-        this.ctx.workspaceState.update(this.savedGroupsKey, serializedGroups);
+        this.persistentStorage.setGroups(serializedGroups);
 
         let serializedBookmarks = this.bookmarks.map(bookmark => SerializableBookmark.fromBookmark(bookmark));
-        this.ctx.workspaceState.update(this.savedBookmarksKey, serializedBookmarks);
+        this.persistentStorage.setBookmarks(serializedBookmarks);
+
+        this.persistentStorage.persist();
 
         this.updateStatusBar();
     }
@@ -1558,10 +1565,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
         // TODO initialize storage into temp var
 
-        // if (!(this.persistentStorage instanceof BookmarkStorageDummy)) {
-        //     // persist a last time and close
-        // }
-
         // if timestamp mismatches ask which one to discard
 
         let configOverviewRulerLane = (config.get(this.configKeyOverviewRulerLane) as string) ?? "center";
@@ -1682,41 +1685,29 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     private loadBookmarkData() {
-        let bookmarkTimestamp: number | undefined = this.ctx.workspaceState.get(this.savedBookmarkTimestampKey);
-        if (typeof bookmarkTimestamp !== "undefined") {
-            this.bookmarkTimestamp = bookmarkTimestamp;
-        } else {
-            this.bookmarkTimestamp = Date.now();
-        }
+        this.bookmarkTimestamp = this.persistentStorage.getTimestamp();
 
-        let serializedGroups: Array<SerializableGroup> | undefined = this.ctx.workspaceState.get(this.savedGroupsKey);
         this.groups = new Array<Group>();
-        if (typeof serializedGroups !== "undefined") {
-            try {
-                for (let sg of serializedGroups) {
-                    this.addNewGroup(Group.fromSerializableGroup(sg, this.decorationFactory));
-                }
-
-                this.groups.sort(Group.sortByName);
-            } catch (e) {
-                vscode.window.showErrorMessage("Restoring bookmark groups failed (" + e + ")");
+        try {
+            for (let sg of this.persistentStorage.getGroups()) {
+                this.addNewGroup(Group.fromSerializableGroup(sg, this.decorationFactory));
             }
+
+            this.groups.sort(Group.sortByName);
+        } catch (e) {
+            vscode.window.showErrorMessage("Restoring bookmark groups failed (" + e + ")");
         }
 
-        let serializedBookmarks: Array<SerializableBookmark> | undefined
-            = this.ctx.workspaceState.get(this.savedBookmarksKey);
         this.bookmarks = new Array<Bookmark>();
-        if (typeof serializedBookmarks !== "undefined") {
-            try {
-                for (let sb of serializedBookmarks) {
-                    let bookmark = Bookmark.fromSerializableBookMark(sb, this.getGroupByName.bind(this), this.decorationFactory);
-                    this.addNewDecoratedBookmark(bookmark);
-                }
-
-                this.bookmarks.sort(Bookmark.sortByLocation);
-            } catch (e) {
-                vscode.window.showErrorMessage("Restoring bookmarks failed (" + e + ")");
+        try {
+            for (let sb of this.persistentStorage.getBookmarks()) {
+                let bookmark = Bookmark.fromSerializableBookMark(sb, this.getGroupByName.bind(this), this.decorationFactory);
+                this.addNewDecoratedBookmark(bookmark);
             }
+
+            this.bookmarks.sort(Bookmark.sortByLocation);
+        } catch (e) {
+            vscode.window.showErrorMessage("Restoring bookmarks failed (" + e + ")");
         }
 
         this.resetTempLists();

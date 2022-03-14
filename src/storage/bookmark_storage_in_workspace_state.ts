@@ -7,19 +7,22 @@ import { SerializableBookmark } from './serializable_bookmark';
 
 export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
 
+    public readonly savedDataFormatVersionKey = "vscLabeledBookmarks.formatVersion";
     public readonly savedBookmarksKey = "vscLabeledBookmarks.bookmarks";
     public readonly savedGroupsKey = "vscLabeledBookmarks.groups";
     public readonly savedBookmarkTimestampKey = "vscodeLabeledBookmarks.bookmarkTimestamp";
 
     private keyPostfix = "";
 
+    private dataFormatVersion: number;
     private groups: Array<SerializableGroup>;
     private bookmarks: Array<SerializableBookmark>;
     private timestamp: number;
 
     private workspaceState: Memento;
 
-    constructor(workspaceState: Memento, keyPostfix: string) {
+    constructor(workspaceState: Memento, keyPostfix: string, abortOnError: boolean) {
+        this.dataFormatVersion = 0;
         this.groups = new Array<SerializableGroup>();
         this.bookmarks = new Array<SerializableBookmark>();
         this.timestamp = 0;
@@ -30,32 +33,64 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         }
         this.keyPostfix += keyPostfix;
 
-        this.readStorage();
+        this.readStorage(abortOnError);
     }
 
-    private readStorage() {
+    private readStorage(abortOnError: boolean) {
+        this.dataFormatVersion = this.workspaceState.get(this.savedDataFormatVersionKey + this.keyPostfix) ?? 0;
+
+        this.ensureDataFormatCompatibility();
+
         let bookmarkTimestamp: number | undefined = this.workspaceState.get(this.savedBookmarkTimestampKey + this.keyPostfix);
-        if (typeof bookmarkTimestamp !== "undefined") {
-            this.timestamp = bookmarkTimestamp;
-        } else {
-            this.timestamp = 0;
+        if (typeof bookmarkTimestamp === "undefined") {
+            if (abortOnError) {
+                throw new Error("Restoring timestamp failed");
+            }
+            bookmarkTimestamp = 0;
         }
+        this.timestamp = bookmarkTimestamp;
 
         let serializedGroups: Array<SerializableGroup> | undefined = this.workspaceState.get(this.savedGroupsKey + this.keyPostfix);
-        this.groups = new Array<SerializableGroup>();
-        if (typeof serializedGroups !== "undefined") {
-            this.groups = serializedGroups;
-        } else {
-            vscode.window.showErrorMessage("Restoring bookmark groups failed");
+        if (typeof serializedGroups === "undefined") {
+            if (abortOnError) {
+                throw new Error("Restoring bookmark groups failed");
+            }
+            serializedGroups = new Array<SerializableGroup>();
         }
+        this.groups = serializedGroups;
 
-        let serializedBookmarks: Array<SerializableBookmark> | undefined
-            = this.workspaceState.get(this.savedBookmarksKey + this.keyPostfix);
-        this.bookmarks = new Array<SerializableBookmark>();
-        if (typeof serializedBookmarks !== "undefined") {
-            this.bookmarks = serializedBookmarks;
-        } else {
-            vscode.window.showErrorMessage("Restoring bookmarks failed");
+        let serializedBookmarks: Array<SerializableBookmark> | undefined = this.workspaceState.get(this.savedBookmarksKey + this.keyPostfix);
+        if (typeof serializedBookmarks === "undefined") {
+            if (abortOnError) {
+                throw new Error("Restoring bookmarks failed");
+            }
+            serializedBookmarks = new Array<SerializableBookmark>();
+        }
+        this.bookmarks = serializedBookmarks;
+    }
+
+    private ensureDataFormatCompatibility() {
+        if (this.dataFormatVersion === 0) {
+            // from v0 to v1: initial set up
+            // - add timestamp
+            // - add format v1
+            // - add groups if not present
+            // - add bookmarks if not present
+
+            this.workspaceState.update(this.savedBookmarkTimestampKey + this.keyPostfix, 0);
+
+            this.dataFormatVersion = 1;
+            this.workspaceState.update(this.savedDataFormatVersionKey + this.keyPostfix, this.dataFormatVersion);
+
+            let serializedGroups: Array<SerializableGroup> | undefined = this.workspaceState.get(this.savedGroupsKey + this.keyPostfix);
+            if (typeof serializedGroups === "undefined") {
+                this.workspaceState.update(this.savedGroupsKey + this.keyPostfix, new Array());
+            }
+
+            let serializedBookmarks: Array<SerializableBookmark> | undefined = this.workspaceState.get(this.savedBookmarksKey + this.keyPostfix);
+            if (typeof serializedBookmarks === "undefined") {
+                this.workspaceState.update(this.savedBookmarksKey + this.keyPostfix, new Array());
+            }
         }
     }
 
@@ -84,12 +119,9 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
     }
 
     public persist(): void {
+        this.workspaceState.update(this.savedDataFormatVersionKey + this.keyPostfix, this.dataFormatVersion);
         this.workspaceState.update(this.savedBookmarkTimestampKey + this.keyPostfix, this.timestamp);
-
-        let serializedGroups = this.groups;
-        this.workspaceState.update(this.savedGroupsKey + this.keyPostfix, serializedGroups);
-
-        let serializedBookmarks = this.bookmarks;
-        this.workspaceState.update(this.savedBookmarksKey + this.keyPostfix, serializedBookmarks);
+        this.workspaceState.update(this.savedGroupsKey + this.keyPostfix, this.groups);
+        this.workspaceState.update(this.savedBookmarksKey + this.keyPostfix, this.bookmarks);
     }
 }
