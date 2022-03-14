@@ -150,8 +150,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.statusBarItem.command = 'vsc-labeled-bookmarks.selectGroup';
         this.statusBarItem.show();
 
-        this.saveLocalState();
-
         this.updateDecorations();
     }
 
@@ -1679,9 +1677,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
 
-        let groupToActivate: string = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
-        groupToActivate = this.getSomeExistingGroupName(groupToActivate);
-        this.activateGroup(groupToActivate, false);
+        let savedGroupToActivate: string = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
+        let actualGroupToActivate = this.getSomeExistingGroupName(savedGroupToActivate);
+
+        this.activateGroup(actualGroupToActivate, savedGroupToActivate !== actualGroupToActivate);
     }
 
     private loadBookmarkData() {
