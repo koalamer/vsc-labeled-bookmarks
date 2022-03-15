@@ -12,7 +12,8 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
 
     public getGroups(): Array<SerializableGroup> {
         this.showError();
-        return new Array<SerializableGroup>();
+        let dummyGroup = new SerializableGroup("uninitialized", "#888888FF", "bookmark", "?");
+        return [dummyGroup];
     }
 
     public getTimestamp(): number {
@@ -37,6 +38,6 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
     };
 
     private showError() {
-        vscode.window.showErrorMessage('Labeled bookmark storage is uninitialized.');
+        vscode.window.showErrorMessage('Labeled bookmark storage is uninitialized. Bookmarks will not persisted.');
     }
 }
