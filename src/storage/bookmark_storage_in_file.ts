@@ -13,6 +13,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
     private dataFormatVersion: number;
     private groups: Array<SerializableGroup>;
     private bookmarks: Array<SerializableBookmark>;
+    private workspaceFolders: Array<String>;
     private timestamp: number;
 
     private isInitialized: boolean = false;
@@ -23,6 +24,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
         this.dataFormatVersion = 1;
         this.groups = new Array<SerializableGroup>();
         this.bookmarks = new Array<SerializableBookmark>();
+        this.workspaceFolders = new Array<String>();
         this.timestamp = 0;
 
         this.isInitialized = false;
@@ -60,6 +62,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
             !savedData.hasOwnProperty('dataFormatVersion')
             || !savedData.hasOwnProperty('groups')
             || !savedData.hasOwnProperty('bookmarks')
+            || !savedData.hasOwnProperty('workspaceFolders')
             || !savedData.hasOwnProperty('timestamp')
         ) {
             Promise.reject(new Error("Expected fields missing from storage file"));
@@ -73,6 +76,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
 
         this.groups = savedData.groups ?? [];
         this.bookmarks = savedData.bookmarks ?? [];
+        this.workspaceFolders = savedData.workspaceFolders ?? [];
         this.timestamp = savedData.timestamp ?? 0;
 
         this.isInitialized = true;
@@ -88,6 +92,11 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
         return this.groups;
     }
 
+    public getWorkspaceFolders(): Array<String> {
+        this.failIfUninitialized();
+        return this.workspaceFolders;
+    }
+
     public getTimestamp(): number {
         this.failIfUninitialized();
         return this.timestamp;
@@ -101,6 +110,10 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
         this.groups = serializableGroups;
     }
 
+    public setWorkspaceFolders(workspaceFolders: String[]): void {
+        this.workspaceFolders = workspaceFolders;
+    }
+
     public setTimestamp(timestamp: number): void {
         this.timestamp = timestamp;
     }
@@ -111,6 +124,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
             "timestamp": this.timestamp,
             "groups": this.groups,
             "bookmarks": this.bookmarks,
+            "workspaceFolders": this.workspaceFolders,
         });
 
         let bytes = Uint8Array.from(json.split("").map(c => { return c.charCodeAt(0); }));

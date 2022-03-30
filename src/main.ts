@@ -186,6 +186,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         let serializedBookmarks = this.bookmarks.map(bookmark => SerializableBookmark.fromBookmark(bookmark));
         this.persistentStorage.setBookmarks(serializedBookmarks);
 
+        let folders = vscode.workspace.workspaceFolders ?? [];
+        this.persistentStorage.setWorkspaceFolders(folders.map(f => f.uri.fsPath));
+
         this.persistentStorage.persist();
 
         this.updateStatusBar();
@@ -645,11 +648,11 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
-        let workspaceFolders = vscode.workspace.workspaceFolders;
-        if (typeof workspaceFolders === "undefined") {
-            return;
-        }
-        workspaceFolders.forEach((x) => vscode.window.showInformationMessage(x.uri.toString()));
+        // let workspaceFolders = vscode.workspace.workspaceFolders;
+        // if (typeof workspaceFolders === "undefined") {
+        //     return;
+        // }
+        // workspaceFolders.forEach((x) => vscode.window.showInformationMessage(x.uri.toString()));
 
         // let vscDir = vscode.Uri.joinPath(mainFolder.uri, ".vscode");
         // // vscode.window.showInformationMessage(vscDir.toString());
@@ -1708,6 +1711,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
     private loadBookmarkData() {
         this.bookmarkTimestamp = this.persistentStorage.getTimestamp();
+
+        // TODO check stored workspace folder list
 
         this.groups = new Array<Group>();
         try {

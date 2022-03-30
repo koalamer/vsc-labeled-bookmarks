@@ -10,6 +10,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
     public readonly savedDataFormatVersionKey = "vscLabeledBookmarks.formatVersion";
     public readonly savedBookmarksKey = "vscLabeledBookmarks.bookmarks";
     public readonly savedGroupsKey = "vscLabeledBookmarks.groups";
+    public readonly savedWorkspaceFoldersKey = "vscLabeledBookmarks.workspaceFolders";
     public readonly savedBookmarkTimestampKey = "vscodeLabeledBookmarks.bookmarkTimestamp";
 
     private keyPostfix = "";
@@ -17,6 +18,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
     private dataFormatVersion: number;
     private groups: Array<SerializableGroup>;
     private bookmarks: Array<SerializableBookmark>;
+    private workspaceFolders: Array<String>;
     private timestamp: number;
 
     private workspaceState: Memento;
@@ -25,6 +27,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         this.dataFormatVersion = 0;
         this.groups = new Array<SerializableGroup>();
         this.bookmarks = new Array<SerializableBookmark>();
+        this.workspaceFolders = new Array<String>();
         this.timestamp = 0;
 
         this.workspaceState = workspaceState;
@@ -67,6 +70,15 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
             serializedBookmarks = new Array<SerializableBookmark>();
         }
         this.bookmarks = serializedBookmarks;
+
+        let serializedWorkspaceFolders: Array<String> | undefined = this.workspaceState.get(this.savedWorkspaceFoldersKey + this.keyPostfix);
+        if (typeof serializedWorkspaceFolders === "undefined") {
+            if (abortOnError) {
+                throw new Error("Restoring workspace folder list failed");
+            }
+            serializedWorkspaceFolders = new Array<String>();
+        }
+        this.workspaceFolders = serializedWorkspaceFolders;
     }
 
     private ensureDataFormatCompatibility() {
@@ -76,6 +88,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
             // - add format v1
             // - add groups if not present
             // - add bookmarks if not present
+            // - add workspaceFolders
 
             this.workspaceState.update(this.savedBookmarkTimestampKey + this.keyPostfix, 0);
 
@@ -91,6 +104,8 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
             if (typeof serializedBookmarks === "undefined") {
                 this.workspaceState.update(this.savedBookmarksKey + this.keyPostfix, new Array());
             }
+
+            this.workspaceState.update(this.savedWorkspaceFoldersKey + this.keyPostfix, new Array());
         }
     }
 
@@ -100,6 +115,10 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
 
     public getGroups(): Array<SerializableGroup> {
         return this.groups;
+    }
+
+    public getWorkspaceFolders(): Array<String> {
+        return this.workspaceFolders;
     }
 
     public getTimestamp(): number {
@@ -114,6 +133,10 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         this.groups = serializableGroups;
     }
 
+    public setWorkspaceFolders(workspaceFolders: Array<String>): void {
+        this.workspaceFolders = workspaceFolders;
+    }
+
     public setTimestamp(timestamp: number): void {
         this.timestamp = timestamp;
     }
@@ -123,5 +146,6 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         this.workspaceState.update(this.savedBookmarkTimestampKey + this.keyPostfix, this.timestamp);
         this.workspaceState.update(this.savedGroupsKey + this.keyPostfix, this.groups);
         this.workspaceState.update(this.savedBookmarksKey + this.keyPostfix, this.bookmarks);
+        this.workspaceState.update(this.savedWorkspaceFoldersKey + this.keyPostfix, this.workspaceFolders);
     }
 }

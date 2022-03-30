@@ -16,6 +16,11 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         return [dummyGroup];
     }
 
+    public getWorkspaceFolders(): Array<String> {
+        this.showError();
+        return new Array<String>();
+    }
+
     public getTimestamp(): number {
         this.showError();
         return 0;
@@ -26,6 +31,10 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
     }
 
     public setGroups(serializableGroups: Array<SerializableGroup>): void {
+        this.showError();
+    }
+
+    public setWorkspaceFolders(workspaceFolders: Array<String>): void {
         this.showError();
     }
 
