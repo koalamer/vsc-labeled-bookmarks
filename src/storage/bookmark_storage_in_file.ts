@@ -10,51 +10,72 @@ import { FileType, FileStat } from 'vscode';
 export class BookmarkStorageInFile implements BookmarkDataStorage {
     private uri: Uri;
 
+    private dataFormatVersion: number;
     private groups: Array<SerializableGroup>;
     private bookmarks: Array<SerializableBookmark>;
     private timestamp: number;
-    private readyCallback: (bms: BookmarkDataStorage) => void;
 
     private isInitialized: boolean = false;
 
-    constructor(uri: Uri, readyCallback: ((bms: BookmarkDataStorage) => void)) {
+    constructor(uri: Uri) {
         this.uri = uri;
 
+        this.dataFormatVersion = 1;
         this.groups = new Array<SerializableGroup>();
         this.bookmarks = new Array<SerializableBookmark>();
         this.timestamp = 0;
 
-        this.readyCallback = readyCallback;
-        this.ensureFile().then(this.readFile);
+        this.isInitialized = false;
     }
 
-    private async ensureFile(): Promise<void> {
+    public async init() {
         let stat: FileStat;
+        try {
+            stat = await workspace.fs.stat(this.uri);
+        } catch (e) {
+            this.persist();
+            stat = await workspace.fs.stat(this.uri);
+        }
 
-        vscode.workspace.fs.stat(this.uri).then(
-            (fileStat) => {
-                if (fileStat.type === FileType.Directory) {
-                    vscode.window.showErrorMessage("Cannot use '" + this.uri.fsPath + "' directory as a file");
-                    throw new Error();
-                }
-            },
-            (reason) => {
-                vscode.window.showErrorMessage("Failed to stat '" + this.uri.fsPath + "': " + reason);
-
-            }
-        );
+        if (stat.type & (FileType.File | FileType.SymbolicLink)) {
+            await this.readFile();
+            Promise.resolve();
+        } else if (stat.type | FileType.Directory) {
+            Promise.reject(new Error("Directory specified as storage path '" + this.uri.toString() + "'"));
+        } else {
+            this.persist();
+        }
     }
 
     private async readFile() {
         let fileContents: Uint8Array = await workspace.fs.readFile(this.uri);
         let json = new TextDecoder("utf-8").decode(fileContents);
         let savedData = JSON.parse(json);
-        vscode.window.showErrorMessage(savedData);
+
+        if (typeof savedData === "undefined") {
+            Promise.reject(new Error("Could not read storage file"));
+        }
+
+        if (
+            !savedData.hasOwnProperty('dataFormatVersion')
+            || !savedData.hasOwnProperty('groups')
+            || !savedData.hasOwnProperty('bookmarks')
+            || !savedData.hasOwnProperty('timestamp')
+        ) {
+            Promise.reject(new Error("Expected fields missing from storage file"));
+        }
+
+        this.dataFormatVersion = savedData.dataFormatVersion ?? 0;
+
+        if (this.dataFormatVersion !== 1) {
+            Promise.reject(new Error("Unkown data format version in storage file"));
+        }
+
         this.groups = savedData.groups ?? [];
         this.bookmarks = savedData.bookmarks ?? [];
         this.timestamp = savedData.timestamp ?? 0;
+
         this.isInitialized = true;
-        this.readyCallback(this);
     }
 
     public getBookmarks(): Array<SerializableBookmark> {
@@ -86,18 +107,26 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
 
     public persist(): void {
         let json = JSON.stringify({
+            "dataFormatVersion": this.dataFormatVersion,
             "timestamp": this.timestamp,
             "groups": this.groups,
             "bookmarks": this.bookmarks,
         });
 
         let bytes = Uint8Array.from(json.split("").map(c => { return c.charCodeAt(0); }));
-        workspace.fs.writeFile(this.uri, bytes);
+        workspace.fs.writeFile(this.uri, bytes).then(
+            () => {
+                vscode.window.showInformationMessage("File written " + this.uri.toString());
+            },
+            (reason) => {
+                vscode.window.showErrorMessage("Failed persisting into storage file: " + reason);
+            }
+        );
     }
 
     private failIfUninitialized() {
         if (!this.isInitialized) {
-            throw new Error("File storage is uninitialized");
+            throw new Error("File storage for '" + this.uri.toString() + "' is uninitialized");
         }
     }
 }

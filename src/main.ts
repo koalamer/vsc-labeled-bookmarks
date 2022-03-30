@@ -7,7 +7,8 @@ import {
     Range, Selection,
     StatusBarItem,
     TextDocument, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
-    QuickPickItem
+    QuickPickItem,
+    Uri
 } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
@@ -47,6 +48,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public readonly configKeyHomingMarginBottom = "homingMarginBottom";
     public readonly configKeyHomingSteps = "homingSteps";
 
+    private storageRoot: Uri;
     public readonly configKeyPersistentStorageType = "persistentStorageType";
     public readonly configKeyPersistToFilePath = "persistToFilePath";
 
@@ -138,18 +140,40 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.hideAll = false;
 
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
-    }
-
-    public async initPhase2() {
-        this.persistentStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "", true);
-
-        this.loadBookmarkData();
-        this.loadLocalState();
-
-        this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
         this.statusBarItem.command = 'vsc-labeled-bookmarks.selectGroup';
         this.statusBarItem.show();
 
+        this.storageRoot = Uri.file(".");
+        let workspaceFolders = vscode.workspace.workspaceFolders;
+        if (typeof workspaceFolders !== "undefined") {
+            this.storageRoot = workspaceFolders[0].uri;
+        }
+    }
+
+    public async initPhase2() {
+        this.loadLocalState();
+
+        if (this.persistentStorageType === "file") {
+            let fileStorage = new BookmarkStorageInFile(
+                Uri.file(this.storageRoot.path + "/" + this.persistToFilePath)
+            );
+            await fileStorage.init();
+            this.persistentStorage = fileStorage;
+        } else {
+            let workspaceStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "", true);
+            this.persistentStorage = workspaceStorage;
+        }
+
+        await this.initBookmarkDataUsingStorage();
+    }
+
+    private async initBookmarkDataUsingStorage() {
+        this.loadBookmarkData();
+
+        let actualGroupToActivate = this.getSomeExistingGroupName(this.activeGroup.name);
+        this.activateGroup(actualGroupToActivate, this.activeGroup.name !== actualGroupToActivate);
+
+        this.updateStatusBar();
         this.updateDecorations();
     }
 
@@ -621,11 +645,11 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
-        // let workspaceFolders = vscode.workspace.workspaceFolders;
-        // if (typeof workspaceFolders === "undefined") {
-        //     return;
-        // }
-        // let mainFolder = workspaceFolders[0];
+        let workspaceFolders = vscode.workspace.workspaceFolders;
+        if (typeof workspaceFolders === "undefined") {
+            return;
+        }
+        workspaceFolders.forEach((x) => vscode.window.showInformationMessage(x.uri.toString()));
 
         // let vscDir = vscode.Uri.joinPath(mainFolder.uri, ".vscode");
         // // vscode.window.showInformationMessage(vscDir.toString());
@@ -1555,7 +1579,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         if (config.has(this.configKeyPersistToFilePath)) {
             try {
                 let configPersistToFilePath = (config.get(this.configKeyPersistToFilePath) as string) ?? "";
-                this.persistentStorageType = configPersistToFilePath;
+                this.persistToFilePath = configPersistToFilePath;
             } catch (e) {
                 vscode.window.showWarningMessage("Error reading bookmark persistent storage file path setting");
             }
@@ -1678,9 +1702,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;
 
         let savedGroupToActivate: string = this.ctx.workspaceState.get(this.savedActiveGroupKey) ?? this.defaultGroupName;
-        let actualGroupToActivate = this.getSomeExistingGroupName(savedGroupToActivate);
+        this.activeGroup = new Group(savedGroupToActivate, this.fallbackColor, this.defaultShape, "", this.decorationFactory);
 
-        this.activateGroup(actualGroupToActivate, savedGroupToActivate !== actualGroupToActivate);
     }
 
     private loadBookmarkData() {
