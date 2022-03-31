@@ -71,7 +71,7 @@ The icon can be customized after creation.
 * `labeledBookmarks.lineEndLabelType`: set how the line end labels for labeled bookmarks should be displayed
 * `labeledBookmarks.homingMarginTop`: how many lines on code should be visible above the bookmark when navigating
 * `labeledBookmarks.homingMarginBottom`: how namy lines of code should be visible below the bookmark when navigating
-* `labeledBookmarks.homingSteps`: the above margin settings are emulated by revealing smaller and smaller regions using above margin settings. This setting controls how many iterations should be done before directly jumping to the boookmarked position, so `0` means it is disabled
+* `labeledBookmarks.homingSteps`: the above margin settings are not always satisfiable due to smaller than needed screen size or long wrapped lines. In order to approximate the margins in such cases increasingly smaller regions (containing the bookmark) are being tried to be fit onto the screen. The value `0` means the homing margin functionality is disabled. Higher values mean more reliable framing of the target bookmark at the price of using multiple reveal actions in quick succession which might cause visible flickering upon navigating to a bookmark.
 
 ## Tree View in the Activity Bar
 

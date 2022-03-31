@@ -324,7 +324,7 @@
         },
         "labeledBookmarks.homingSteps": {
           "type": "number",
-          "description": "To approximate the homing margin functionality, in how many steps the navigation should close in on the bookmark using the top and bottom homing margin settings. The value 0 means disabled.",
+          "description": "The value 0 means the homing margin functionality is disabled. Higher values cause the homing functionality to work more reliable in case the target area contains long wrapped lines or the viewport is too small for the target area to fit into it.",
           "default": 0,
           "minimum": 0,
           "maximum": 5
