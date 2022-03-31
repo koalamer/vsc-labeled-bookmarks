@@ -170,7 +170,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     private async initBookmarkDataUsingStorage() {
         this.loadBookmarkData();
 
-        let actualGroupToActivate = this.getSomeExistingGroupName(this.activeGroup.name);
+        let actualGroupToActivate = this.getExistingGroupNameOrDefault(this.activeGroup.name);
         this.activateGroup(actualGroupToActivate, this.activeGroup.name !== actualGroupToActivate);
 
         this.updateStatusBar();
@@ -648,6 +648,31 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
+        // vscode.window.showOpenDialog({
+        //     canSelectFiles: true,
+        //     canSelectFolders: false,
+        //     canSelectMany: false,
+        //     defaultUri: undefined,
+        //     filters: {"json": ["json"]},
+        //     openLabel: "the label",
+        //     title: "the title",
+        // }).then((result) => {
+        //     if (typeof result !== "undefined") {
+        //         vscode.window.showInformationMessage(result.map(u => u.fsPath).join("; "));
+        //     }
+        // });
+
+        // vscode.window.showSaveDialog({
+        //     defaultUri: undefined,
+        //     filters: {"json": ["json"]},
+        //     saveLabel: "the label",
+        //     title: "the title",
+        // }).then((result) => {
+        //     if (typeof result !== "undefined") {
+        //         vscode.window.showInformationMessage(result.fsPath);
+        //     }
+        // });
+
         // let workspaceFolders = vscode.workspace.workspaceFolders;
         // if (typeof workspaceFolders === "undefined") {
         //     return;
@@ -1686,7 +1711,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.statusBarItem.text = "$(bookmark) "
             + this.activeGroup.name
             + ": "
-            + this.getTempGroupBookmarkList(this.activeGroup).length;
+            + this.getTempGroupBookmarkList(this.activeGroup).length
+            + this.persistentStorage.getStatusBarText();
 
         let hideStatus = "";
         if (this.hideAll) {
@@ -1696,7 +1722,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         } else {
             hideStatus = ", all visible";
         }
-        this.statusBarItem.tooltip = this.groups.length + " group(s)" + hideStatus;
+        this.statusBarItem.tooltip = this.groups.length + " group(s)" + hideStatus
+            + "\n" + this.persistentStorage.getStatusBarTooltipText();
     }
 
     private loadLocalState() {
@@ -1773,9 +1800,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         }
     }
 
-    private getSomeExistingGroupName(preferredName: string): string {
+    private getExistingGroupNameOrDefault(preferredName: string): string {
         if (this.groups.length === 0) {
-            return preferredName;
+            return this.defaultGroupName;
         }
 
         let group = this.groups.find((g: Group) => { return g.name === preferredName; });

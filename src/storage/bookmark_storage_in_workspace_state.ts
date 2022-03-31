@@ -31,10 +31,11 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         this.timestamp = 0;
 
         this.workspaceState = workspaceState;
-        if (keyPostfix !== "") {
-            this.keyPostfix = "_";
-        }
-        this.keyPostfix += keyPostfix;
+        // if (keyPostfix !== "") {
+        //     this.keyPostfix = "_";
+        // }
+        // this.keyPostfix += keyPostfix;
+        this.keyPostfix = keyPostfix;
 
         this.readStorage(abortOnError);
     }
@@ -124,6 +125,18 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
     public getTimestamp(): number {
         return this.timestamp;
     };
+
+    public getStatusBarText(): String {
+        if (this.keyPostfix === "") {
+            return "";
+        }
+
+        return " (slot: " + this.keyPostfix + ")";
+    }
+
+    public getStatusBarTooltipText(): String {
+        return "Bookmarks are stored locally in the workspace state";
+    }
 
     public setBookmarks(serializableBookmarks: Array<SerializableBookmark>): void {
         this.bookmarks = serializableBookmarks;

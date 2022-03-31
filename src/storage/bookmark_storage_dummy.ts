@@ -26,6 +26,14 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         return 0;
     }
 
+    public getStatusBarText(): String {
+        return " (not persisted)";
+    }
+
+    public getStatusBarTooltipText(): String {
+        return "\nBookmarks are not persisted and will be lost";
+    }
+
     public setBookmarks(serializableBookmarks: Array<SerializableBookmark>): void {
         this.showError();
     }

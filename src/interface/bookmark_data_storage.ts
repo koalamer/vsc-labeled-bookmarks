@@ -6,6 +6,8 @@ export interface BookmarkDataStorage {
     getGroups(): Array<SerializableGroup>;
     getWorkspaceFolders(): Array<String>;
     getTimestamp(): number;
+    getStatusBarText(): String;
+    getStatusBarTooltipText(): String;
 
     setBookmarks(serializableBookmarks: Array<SerializableBookmark>): void;
     setGroups(serializableGroups: Array<SerializableGroup>): void;

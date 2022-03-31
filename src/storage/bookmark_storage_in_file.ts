@@ -102,6 +102,14 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
         return this.timestamp;
     }
 
+    public getStatusBarText(): String {
+        return " (in file)";
+    }
+
+    public getStatusBarTooltipText(): String {
+        return "Bookmark storage file: " + this.uri.fsPath;
+    }
+
     public setBookmarks(serializableBookmarks: Array<SerializableBookmark>): void {
         this.bookmarks = serializableBookmarks;
     }
