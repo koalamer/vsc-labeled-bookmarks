@@ -37,6 +37,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public readonly savedActiveGroupKey = "vscLabeledBookmarks.activeGroup";
     public readonly savedHideInactiveGroupsKey = "vscLabeledBookmarks.hideInactiveGroups";
     public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
+    public readonly savedPersistentStorageTypeKey = "persistentStorageType";
+    public readonly savedPersistToFilePathKey = "persistToFilePath";
 
     public readonly configRoot = "labeledBookmarks";
     public readonly configKeyColors = "colors";
@@ -49,8 +51,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public readonly configKeyHomingSteps = "homingSteps";
 
     private storageRoot: Uri;
-    public readonly configKeyPersistentStorageType = "persistentStorageType";
-    public readonly configKeyPersistToFilePath = "persistToFilePath";
 
     public readonly persistentStorageTypeOptions = ["workspaceState", "file"];
     public readonly defaultPersistentStorageType = "workspaceState";
@@ -198,6 +198,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.ctx.workspaceState.update(this.savedActiveGroupKey, this.activeGroup.name);
         this.ctx.workspaceState.update(this.savedHideInactiveGroupsKey, this.hideInactiveGroups);
         this.ctx.workspaceState.update(this.savedHideAllKey, this.hideAll);
+        this.ctx.workspaceState.update(this.savedPersistentStorageTypeKey, this.persistentStorageType);
+        this.ctx.workspaceState.update(this.savedPersistToFilePathKey, this.persistToFilePath);
 
         this.updateStatusBar();
     }
@@ -1567,19 +1569,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             this.defaultShape = defaultDefaultShape;
         }
 
-        if (config.has(this.configKeyPersistentStorageType)) {
-            try {
-                let configPersistentStorageType = (config.get(this.configKeyPersistentStorageType) as string) ?? "";
-                if (this.persistentStorageTypeOptions.indexOf(configPersistentStorageType) > -1) {
-                    this.persistentStorageType = configPersistentStorageType;
-                } else {
-                    this.persistentStorageType = this.defaultPersistentStorageType;
-                }
-            } catch (e) {
-                vscode.window.showWarningMessage("Error reading bookmark persistent storage type setting");
-            }
-        }
-
         if (config.has(this.configKeyHomingMarginTop)) {
             try {
                 this.homingMarginTop = (config.get(this.configKeyHomingMarginTop) as number) ?? 0;
@@ -1603,19 +1592,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 vscode.window.showWarningMessage("Error reading homing steps setting");
             }
         }
-
-        if (config.has(this.configKeyPersistToFilePath)) {
-            try {
-                let configPersistToFilePath = (config.get(this.configKeyPersistToFilePath) as string) ?? "";
-                this.persistToFilePath = configPersistToFilePath;
-            } catch (e) {
-                vscode.window.showWarningMessage("Error reading bookmark persistent storage file path setting");
-            }
-        }
-
-        // TODO initialize storage into temp var
-
-        // if timestamp mismatches ask which one to discard
 
         let configOverviewRulerLane = (config.get(this.configKeyOverviewRulerLane) as string) ?? "center";
         let previousOverviewRulerLane = this.decorationFactory.overviewRulerLane;
@@ -1727,6 +1703,16 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     private loadLocalState() {
+        let savedPersistentStorageType = (this.ctx.workspaceState.get(this.savedPersistentStorageTypeKey) as string) ?? "";
+        if (this.persistentStorageTypeOptions.indexOf(savedPersistentStorageType) > -1) {
+            this.persistentStorageType = savedPersistentStorageType;
+        } else {
+            this.persistentStorageType = this.defaultPersistentStorageType;
+        }
+
+        let savedPersistToFilePath = (this.ctx.workspaceState.get(this.savedPersistToFilePathKey) as string) ?? "";
+        this.persistToFilePath = savedPersistToFilePath;
+
         this.hideInactiveGroups = this.ctx.workspaceState.get(this.savedHideInactiveGroupsKey) ?? false;
 
         this.hideAll = this.ctx.workspaceState.get(this.savedHideAllKey) ?? false;

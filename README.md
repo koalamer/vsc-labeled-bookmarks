@@ -69,8 +69,6 @@ The icon can be customized after creation.
 * `labeledBookmarks.defaultShape`: set which vector icon should be used as the default for new groups
 * `labeledBookmarks.overviewRulerLane`: set how the bookmark should be marked on the overview ruler (scrollbar)
 * `labeledBookmarks.lineEndLabelType`: set how the line end labels for labeled bookmarks should be displayed
-* `labeledBookmarks.persistentStorageType`: where to store the bookmark data: in the workspace state or in a file
-* `labeledBookmarks.persistToFilePath`: the file path to be used when `persistentStorageType` is set to file
 * `labeledBookmarks.homingMarginTop`: how many lines on code should be visible above the bookmark when navigating
 * `labeledBookmarks.homingMarginBottom`: how namy lines of code should be visible below the bookmark when navigating
 * `labeledBookmarks.homingSteps`: the above margin settings are emulated by revealing smaller and smaller regions using above margin settings. This setting controls how many iterations should be done before directly jumping to the boookmarked position, so `0` means it is disabled
