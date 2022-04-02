@@ -1,7 +1,7 @@
 import { QuickPickItem, QuickPickItemKind } from 'vscode';
 
 export class StorageMenuPickItem implements QuickPickItem {
-    action: string;
+    payload: string;
     alwaysShow: boolean;
     description: string;
     detail: string;
@@ -9,11 +9,11 @@ export class StorageMenuPickItem implements QuickPickItem {
     label: string;
     picked: boolean;
 
-    constructor(action: string, label: string, description: string, detail: string) {
-        this.action = action;
+    constructor(payload: string, label: string, description: string) {
+        this.payload = payload;
         this.alwaysShow = true;
         this.description = description;
-        this.detail = detail;
+        this.detail = "";
         this.kind = QuickPickItemKind.Default;
         this.label = label;
         this.picked = false;

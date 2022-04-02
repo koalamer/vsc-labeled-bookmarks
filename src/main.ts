@@ -51,6 +51,33 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public readonly configKeyHomingMarginBottom = "homingMarginBottom";
     public readonly configKeyHomingSteps = "homingSteps";
 
+    private readonly storageActionOptions: Map<string, { label: string, description: string }> = new Map([
+        ["moveTo",
+            {
+                label: "move to another storage location",
+                description: "and wipe the current location"
+            }
+        ],
+        ["switchTo",
+            {
+                label: "switch to using another storage location",
+                description: "and leave the current storage alone"
+            }
+        ],
+        ["exportTo",
+            {
+                label: "export to another storage location",
+                description: "selected bookmark groups"
+            }
+        ],
+        ["importFrom",
+            {
+                label: "import from another storage location",
+                description: "selected bookmark groups"
+            }
+        ]
+    ]);
+
     private storageRoot: Uri;
 
     public readonly persistentStorageTypeOptions = ["workspaceState", "file"];
@@ -1485,10 +1512,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public actionShowStorageActionMenu() {
         let pickItems: QuickPickItem[] = [];
 
-        pickItems.push(new StorageMenuPickItem("moveTo", "move to another storage location", "and wipe the current location", ""));
-        pickItems.push(new StorageMenuPickItem("switchTo", "switch to using another storage location", "and leave the current storage alone", ""));
-        pickItems.push(new StorageMenuPickItem("exportTo", "export to another storage location", "selected bookmark groups", ""));
-        pickItems.push(new StorageMenuPickItem("importFrom", "import from another storage location", "selected bookmark groups", ""));
+        this.storageActionOptions.forEach((v, k) => {
+            pickItems.push(new StorageMenuPickItem(k, v.label, v.description));
+        });
 
         vscode.window.showQuickPick(
             pickItems,
@@ -1497,13 +1523,77 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 ignoreFocusOut: false,
                 matchOnDescription: false,
                 matchOnDetail: false,
-                placeHolder: "",
+                placeHolder: "select bookmark storage action",
                 title: "Bookmark storage actions",
             }
         ).then((selected) => {
-            if (typeof selected !== "undefined" && !(selected instanceof QuickPickSeparator)) {
+            if (typeof selected !== "undefined") {
                 let tmp = selected as StorageMenuPickItem;
-                vscode.window.showInformationMessage(tmp.action);
+                this.showStorageActionMenuStorageTypeFor(tmp.payload);
+            }
+        });
+    }
+
+    private async showStorageActionMenuStorageTypeFor(action: string) {
+        let pickItems: QuickPickItem[] = [];
+
+        pickItems.push(new StorageMenuPickItem("workspaceState", "workspace state", ""));
+        pickItems.push(new StorageMenuPickItem("file", "file", ""));
+
+        let actionLabel = this.storageActionOptions.get(action)?.label;
+
+        vscode.window.showQuickPick(
+            pickItems,
+            {
+                canPickMany: false,
+                ignoreFocusOut: false,
+                matchOnDescription: false,
+                matchOnDetail: false,
+                placeHolder: "select bookmark storage type",
+                title: "Bookmark storage: " + actionLabel,
+            }
+        ).then((selected) => {
+            if (typeof selected !== "undefined") {
+                let tmp = selected as StorageMenuPickItem;
+                let targetType = tmp.payload;
+                switch (targetType) {
+                    case "file":
+                        switch (action) {
+                            case "moveTo":
+                            case "exportTo":
+                                vscode.window.showSaveDialog({
+                                    defaultUri: undefined,
+                                    filters: { "json": ["json"] },
+                                    saveLabel: undefined,
+                                    title: "Bookmark storage: " + actionLabel,
+                                }).then((result) => {
+                                    if (typeof result !== "undefined") {
+                                        vscode.window.showInformationMessage(action + " " + targetType + " " + result?.fsPath);
+                                    }
+                                });
+                                break;
+                            case "switchTo":
+                            case "importFrom":
+                                vscode.window.showOpenDialog({
+                                    canSelectFiles: true,
+                                    canSelectFolders: false,
+                                    canSelectMany: false,
+                                    defaultUri: undefined,
+                                    filters: { "json": ["json"] },
+                                    openLabel: undefined,
+                                    title: "Bookmark storage: " + actionLabel,
+                                }).then((result) => {
+                                    if (typeof result !== "undefined") {
+                                        vscode.window.showInformationMessage(action + " " + targetType + " " + result[0]?.fsPath);
+                                    }
+                                });
+                                break;
+                        }
+                        break;
+                    case "workspaceState":
+                        vscode.window.showInformationMessage(action + " " + targetType);
+                        break;
+                }
             }
         });
     }
