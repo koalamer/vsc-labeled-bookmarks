@@ -63,7 +63,7 @@
         "title": "Bookmarks: set group icon shape"
       },
       {
-        "command": "vsc-labeled-bookmarks.actionSetCustomIconText",
+        "command": "vsc-labeled-bookmarks.setCustomIconText",
         "title": "Bookmarks: set group icon text character"
       },
       {
@@ -118,6 +118,10 @@
       {
         "command": "vsc-labeled-bookmarks.moveBookmarksFromActiveGroup",
         "title": "Bookmarks: move bookmarks"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.showStorageActionMenu",
+        "title": "Bookmarks: show storage action menu"
       },
       {
         "command": "vsc-labeled-bookmarks.activateTreeItem",
@@ -217,6 +221,14 @@
       {
         "command": "vsc-labeled-bookmarks.moveBookmarksFromActiveGroup",
         "key": "ctrl+alt+b m"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.setCustomIconText",
+        "key": "ctrl+alt+b ctrl+c"
+      },
+      {
+        "command": "vsc-labeled-bookmarks.showStorageActionMenu",
+        "key": "ctrl+alt+b ctrl+s"
       }
     ],
     "configuration": {

@@ -18,7 +18,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
     private dataFormatVersion: number;
     private groups: Array<SerializableGroup>;
     private bookmarks: Array<SerializableBookmark>;
-    private workspaceFolders: Array<String>;
+    private workspaceFolders: Array<string>;
     private timestamp: number;
 
     private workspaceState: Memento;
@@ -27,7 +27,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         this.dataFormatVersion = 0;
         this.groups = new Array<SerializableGroup>();
         this.bookmarks = new Array<SerializableBookmark>();
-        this.workspaceFolders = new Array<String>();
+        this.workspaceFolders = new Array<string>();
         this.timestamp = 0;
 
         this.workspaceState = workspaceState;
@@ -72,12 +72,12 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         }
         this.bookmarks = serializedBookmarks;
 
-        let serializedWorkspaceFolders: Array<String> | undefined = this.workspaceState.get(this.savedWorkspaceFoldersKey + this.keyPostfix);
+        let serializedWorkspaceFolders: Array<string> | undefined = this.workspaceState.get(this.savedWorkspaceFoldersKey + this.keyPostfix);
         if (typeof serializedWorkspaceFolders === "undefined") {
             if (abortOnError) {
                 throw new Error("Restoring workspace folder list failed");
             }
-            serializedWorkspaceFolders = new Array<String>();
+            serializedWorkspaceFolders = new Array<string>();
         }
         this.workspaceFolders = serializedWorkspaceFolders;
     }
@@ -118,7 +118,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         return this.groups;
     }
 
-    public getWorkspaceFolders(): Array<String> {
+    public getWorkspaceFolders(): Array<string> {
         return this.workspaceFolders;
     }
 
@@ -126,7 +126,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         return this.timestamp;
     };
 
-    public getStatusBarText(): String {
+    public getStatusBarText(): string {
         if (this.keyPostfix === "") {
             return "";
         }
@@ -134,7 +134,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         return " (slot: " + this.keyPostfix + ")";
     }
 
-    public getStatusBarTooltipText(): String {
+    public getStatusBarTooltipText(): string {
         return "Bookmarks are stored locally in the workspace state";
     }
 
@@ -146,7 +146,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         this.groups = serializableGroups;
     }
 
-    public setWorkspaceFolders(workspaceFolders: Array<String>): void {
+    public setWorkspaceFolders(workspaceFolders: Array<string>): void {
         this.workspaceFolders = workspaceFolders;
     }
 

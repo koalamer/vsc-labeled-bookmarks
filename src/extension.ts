@@ -83,7 +83,7 @@ function activatePhase2(context: ExtensionContext): void {
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand(
-		'vsc-labeled-bookmarks.actionSetCustomIconText',
+		'vsc-labeled-bookmarks.setCustomIconText',
 		() => main.actionSetCustomIconText());
 	context.subscriptions.push(disposable);
 
@@ -115,6 +115,11 @@ function activatePhase2(context: ExtensionContext): void {
 	disposable = vscode.commands.registerCommand(
 		'vsc-labeled-bookmarks.moveBookmarksFromActiveGroup',
 		() => main.actionMoveBookmarksFromActiveGroup());
+	context.subscriptions.push(disposable);
+
+	disposable = vscode.commands.registerCommand(
+		'vsc-labeled-bookmarks.showStorageActionMenu',
+		() => main.actionShowStorageActionMenu());
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerTextEditorCommand(

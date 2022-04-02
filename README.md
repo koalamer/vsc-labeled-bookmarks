@@ -60,7 +60,7 @@ Group icons come in two variants: vector icons (fixed set) and unicode character
 The icon can be customized after creation.
 
 * The icon color can be chosen selected from a list using `ctrl+alt+b c`. You can define the elements of this list with the configuration option `labeledBookmarks.colors`. If it is not defined a default color set is used.
-* The vector icon letter / unicode icon character can be set via the `Bookmarks: set group icon text character` action which does not have an action key assignment by default. The restrictions on accepted vector icon letters do apply but unicode icons can be set freely. The preferred way to have regularly used icons is to set the `labeledBookmarks.unicodeMarkers` option as needed and use the shape selection action as described above.
+* The vector icon letter / unicode icon character can be set using `ctrl+alt+b ctrl+c`. The restrictions on accepted characters for vector icon letters do apply here too but for unicode icons anything can be set as an icon. (Note that not all unicode chars look the same on all platforms or work at all on all platforms.)
 
 ## Extension Settings
 

@@ -26,6 +26,7 @@ import { BookmarkStorageDummy } from './storage/bookmark_storage_dummy';
 import { ActiveGroupProvider } from './interface/active_group_provider';
 import { BookmarkStorageInWorkspaceState } from './storage/bookmark_storage_in_workspace_state';
 import { BookmarkStorageInFile } from './storage/bookmark_storage_in_file';
+import { StorageMenuPickItem } from './storage_menu_pick_item';
 
 export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupProvider {
     public ctx: ExtensionContext;
@@ -1212,8 +1213,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         let shape = this.activeGroup.shape;
 
         vscode.window.showInputBox({
-            placeHolder: "character for icon",
-            prompt: "Enter character for icon",
+            placeHolder: "character for bookmark icon",
+            prompt: "Enter character for bookmark icon",
             value: unicodeChar,
         }).then((input: string | undefined) => {
             if (typeof input === "undefined" || input.trim() === "") {
@@ -1477,6 +1478,32 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         ).then(selected => {
             if (typeof selected !== "undefined") {
                 this.moveBookmarksBetween(this.activeGroup, selected.group);
+            }
+        });
+    }
+
+    public actionShowStorageActionMenu() {
+        let pickItems: QuickPickItem[] = [];
+
+        pickItems.push(new StorageMenuPickItem("moveTo", "move to another storage location", "and wipe the current location", ""));
+        pickItems.push(new StorageMenuPickItem("switchTo", "switch to using another storage location", "and leave the current storage alone", ""));
+        pickItems.push(new StorageMenuPickItem("exportTo", "export to another storage location", "selected bookmark groups", ""));
+        pickItems.push(new StorageMenuPickItem("importFrom", "import from another storage location", "selected bookmark groups", ""));
+
+        vscode.window.showQuickPick(
+            pickItems,
+            {
+                canPickMany: false,
+                ignoreFocusOut: false,
+                matchOnDescription: false,
+                matchOnDetail: false,
+                placeHolder: "",
+                title: "Bookmark storage actions",
+            }
+        ).then((selected) => {
+            if (typeof selected !== "undefined" && !(selected instanceof QuickPickSeparator)) {
+                let tmp = selected as StorageMenuPickItem;
+                vscode.window.showInformationMessage(tmp.action);
             }
         });
     }

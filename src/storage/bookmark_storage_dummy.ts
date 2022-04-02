@@ -16,9 +16,9 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         return [dummyGroup];
     }
 
-    public getWorkspaceFolders(): Array<String> {
+    public getWorkspaceFolders(): Array<string> {
         this.showError();
-        return new Array<String>();
+        return new Array<string>();
     }
 
     public getTimestamp(): number {
@@ -26,11 +26,11 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         return 0;
     }
 
-    public getStatusBarText(): String {
+    public getStatusBarText(): string {
         return " (not persisted)";
     }
 
-    public getStatusBarTooltipText(): String {
+    public getStatusBarTooltipText(): string {
         return "\nBookmarks are not persisted and will be lost";
     }
 
@@ -42,7 +42,7 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         this.showError();
     }
 
-    public setWorkspaceFolders(workspaceFolders: Array<String>): void {
+    public setWorkspaceFolders(workspaceFolders: Array<string>): void {
         this.showError();
     }
 
