@@ -17,6 +17,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
     private timestamp: number;
 
     private isInitialized: boolean = false;
+    // todo remove this
 
     constructor(uri: Uri) {
         this.uri = uri;
@@ -116,6 +117,14 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
 
     public setGroups(serializableGroups: Array<SerializableGroup>): void {
         this.groups = serializableGroups;
+    }
+
+    public getStorageType(): string {
+        return "file";
+    }
+
+    public getStoragePath(): string {
+        return this.uri.fsPath;
     }
 
     public setWorkspaceFolders(workspaceFolders: string[]): void {

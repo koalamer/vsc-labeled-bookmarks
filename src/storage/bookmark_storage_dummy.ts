@@ -34,6 +34,14 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         return "\nBookmarks are not persisted and will be lost";
     }
 
+    public getStorageType(): string {
+        return "dummy";
+    }
+
+    public getStoragePath(): string {
+        return "";
+    }
+
     public setBookmarks(serializableBookmarks: Array<SerializableBookmark>): void {
         this.showError();
     }

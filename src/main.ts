@@ -234,6 +234,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         let actualGroupToActivate = this.getExistingGroupNameOrDefault(this.activeGroup.name);
         this.activateGroup(actualGroupToActivate, this.activeGroup.name !== actualGroupToActivate);
 
+        this.saveLocalState();
+
         this.updateStatusBar();
         this.updateDecorations();
     }
@@ -1631,7 +1633,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         });
     }
 
-    private executeStoreageAction(action: string, targetType: string, target: string) {
+    private async executeStoreageAction(action: string, targetType: string, target: string) {
         let actionParameters = this.storageActionOptions.get(action);
         if (typeof actionParameters === "undefined") {
             vscode.window.showErrorMessage("unknown bookmark storage action: " + action);
@@ -1649,15 +1651,43 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         }
 
         if (actionParameters.writeToTarget) {
+            this.persistentStorage.persist();
+
             if (actionParameters.writeToTargetSelectively) {
-                // todo selective export
+                let pickItems = this.groups.map(
+                    group => GroupPickItem.fromGroup(group, this.getTempGroupBookmarkList(group).length)
+                );
+
+                let selectedItems = await vscode.window.showQuickPick(
+                    pickItems,
+                    {
+                        canPickMany: true,
+                        matchOnDescription: false,
+                        placeHolder: "select bookmark groups to be exported",
+                        title: "Bookmark storage: " + actionParameters.label
+                    }
+                );
+
+                if (typeof selectedItems === "undefined") {
+                    return;
+                }
+
+                let selectedGroups = selectedItems.map(pickItem => pickItem.group.name);
+
+                let filteredGroups = this.persistentStorage.getGroups()
+                    .filter(g => selectedGroups.includes(g.name));
+                targetStorage.setGroups(filteredGroups);
+
+                let filteredBookmarks = this.persistentStorage.getBookmarks()
+                    .filter(b => selectedGroups.includes(b.groupName));
+                targetStorage.setBookmarks(filteredBookmarks);
             } else {
                 targetStorage.setBookmarks(this.persistentStorage.getBookmarks());
                 targetStorage.setGroups(this.persistentStorage.getGroups());
-                targetStorage.setWorkspaceFolders(this.persistentStorage.getWorkspaceFolders());
-                targetStorage.setTimestamp(this.persistentStorage.getTimestamp());
-                targetStorage.persist();
             }
+            targetStorage.setWorkspaceFolders(this.persistentStorage.getWorkspaceFolders());
+            targetStorage.setTimestamp(this.persistentStorage.getTimestamp());
+            targetStorage.persist();
         }
 
         let currentStorage = this.persistentStorage;
@@ -1680,6 +1710,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             } else {
                 // todo full load and merge
             }
+        }
+
+        if (actionParameters.switchToTarget || actionParameters.loadFromTarget) {
+            this.initBookmarkDataUsingStorage();
         }
     }
 
@@ -1927,8 +1961,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     private loadBookmarkData() {
         this.bookmarkTimestamp = this.persistentStorage.getTimestamp();
 
-        // TODO check stored workspace folder list
-
         this.groups = new Array<Group>();
         try {
             for (let sg of this.persistentStorage.getGroups()) {
@@ -1951,6 +1983,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         } catch (e) {
             vscode.window.showErrorMessage("Restoring bookmarks failed (" + e + ")");
         }
+
+        this.persistentStorageType = this.persistentStorage.getStorageType();
+        this.persistToFilePath = this.persistentStorage.getStoragePath();
 
         this.resetTempLists();
     }

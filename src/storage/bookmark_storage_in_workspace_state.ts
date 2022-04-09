@@ -138,6 +138,14 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         return "Bookmarks are stored locally in the workspace state";
     }
 
+    public getStorageType(): string {
+        return "workspaceState";
+    }
+
+    public getStoragePath(): string {
+        return this.keyPostfix;
+    }
+
     public setBookmarks(serializableBookmarks: Array<SerializableBookmark>): void {
         this.bookmarks = serializableBookmarks;
     };
