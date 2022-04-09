@@ -138,7 +138,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
         let bytes = Uint8Array.from(json.split("").map(c => { return c.charCodeAt(0); }));
         workspace.fs.writeFile(this.uri, bytes).then(
             () => {
-                vscode.window.showInformationMessage("File written " + this.uri.toString());
+                // vscode.window.showInformationMessage("File written " + this.uri.toString());
             },
             (reason) => {
                 vscode.window.showErrorMessage("Failed persisting into storage file: " + reason);

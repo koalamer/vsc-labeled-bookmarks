@@ -51,29 +51,62 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public readonly configKeyHomingMarginBottom = "homingMarginBottom";
     public readonly configKeyHomingSteps = "homingSteps";
 
-    private readonly storageActionOptions: Map<string, { label: string, description: string }> = new Map([
+    private readonly storageActionOptions: Map<string, {
+        label: string,
+        description: string
+        writeToTarget: boolean,
+        writeToTargetSelectively: boolean,
+        eraseCurrent: boolean,
+        switchToTarget: boolean,
+        loadFromTarget: boolean,
+        loadFromTargetSelectively: boolean
+    }> = new Map([
         ["moveTo",
             {
                 label: "move to another storage location",
-                description: "and wipe the current location"
+                description: "and wipe the current location",
+                writeToTarget: true,
+                writeToTargetSelectively: false,
+                eraseCurrent: true,
+                switchToTarget: true,
+                loadFromTarget: false,
+                loadFromTargetSelectively: false
             }
         ],
         ["switchTo",
             {
                 label: "switch to using another storage location",
-                description: "and leave the current storage alone"
+                description: "and leave the current storage alone",
+                writeToTarget: false,
+                writeToTargetSelectively: false,
+                eraseCurrent: false,
+                switchToTarget: true,
+                loadFromTarget: false,
+                loadFromTargetSelectively: false
             }
         ],
         ["exportTo",
             {
                 label: "export to another storage location",
-                description: "selected bookmark groups"
+                description: "selected bookmark groups",
+                writeToTarget: true,
+                writeToTargetSelectively: true,
+                eraseCurrent: false,
+                switchToTarget: false,
+                loadFromTarget: false,
+                loadFromTargetSelectively: false
             }
         ],
         ["importFrom",
             {
                 label: "import from another storage location",
-                description: "selected bookmark groups"
+                description: "selected bookmark groups",
+                writeToTarget: false,
+                writeToTargetSelectively: false,
+                eraseCurrent: false,
+                switchToTarget: false,
+                loadFromTarget: true,
+                loadFromTargetSelectively: true
             }
         ]
     ]);
@@ -1568,7 +1601,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                                     title: "Bookmark storage: " + actionLabel,
                                 }).then((result) => {
                                     if (typeof result !== "undefined") {
-                                        vscode.window.showInformationMessage(action + " " + targetType + " " + result?.fsPath);
+                                        this.executeStoreageAction(action, targetType, result?.fsPath);
                                     }
                                 });
                                 break;
@@ -1584,18 +1617,70 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                                     title: "Bookmark storage: " + actionLabel,
                                 }).then((result) => {
                                     if (typeof result !== "undefined") {
-                                        vscode.window.showInformationMessage(action + " " + targetType + " " + result[0]?.fsPath);
+                                        this.executeStoreageAction(action, targetType, result[0]?.fsPath);
                                     }
                                 });
                                 break;
                         }
                         break;
                     case "workspaceState":
-                        vscode.window.showInformationMessage(action + " " + targetType);
+                        this.executeStoreageAction(action, targetType, "");
                         break;
                 }
             }
         });
+    }
+
+    private executeStoreageAction(action: string, targetType: string, target: string) {
+        let actionParameters = this.storageActionOptions.get(action);
+        if (typeof actionParameters === "undefined") {
+            vscode.window.showErrorMessage("unknown bookmark storage action: " + action);
+            return;
+        }
+
+        let targetStorage: BookmarkDataStorage;
+        if (targetType === "file") {
+            targetStorage = new BookmarkStorageInFile(Uri.file(target));
+        } else if (targetType === "workspaceState") {
+            targetStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, target, true);
+        } else {
+            vscode.window.showErrorMessage("unknown bookmark storage target type: " + targetType);
+            return;
+        }
+
+        if (actionParameters.writeToTarget) {
+            if (actionParameters.writeToTargetSelectively) {
+                // todo selective export
+            } else {
+                targetStorage.setBookmarks(this.persistentStorage.getBookmarks());
+                targetStorage.setGroups(this.persistentStorage.getGroups());
+                targetStorage.setWorkspaceFolders(this.persistentStorage.getWorkspaceFolders());
+                targetStorage.setTimestamp(this.persistentStorage.getTimestamp());
+                targetStorage.persist();
+            }
+        }
+
+        let currentStorage = this.persistentStorage;
+
+        if (actionParameters.switchToTarget) {
+            this.persistentStorage = targetStorage;
+        }
+
+        if (actionParameters.eraseCurrent) {
+            currentStorage.setBookmarks([]);
+            currentStorage.setGroups([]);
+            currentStorage.setWorkspaceFolders([]);
+            currentStorage.setTimestamp(0);
+            currentStorage.persist();
+        }
+
+        if (actionParameters.loadFromTarget) {
+            if (actionParameters.loadFromTargetSelectively) {
+                // todo selective load and merge
+            } else {
+                // todo full load and merge
+            }
+        }
     }
 
     private moveBookmarksBetween(src: Group, dst: Group) {
