@@ -8,7 +8,8 @@ import {
     StatusBarItem,
     TextDocument, TextDocumentChangeEvent, TextEditor, TextEditorDecorationType,
     QuickPickItem,
-    Uri
+    Uri,
+    MessageItem
 } from 'vscode';
 import { DecorationFactory } from './decoration_factory';
 import { GroupPickItem } from './group_pick_item';
@@ -1723,11 +1724,112 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         }
 
         if (actionParameters.loadFromTarget) {
-            if (actionParameters.loadFromTargetSelectively) {
-                // todo selective load and merge
-            } else {
-                // todo full load and merge
+            if (targetStorage instanceof BookmarkStorageInFile) {
+                await targetStorage.readFile();
             }
+
+            // TODO check workspace folder list and align bookmark paths
+
+            let existingGroups = this.groups.map(g => g.name);
+            let incomingGroups = targetStorage.getGroups().map(g => g.name);
+
+            if (actionParameters.loadFromTargetSelectively) {
+                let pickItems = incomingGroups.map(
+                    name => new StorageMenuPickItem(
+                        name,
+                        name,
+                        " $(bookmark) " + targetStorage.getBookmarks().filter(b => b.groupName === name).length
+                    )
+                );
+
+                let selectedItems = await vscode.window.showQuickPick(
+                    pickItems,
+                    {
+                        canPickMany: true,
+                        matchOnDescription: false,
+                        placeHolder: "select bookmark groups to be imported",
+                        title: "Bookmark storage: " + actionParameters.label
+                    }
+                ) ?? [];
+
+                let selectedGroupNames = selectedItems.map(pickItem => pickItem.payload);
+
+                incomingGroups = incomingGroups.filter(g => selectedGroupNames.includes(g));
+            }
+
+            let conflictingGroups = existingGroups.filter(name => incomingGroups.includes(name));
+            let nonConflictingGroups = incomingGroups.filter(name => !conflictingGroups.includes(name));
+
+            if (conflictingGroups.length > 0) {
+                let abortAction = { title: "Keep current bookmarks", isCloseAffordance: false };
+
+                let messageActions: MessageItem[] = [
+                    abortAction,
+                    { title: "Merge bookmarks", isCloseAffordance: false },
+                    { title: "Overwrite current bookmarks", isCloseAffordance: false },
+                ];
+
+                let selectedMergeAction = await vscode.window.showInformationMessage(
+                    "Some groups already exist: '"
+                    + conflictingGroups.join("', '")
+                    + "'. How should bookmarks in these groups be handled?",
+                    {
+                        modal: true,
+                        detail: "The timestamp in the import source is:"
+                            + (new Date(targetStorage.getTimestamp())).toLocaleString()
+                    },
+                    ...messageActions
+                ) ?? abortAction;
+
+                switch (selectedMergeAction.title) {
+                    case "Overwrite current bookmarks":
+                        originalStorage.setBookmarks(
+                            originalStorage.getBookmarks().filter(b => !conflictingGroups.includes(b.groupName))
+                        );
+                    case "Merge bookmarks":
+                        let existings = originalStorage.getBookmarks();
+                        let additionals = targetStorage.getBookmarks();
+
+                        additionals.forEach(additional => {
+                            let existing = existings.find(
+                                existing => (
+                                    existing.fsPath === additional.fsPath
+                                    && existing.lineNumber === additional.lineNumber
+                                    && existing.groupName === additional.groupName
+                                )
+                            );
+
+                            if (typeof existing === "undefined") {
+                                existings.push(additional);
+                                return;
+                            }
+
+                            if ((existing.label ?? "").length === 0) {
+                                existing.label = additional.label;
+                            }
+                        });
+
+                        this.persistentStorage.setBookmarks(existings);
+                        break;
+                }
+            }
+
+            if (nonConflictingGroups.length > 0) {
+                let currentGroups = this.persistentStorage.getGroups();
+                targetStorage.getGroups()
+                    .filter(g => nonConflictingGroups.includes(g.name))
+                    .forEach(g => currentGroups.push(g));
+                this.persistentStorage.setGroups(currentGroups);
+
+                let currentBookmarks = this.persistentStorage.getBookmarks();
+                targetStorage.getBookmarks()
+                    .filter(b => nonConflictingGroups.includes(b.groupName))
+                    .forEach(b => currentBookmarks.push(b))
+                    ;
+                this.persistentStorage.setBookmarks(currentBookmarks);
+            }
+
+            this.purgeAllDecorations();
         }
 
         if (actionParameters.switchToTarget || actionParameters.loadFromTarget) {
