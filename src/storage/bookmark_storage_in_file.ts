@@ -5,7 +5,6 @@ import { Uri, workspace } from "vscode";
 import { SerializableGroup } from "./serializable_group";
 import { SerializableBookmark } from './serializable_bookmark';
 import { TextDecoder } from "util";
-import { FileType, FileStat } from 'vscode';
 
 export class BookmarkStorageInFile implements BookmarkDataStorage {
     private uri: Uri;
@@ -16,47 +15,25 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
     private workspaceFolders: Array<string>;
     private timestamp: number;
 
-    private isInitialized: boolean = false;
-    // todo remove this
+    private readonly presentDataFormatVersion = 1;
 
     constructor(uri: Uri) {
         this.uri = uri;
 
-        this.dataFormatVersion = 1;
+        this.dataFormatVersion = this.presentDataFormatVersion;
         this.groups = new Array<SerializableGroup>();
         this.bookmarks = new Array<SerializableBookmark>();
         this.workspaceFolders = new Array<string>();
         this.timestamp = 0;
-
-        this.isInitialized = false;
     }
 
-    public async init() {
-        let stat: FileStat;
-        try {
-            stat = await workspace.fs.stat(this.uri);
-        } catch (e) {
-            this.persist();
-            stat = await workspace.fs.stat(this.uri);
-        }
-
-        if (stat.type & (FileType.File | FileType.SymbolicLink)) {
-            await this.readFile();
-            Promise.resolve();
-        } else if (stat.type | FileType.Directory) {
-            Promise.reject(new Error("Directory specified as storage path '" + this.uri.toString() + "'"));
-        } else {
-            this.persist();
-        }
-    }
-
-    private async readFile() {
+    public async readFile() {
         let fileContents: Uint8Array = await workspace.fs.readFile(this.uri);
         let json = new TextDecoder("utf-8").decode(fileContents);
         let savedData = JSON.parse(json);
 
         if (typeof savedData === "undefined") {
-            Promise.reject(new Error("Could not read storage file"));
+            Promise.reject(new Error("Could not read storage file " + this.uri.fsPath));
         }
 
         if (
@@ -71,7 +48,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
 
         this.dataFormatVersion = savedData.dataFormatVersion ?? 0;
 
-        if (this.dataFormatVersion !== 1) {
+        if (this.dataFormatVersion !== this.presentDataFormatVersion) {
             Promise.reject(new Error("Unkown data format version in storage file"));
         }
 
@@ -79,27 +56,21 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
         this.bookmarks = savedData.bookmarks ?? [];
         this.workspaceFolders = savedData.workspaceFolders ?? [];
         this.timestamp = savedData.timestamp ?? 0;
-
-        this.isInitialized = true;
     }
 
     public getBookmarks(): Array<SerializableBookmark> {
-        this.failIfUninitialized();
         return this.bookmarks;
     }
 
     public getGroups(): Array<SerializableGroup> {
-        this.failIfUninitialized();
         return this.groups;
     }
 
     public getWorkspaceFolders(): Array<string> {
-        this.failIfUninitialized();
         return this.workspaceFolders;
     }
 
     public getTimestamp(): number {
-        this.failIfUninitialized();
         return this.timestamp;
     }
 
@@ -153,11 +124,5 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
                 vscode.window.showErrorMessage("Failed persisting into storage file: " + reason);
             }
         );
-    }
-
-    private failIfUninitialized() {
-        if (!this.isInitialized) {
-            throw new Error("File storage for '" + this.uri.toString() + "' is uninitialized");
-        }
     }
 }

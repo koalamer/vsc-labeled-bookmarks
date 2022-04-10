@@ -43,6 +43,15 @@ Groups were implemented to be able to separate one set of bookmarks (for one top
 * Select the active group from a list of the available groups: `ctrl+alt+b g`
 * Move bookmarks from the active group to another one using `ctrl+alt+b m`
 
+### Persistent Storage
+
+The default place to persist bookmarks is the workspace state, which is local to the workstation (and user) the IDE is running on. The other storage type available is the file storage which uses json to store bookmark data. Storage location can be changed and json storage files can be exported and imported using `ctrl+alt+b ctrl+s` which will display a list of possible storage actions to perform:
+
+* move to another storage location: this will move the current bookmarks to another location and clean the current location. (Does not delete storage files, only blanks them.)
+* switch to using another storage location: abandon using the current storage (keeping its current state), and start using another storage and its bookmarks.
+* export to another storage location: export selected bookmark groups into another storage location.
+* import from another storage location: extends your current set of bookmarks with those loaded from the specified file.
+
 ### Display Options
 
 * Hide / unhide bookmark icons (might be necessary to set a breakpoint on a line that also has a bookmark): `ctrl+alt+b h`
@@ -60,7 +69,7 @@ Group icons come in two variants: vector icons (fixed set) and unicode character
 The icon can be customized after creation.
 
 * The icon color can be chosen selected from a list using `ctrl+alt+b c`. You can define the elements of this list with the configuration option `labeledBookmarks.colors`. If it is not defined a default color set is used.
-* The vector icon letter / unicode icon character can be set using `ctrl+alt+b ctrl+c`. The restrictions on accepted characters for vector icon letters do apply here too but for unicode icons anything can be set as an icon. (Note that not all unicode chars look the same on all platforms or work at all on all platforms.)
+* The vector icon letter / unicode icon character can be set using `ctrl+alt+b ctrl+i`. The restrictions on accepted characters for vector icon letters do apply here too but for unicode icons anything can be set as an icon. (Note that not all unicode chars look the same on all platforms or work at all on all platforms.)
 
 ## Extension Settings
 
@@ -112,6 +121,7 @@ Or you can delete them using `ctrl+alt+b d` and selecting them manually.
 ## Known Issues
 
 * Bookmark icons might interfere with placing breakpoints. Use `ctrl+alt+b h` to hide/unhide the bookmark icons to avoid this.
+* The default bookmark data storage is the workspace state which is local to the IDE. If you are working on a remote, different workstations will not see eachother's bookmarks. In such cases switch to file storage by using `ctrl+alt+b ctrl+s`.
 * On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these conflicting actions. If you are not using notebooks, there should be no problem.
 * The content of the bookmarked line is stored within the bookmark itself for display purposes, and it is updated when changes in the file/line trigger a file changed event. However, not all changes to files trigger such an event. Git operations and even source code formatters might cause file changes without triggering a proper update of the bookmarks, and so markings can drift off the originally marked code and the stored line text might get off sync from the actual line content.
 * If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a suspiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.

@@ -2,10 +2,12 @@
 
 All notable changes to the "vsc-labeled-bookmarks" extension will be documented in this file.
 
-## [1.1.11] - 2021-10-04
+## [1.1.11] - 2022-05-01
 
 - Fix single letter labeled bookmark uniqueness
 - Add dir name as description to tree view file items
+- Added option to use top and bottom margins when revealing bookmarked location
+- Added action to change persistent storage location, export, import
 
 ## [1.1.10] - 2021-09-26
 

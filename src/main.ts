@@ -32,9 +32,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public ctx: ExtensionContext;
     private treeViewRefreshCallback = () => { };
 
-    public readonly savedBookmarksKey = "vscLabeledBookmarks.bookmarks"; // todo moved to storage impl
-    public readonly savedGroupsKey = "vscLabeledBookmarks.groups"; // todo moved to storage impl
-    public readonly savedBookmarkTimestampKey = "vscodeLabeledBookmarks.bookmarkTimestamp"; // todo moved to storage impl
     public readonly savedActiveGroupKey = "vscLabeledBookmarks.activeGroup";
     public readonly savedHideInactiveGroupsKey = "vscLabeledBookmarks.hideInactiveGroups";
     public readonly savedHideAllKey = "vscLabeledBookmarks.hideAll";
@@ -111,18 +108,14 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         ]
     ]);
 
-    private storageRoot: Uri;
-
     public readonly persistentStorageTypeOptions = ["workspaceState", "file"];
     public readonly defaultPersistentStorageType = "workspaceState";
 
     public readonly defaultPersistToFilePath = "./.vscode/labeled_bookmarks.json";
-    // TODO git branch sensitive file name?
     public persistentStorageType: string;
     public persistToFilePath: string;
 
     private persistentStorage: BookmarkDataStorage;
-    // TODO init this to the internal storage? Or a dummy one?
 
     public readonly maxGroupNameLength = 40;
 
@@ -203,12 +196,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
         this.statusBarItem.command = 'vsc-labeled-bookmarks.selectGroup';
         this.statusBarItem.show();
-
-        this.storageRoot = Uri.file(".");
-        let workspaceFolders = vscode.workspace.workspaceFolders;
-        if (typeof workspaceFolders !== "undefined") {
-            this.storageRoot = workspaceFolders[0].uri;
-        }
     }
 
     public async initPhase2() {
@@ -216,9 +203,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
         if (this.persistentStorageType === "file") {
             let fileStorage = new BookmarkStorageInFile(
-                Uri.file(this.storageRoot.path + "/" + this.persistToFilePath)
+                Uri.file(this.persistToFilePath)
             );
-            await fileStorage.init();
+            await fileStorage.readFile();
             this.persistentStorage = fileStorage;
         } else {
             let workspaceStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "", true);
@@ -308,6 +295,22 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
     public getTimestamp(): number {
         return this.bookmarkTimestamp;
+    }
+
+    private purgeAllDecorations() {
+        this.bookmarks.map(b => b.getDecoration())
+            .forEach(d => {
+                if (d !== null) {
+                    this.removedDecorations.set(d, true);
+                }
+            });
+
+        this.groups.map(g => g.getActiveDecoration())
+            .forEach(d => {
+                if (d !== null) {
+                    this.removedDecorations.set(d, true);
+                }
+            });
     }
 
     private updateDecorations() {
@@ -1650,6 +1653,16 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             return;
         }
 
+        if (
+            targetStorage.getStorageType() === this.persistentStorage.getStorageType()
+            && targetStorage.getStoragePath() === this.persistentStorage.getStoragePath()
+        ) {
+            vscode.window.showErrorMessage(
+                "The selected storage is the current one. Aborting " + actionParameters.label + "."
+            );
+            return;
+        }
+
         if (actionParameters.writeToTarget) {
             this.persistentStorage.persist();
 
@@ -1690,18 +1703,23 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             targetStorage.persist();
         }
 
-        let currentStorage = this.persistentStorage;
+        let originalStorage = this.persistentStorage;
 
         if (actionParameters.switchToTarget) {
+            if (targetStorage instanceof BookmarkStorageInFile) {
+                await targetStorage.readFile();
+            }
+            this.purgeAllDecorations();
             this.persistentStorage = targetStorage;
         }
 
         if (actionParameters.eraseCurrent) {
-            currentStorage.setBookmarks([]);
-            currentStorage.setGroups([]);
-            currentStorage.setWorkspaceFolders([]);
-            currentStorage.setTimestamp(0);
-            currentStorage.persist();
+            originalStorage.setBookmarks([]);
+            originalStorage.setGroups([]);
+            originalStorage.setWorkspaceFolders([]);
+            originalStorage.setTimestamp(0);
+
+            originalStorage.persist();
         }
 
         if (actionParameters.loadFromTarget) {

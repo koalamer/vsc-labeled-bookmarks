@@ -224,7 +224,7 @@
       },
       {
         "command": "vsc-labeled-bookmarks.setCustomIconText",
-        "key": "ctrl+alt+b ctrl+c"
+        "key": "ctrl+alt+b ctrl+i"
       },
       {
         "command": "vsc-labeled-bookmarks.showStorageActionMenu",
