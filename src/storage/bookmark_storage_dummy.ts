@@ -58,6 +58,8 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         this.showError();
     }
 
+    public async readStorage(): Promise<void> { }
+
     public async persist(): Promise<void> {
         this.showError();
     };

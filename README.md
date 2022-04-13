@@ -52,6 +52,8 @@ The default place to persist bookmarks is the workspace state, which is local to
 * export to another storage location: export selected bookmark groups into another storage location.
 * import from another storage location: extends your current set of bookmarks with those loaded from the specified file.
 
+The current set of bookmarks is written into persistent storage with some delay to reduce the number of writes. The first delay and the consecutive write intervals can be modified in the settings.
+
 ### Display Options
 
 * Hide / unhide bookmark icons (might be necessary to set a breakpoint on a line that also has a bookmark): `ctrl+alt+b h`
@@ -81,6 +83,9 @@ The icon can be customized after creation.
 * `labeledBookmarks.homingMarginTop`: how many lines on code should be visible above the bookmark when navigating
 * `labeledBookmarks.homingMarginBottom`: how namy lines of code should be visible below the bookmark when navigating
 * `labeledBookmarks.homingSteps`: the above margin settings are not always satisfiable due to smaller than needed screen size or long wrapped lines. In order to approximate the margins in such cases increasingly smaller regions (containing the bookmark) are being tried to be fit onto the screen. The value `0` means the homing margin functionality is disabled. Higher values mean more reliable framing of the target bookmark at the price of using multiple reveal actions in quick succession which might cause visible flickering upon navigating to a bookmark.
+* `labeledBookmarks.persistenceDelay`: accumulate changes for this many milliseconds before starting to persist them
+* `labeledBookmarks.persistenceIntervalForFiles`: if bookmarks are persisted into a file, wait this many milliseconds between repeatedly writing
+* `labeledBookmarks.persistenceIntervalForWorkspaceState`: if bookmarks are persisted into the workspace state, wait this many milliseconds between repeatedly writing
 
 ## Tree View in the Activity Bar
 

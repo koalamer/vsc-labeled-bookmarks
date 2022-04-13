@@ -21,7 +21,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
 
     private workspaceState: Memento;
 
-    constructor(workspaceState: Memento, keyPostfix: string, abortOnError: boolean) {
+    constructor(workspaceState: Memento, keyPostfix: string) {
         this.dataFormatVersion = 0;
         this.groups = new Array<SerializableGroup>();
         this.bookmarks = new Array<SerializableBookmark>();
@@ -29,19 +29,15 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         this.timestamp = 0;
 
         this.workspaceState = workspaceState;
-        // if (keyPostfix !== "") {
-        //     this.keyPostfix = "_";
-        // }
-        // this.keyPostfix += keyPostfix;
         this.keyPostfix = keyPostfix;
-
-        this.readStorage(abortOnError);
     }
 
-    private readStorage(abortOnError: boolean) {
+    public async readStorage() {
         this.dataFormatVersion = this.workspaceState.get(this.savedDataFormatVersionKey + this.keyPostfix) ?? 0;
 
-        this.ensureDataFormatCompatibility();
+        let abortOnError: boolean = this.dataFormatVersion !== 0;
+
+        await this.ensureDataFormatCompatibility();
 
         let bookmarkTimestamp: number | undefined = this.workspaceState.get(this.savedBookmarkTimestampKey + this.keyPostfix);
         if (typeof bookmarkTimestamp === "undefined") {
@@ -80,7 +76,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         this.workspaceFolders = serializedWorkspaceFolders;
     }
 
-    private ensureDataFormatCompatibility() {
+    private async ensureDataFormatCompatibility() {
         if (this.dataFormatVersion === 0) {
             // from v0 to v1: initial set up
             // - add timestamp
@@ -89,22 +85,22 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
             // - add bookmarks if not present
             // - add workspaceFolders
 
-            this.workspaceState.update(this.savedBookmarkTimestampKey + this.keyPostfix, 0);
+            await this.workspaceState.update(this.savedBookmarkTimestampKey + this.keyPostfix, 0);
 
             this.dataFormatVersion = 1;
-            this.workspaceState.update(this.savedDataFormatVersionKey + this.keyPostfix, this.dataFormatVersion);
+            await this.workspaceState.update(this.savedDataFormatVersionKey + this.keyPostfix, this.dataFormatVersion);
 
             let serializedGroups: Array<SerializableGroup> | undefined = this.workspaceState.get(this.savedGroupsKey + this.keyPostfix);
             if (typeof serializedGroups === "undefined") {
-                this.workspaceState.update(this.savedGroupsKey + this.keyPostfix, new Array());
+                await this.workspaceState.update(this.savedGroupsKey + this.keyPostfix, new Array());
             }
 
             let serializedBookmarks: Array<SerializableBookmark> | undefined = this.workspaceState.get(this.savedBookmarksKey + this.keyPostfix);
             if (typeof serializedBookmarks === "undefined") {
-                this.workspaceState.update(this.savedBookmarksKey + this.keyPostfix, new Array());
+                await this.workspaceState.update(this.savedBookmarksKey + this.keyPostfix, new Array());
             }
 
-            this.workspaceState.update(this.savedWorkspaceFoldersKey + this.keyPostfix, new Array());
+            await this.workspaceState.update(this.savedWorkspaceFoldersKey + this.keyPostfix, new Array());
         }
     }
 
@@ -161,10 +157,10 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
     }
 
     public async persist(): Promise<void> {
-        this.workspaceState.update(this.savedDataFormatVersionKey + this.keyPostfix, this.dataFormatVersion);
-        this.workspaceState.update(this.savedBookmarkTimestampKey + this.keyPostfix, this.timestamp);
-        this.workspaceState.update(this.savedGroupsKey + this.keyPostfix, this.groups);
-        this.workspaceState.update(this.savedBookmarksKey + this.keyPostfix, this.bookmarks);
-        this.workspaceState.update(this.savedWorkspaceFoldersKey + this.keyPostfix, this.workspaceFolders);
+        await this.workspaceState.update(this.savedDataFormatVersionKey + this.keyPostfix, this.dataFormatVersion);
+        await this.workspaceState.update(this.savedBookmarkTimestampKey + this.keyPostfix, this.timestamp);
+        await this.workspaceState.update(this.savedGroupsKey + this.keyPostfix, this.groups);
+        await this.workspaceState.update(this.savedBookmarksKey + this.keyPostfix, this.bookmarks);
+        await this.workspaceState.update(this.savedWorkspaceFoldersKey + this.keyPostfix, this.workspaceFolders);
     }
 }

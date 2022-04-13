@@ -1657,7 +1657,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         if (targetType === "file") {
             targetStorage = new BookmarkStorageInFile(Uri.file(target));
         } else if (targetType === "workspaceState") {
-            targetStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, target, true);
+            targetStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, target);
         } else {
             vscode.window.showErrorMessage("unknown bookmark storage target type: " + targetType);
             return;
@@ -1718,9 +1718,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         let originalStorage = this.persistentStorage;
 
         if (actionParameters.switchToTarget) {
-            if (targetStorage instanceof BookmarkStorageInFile) {
-                await targetStorage.readFile();
-            }
+            await targetStorage.readStorage();
             this.purgeAllDecorations();
             this.persistentStorage = targetStorage;
             this.setStorageRateLimiter();
@@ -1736,9 +1734,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         }
 
         if (actionParameters.loadFromTarget) {
-            if (targetStorage instanceof BookmarkStorageInFile) {
-                await targetStorage.readFile();
-            }
+            await targetStorage.readStorage();
 
             // TODO check workspace folder list and align bookmark paths
 

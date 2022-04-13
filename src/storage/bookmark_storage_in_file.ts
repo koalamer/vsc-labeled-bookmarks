@@ -27,7 +27,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
         this.timestamp = 0;
     }
 
-    public async readFile() {
+    public async readStorage() {
         let fileContents: Uint8Array = await workspace.fs.readFile(this.uri);
         let json = new TextDecoder("utf-8").decode(fileContents);
         let savedData = JSON.parse(json);
