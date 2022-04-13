@@ -185,7 +185,7 @@ function activatePhase2(context: ExtensionContext): void {
 	treeView.init(main);
 }
 
-export function deactivate() {
-	main.saveBookmarkData();
+export async function deactivate() {
+	await main.saveBookmarkDataImmediately();
 	main.saveLocalState();
 }

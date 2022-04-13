@@ -1,5 +1,3 @@
-import * as vscode from 'vscode';
-
 import { BookmarkDataStorage } from "../interface/bookmark_data_storage";
 import { Memento } from "vscode";
 import { SerializableGroup } from "./serializable_group";
@@ -162,7 +160,7 @@ export class BookmarkStorageInWorkspaceState implements BookmarkDataStorage {
         this.timestamp = timestamp;
     }
 
-    public persist(): void {
+    public async persist(): Promise<void> {
         this.workspaceState.update(this.savedDataFormatVersionKey + this.keyPostfix, this.dataFormatVersion);
         this.workspaceState.update(this.savedBookmarkTimestampKey + this.keyPostfix, this.timestamp);
         this.workspaceState.update(this.savedGroupsKey + this.keyPostfix, this.groups);

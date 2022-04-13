@@ -340,6 +340,27 @@
           "default": 0,
           "minimum": 0,
           "maximum": 5
+        },
+        "labeledBookmarks.persistenceDelay": {
+          "type": "number",
+          "description": "Accumulate changes for this many milliseconds before starting to persist them.",
+          "default": 500,
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "labeledBookmarks.persistenceIntervalForWorkspaceState": {
+          "type": "number",
+          "description": "If bookmarks are persisted into the workspace state, wait this many milliseconds between repeatedly writing.",
+          "default": 500,
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "labeledBookmarks.persistenceIntervalForFiles": {
+          "type": "number",
+          "description": "If bookmarks are persisted into a file, wait this many milliseconds between repeatedly writing.",
+          "default": 1500,
+          "minimum": 0,
+          "maximum": 10000
         }
       }
     },

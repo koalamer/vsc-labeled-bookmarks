@@ -28,6 +28,7 @@ import { ActiveGroupProvider } from './interface/active_group_provider';
 import { BookmarkStorageInWorkspaceState } from './storage/bookmark_storage_in_workspace_state';
 import { BookmarkStorageInFile } from './storage/bookmark_storage_in_file';
 import { StorageMenuPickItem } from './storage_menu_pick_item';
+import { RateLimiter } from './rate_limiter/rate_limiter';
 
 export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupProvider {
     public ctx: ExtensionContext;
@@ -48,6 +49,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public readonly configKeyHomingMarginTop = "homingMarginTop";
     public readonly configKeyHomingMarginBottom = "homingMarginBottom";
     public readonly configKeyHomingSteps = "homingSteps";
+    public readonly configKeyPersistenceDelay = "persistenceDelay";
+    public readonly configKeyPersistenceIntervalForWorkspaceState = "persistenceIntervalForWorkspaceState";
+    public readonly configKeyPersistenceIntervalForFiles = "persistenceIntervalForFiles";
 
     private readonly storageActionOptions: Map<string, {
         label: string,
@@ -117,6 +121,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public persistToFilePath: string;
 
     private persistentStorage: BookmarkDataStorage;
+    private persistentStorageRateLimiter: RateLimiter;
 
     public readonly maxGroupNameLength = 40;
 
@@ -137,6 +142,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public homingMarginTop = 6;
     public homingMarginBottom = 30;
     public homingSteps = 0;
+    public persistenceDelay = 500;
+    public persistenceIntervalForWorkspaceState = 500;
+    public persistenceIntervalForFiles = 1500;
 
     public hideInactiveGroups: boolean;
     public hideAll: boolean;
@@ -158,6 +166,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.decorationFactory = new DecorationFactory(this.ctx.globalStorageUri, OverviewRulerLane.Center, "bordered");
 
         this.persistentStorage = new BookmarkStorageDummy();
+        this.persistentStorageRateLimiter = new RateLimiter(() => { }, 500, 500);
 
         this.bookmarks = new Array<Bookmark>();
         this.groups = new Array<Group>();
@@ -202,18 +211,11 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public async initPhase2() {
         this.loadLocalState();
 
-        if (this.persistentStorageType === "file") {
-            let fileStorage = new BookmarkStorageInFile(
-                Uri.file(this.persistToFilePath)
-            );
-            await fileStorage.readFile();
-            this.persistentStorage = fileStorage;
-        } else {
-            let workspaceStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "", true);
-            this.persistentStorage = workspaceStorage;
-        }
-
-        await this.initBookmarkDataUsingStorage();
+        await this.executeStoreageAction(
+            "switchTo",
+            this.persistentStorageType,
+            (this.persistentStorageType === "file") ? this.persistToFilePath : ""
+        );
     }
 
     private async initBookmarkDataUsingStorage() {
@@ -229,6 +231,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public saveBookmarkData() {
+        this.persistentStorageRateLimiter.fire();
+    }
+
+    public async saveBookmarkDataImmediately() {
         this.persistentStorage.setTimestamp(this.bookmarkTimestamp);
 
         let serializedGroups = this.groups.map(group => SerializableGroup.fromGroup(group));
@@ -240,7 +246,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         let folders = vscode.workspace.workspaceFolders ?? [];
         this.persistentStorage.setWorkspaceFolders(folders.map(f => f.uri.fsPath));
 
-        this.persistentStorage.persist();
+        await this.persistentStorage.persist();
 
         this.updateStatusBar();
     }
@@ -1597,11 +1603,14 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 let targetType = tmp.payload;
                 switch (targetType) {
                     case "file":
+                        let aWorkspaceFolder = vscode.workspace.workspaceFolders
+                            ? vscode.workspace.workspaceFolders[0]?.uri
+                            : undefined;
                         switch (action) {
                             case "moveTo":
                             case "exportTo":
                                 vscode.window.showSaveDialog({
-                                    defaultUri: undefined,
+                                    defaultUri: aWorkspaceFolder,
                                     filters: { "json": ["json"] },
                                     saveLabel: undefined,
                                     title: "Bookmark storage: " + actionLabel,
@@ -1617,7 +1626,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                                     canSelectFiles: true,
                                     canSelectFolders: false,
                                     canSelectMany: false,
-                                    defaultUri: undefined,
+                                    defaultUri: aWorkspaceFolder,
                                     filters: { "json": ["json"] },
                                     openLabel: undefined,
                                     title: "Bookmark storage: " + actionLabel,
@@ -1665,7 +1674,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         }
 
         if (actionParameters.writeToTarget) {
-            this.persistentStorage.persist();
+            if (this.persistentStorage.getStorageType() !== "dummy") {
+                await this.persistentStorage.persist();
+            }
 
             if (actionParameters.writeToTargetSelectively) {
                 let pickItems = this.groups.map(
@@ -1701,7 +1712,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             }
             targetStorage.setWorkspaceFolders(this.persistentStorage.getWorkspaceFolders());
             targetStorage.setTimestamp(this.persistentStorage.getTimestamp());
-            targetStorage.persist();
+            await targetStorage.persist();
         }
 
         let originalStorage = this.persistentStorage;
@@ -1712,6 +1723,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             }
             this.purgeAllDecorations();
             this.persistentStorage = targetStorage;
+            this.setStorageRateLimiter();
         }
 
         if (actionParameters.eraseCurrent) {
@@ -1720,7 +1732,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             originalStorage.setWorkspaceFolders([]);
             originalStorage.setTimestamp(0);
 
-            originalStorage.persist();
+            await originalStorage.persist();
         }
 
         if (actionParameters.loadFromTarget) {
@@ -1833,7 +1845,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         }
 
         if (actionParameters.switchToTarget || actionParameters.loadFromTarget) {
-            this.initBookmarkDataUsingStorage();
+            await this.initBookmarkDataUsingStorage();
         }
     }
 
@@ -1948,6 +1960,31 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 vscode.window.showWarningMessage("Error reading homing steps setting");
             }
         }
+
+        if (config.has(this.configKeyPersistenceDelay)) {
+            try {
+                this.persistenceDelay = (config.get(this.configKeyPersistenceDelay) as number) ?? 500;
+            } catch (e) {
+                vscode.window.showWarningMessage("Error reading persistence delay");
+            }
+        }
+
+        if (config.has(this.configKeyPersistenceIntervalForWorkspaceState)) {
+            try {
+                this.persistenceIntervalForWorkspaceState = (config.get(this.configKeyPersistenceIntervalForWorkspaceState) as number) ?? 500;
+            } catch (e) {
+                vscode.window.showWarningMessage("Error reading persistence interval for workspace state");
+            }
+        }
+
+        if (config.has(this.configKeyPersistenceIntervalForFiles)) {
+            try {
+                this.persistenceIntervalForFiles = (config.get(this.configKeyPersistenceIntervalForFiles) as number) ?? 1500;
+            } catch (e) {
+                vscode.window.showWarningMessage("Error reading persistence interval for files");
+            }
+        }
+        this.setStorageRateLimiter();
 
         let configOverviewRulerLane = (config.get(this.configKeyOverviewRulerLane) as string) ?? "center";
         let previousOverviewRulerLane = this.decorationFactory.overviewRulerLane;
@@ -2358,5 +2395,17 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
     private updateBookmarkTimestamp() {
         this.bookmarkTimestamp = Date.now();
+    }
+
+    private setStorageRateLimiter() {
+        let repeatedWriteDelay = this.persistentStorage.getStorageType() === "file"
+            ? this.persistenceIntervalForFiles
+            : this.persistenceIntervalForWorkspaceState;
+
+        this.persistentStorageRateLimiter = new RateLimiter(
+            this.saveBookmarkDataImmediately.bind(this),
+            this.persistenceDelay,
+            repeatedWriteDelay
+        );
     }
 }

@@ -16,5 +16,5 @@ export interface BookmarkDataStorage {
     setGroups(serializableGroups: Array<SerializableGroup>): void;
     setWorkspaceFolders(workspaceFolders: Array<string>): void;
     setTimestamp(timestamp: number): void;
-    persist(): void;
+    persist(): Promise<void>;
 }

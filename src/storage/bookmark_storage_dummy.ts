@@ -58,11 +58,11 @@ export class BookmarkStorageDummy implements BookmarkDataStorage {
         this.showError();
     }
 
-    public persist(): void {
+    public async persist(): Promise<void> {
         this.showError();
     };
 
     private showError() {
-        vscode.window.showErrorMessage('Labeled bookmark storage is uninitialized. Bookmarks will not persisted.');
+        vscode.window.showErrorMessage('Labeled bookmark storage is uninitialized. Bookmarks will not persisted. Use `ctrl+alt+b ctrl+s` to switch to an actual storage location.');
     }
 }

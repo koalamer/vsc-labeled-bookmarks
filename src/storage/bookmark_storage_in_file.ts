@@ -106,7 +106,7 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
         this.timestamp = timestamp;
     }
 
-    public persist(): void {
+    public async persist(): Promise<void> {
         let json = JSON.stringify({
             "dataFormatVersion": this.dataFormatVersion,
             "timestamp": this.timestamp,
@@ -116,13 +116,6 @@ export class BookmarkStorageInFile implements BookmarkDataStorage {
         });
 
         let bytes = Uint8Array.from(json.split("").map(c => { return c.charCodeAt(0); }));
-        workspace.fs.writeFile(this.uri, bytes).then(
-            () => {
-                // vscode.window.showInformationMessage("File written " + this.uri.toString());
-            },
-            (reason) => {
-                vscode.window.showErrorMessage("Failed persisting into storage file: " + reason);
-            }
-        );
+        await workspace.fs.writeFile(this.uri, bytes);
     }
 }
