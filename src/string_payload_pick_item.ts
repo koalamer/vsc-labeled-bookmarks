@@ -1,6 +1,6 @@
 import { QuickPickItem, QuickPickItemKind } from 'vscode';
 
-export class StorageMenuPickItem implements QuickPickItem {
+export class StringPayloadPickItem implements QuickPickItem {
     payload: string;
     alwaysShow: boolean;
     description: string;
@@ -18,4 +18,11 @@ export class StorageMenuPickItem implements QuickPickItem {
         this.label = label;
         this.picked = false;
     }
+
+    static newSeparator(label: string): StringPayloadPickItem {
+        let separator = new StringPayloadPickItem("", label, "");
+        separator.kind = QuickPickItemKind.Separator;
+        return separator;
+    }
+
 }

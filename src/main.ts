@@ -27,7 +27,7 @@ import { BookmarkStorageDummy } from './storage/bookmark_storage_dummy';
 import { ActiveGroupProvider } from './interface/active_group_provider';
 import { BookmarkStorageInWorkspaceState } from './storage/bookmark_storage_in_workspace_state';
 import { BookmarkStorageInFile } from './storage/bookmark_storage_in_file';
-import { StorageMenuPickItem } from './storage_menu_pick_item';
+import { StringPayloadPickItem } from './string_payload_pick_item';
 import { RateLimiter } from './rate_limiter/rate_limiter';
 import { FolderMappingStats } from './storage/folder_mapping_stats';
 import { FolderMatchStats as FolderMatchStats } from './storage/folder_match_stats';
@@ -1498,7 +1498,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         let pickItems: QuickPickItem[] = [];
 
         this.storageActionOptions.forEach((v, k) => {
-            pickItems.push(new StorageMenuPickItem(k, v.label, v.description));
+            pickItems.push(new StringPayloadPickItem(k, v.label, v.description));
         });
 
         vscode.window.showQuickPick(
@@ -1513,7 +1513,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             }
         ).then((selected) => {
             if (typeof selected !== "undefined") {
-                let tmp = selected as StorageMenuPickItem;
+                let tmp = selected as StringPayloadPickItem;
                 this.showStorageActionMenuStorageTypeFor(tmp.payload);
             }
         });
@@ -1522,8 +1522,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     private async showStorageActionMenuStorageTypeFor(action: string) {
         let pickItems: QuickPickItem[] = [];
 
-        pickItems.push(new StorageMenuPickItem("workspaceState", "workspace state", ""));
-        pickItems.push(new StorageMenuPickItem("file", "file", ""));
+        pickItems.push(new StringPayloadPickItem("workspaceState", "workspace state", ""));
+        pickItems.push(new StringPayloadPickItem("file", "file", ""));
 
         let actionLabel = this.storageActionOptions.get(action)?.label;
 
@@ -1539,7 +1539,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             }
         ).then((selected) => {
             if (typeof selected !== "undefined") {
-                let tmp = selected as StorageMenuPickItem;
+                let tmp = selected as StringPayloadPickItem;
                 let targetType = tmp.payload;
                 switch (targetType) {
                     case "file":
@@ -1701,7 +1701,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
             if (actionParameters.loadFromTargetSelectively) {
                 let pickItems = incomingGroups.map(
-                    name => new StorageMenuPickItem(
+                    name => new StringPayloadPickItem(
                         name,
                         name,
                         " $(bookmark) " + targetStorage.getBookmarks().filter(b => b.groupName === name).length
@@ -2498,15 +2498,15 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             });
 
             if (totalMatchCount !== 1 || partialMatchCount !== 0 || matchingLocalFolder === "") {
-                let assignmentOptions: StorageMenuPickItem[] = [];
-                let optionToSkip = new StorageMenuPickItem(
+                let assignmentOptions: StringPayloadPickItem[] = [];
+                let optionToSkip = new StringPayloadPickItem(
                     "",
                     "do not import bookmarks of this imported folder",
                     ""
                 );
 
                 statsForIncomingFolder.forEach((stats, localFolderOrig) => {
-                    assignmentOptions.push(new StorageMenuPickItem(
+                    assignmentOptions.push(new StringPayloadPickItem(
                         localFolderOrig,
                         localFolderOrig,
                         stats.existingFileCount + " of " + stats.fileCount + " files actually exist"
