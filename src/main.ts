@@ -811,7 +811,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         if (firstNlPos >= 0) {
             selectedText = selectedText.substring(0, firstNlPos).trim();
         }
-        selectedText = selectedText.replace(/[\s\t\r\n]+/, " ").replace("@", "@\u200b");
+        selectedText = selectedText.replace(/[\s\t\r\n]+/g, " ").replace("/@/g", "@\u200b");
 
         vscode.window.showInputBox({
             placeHolder: "label or label@@group or @@group",
@@ -836,7 +836,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 label = input.substring(0, separatorPos).trim();
                 groupName = input.substring(separatorPos + 2).trim();
             } else {
-                label = input.replace("@\u200b", "@");
+                label = input.replace(/@\u200b/g, "@");
             }
 
             if (label === "" && groupName === "") {
@@ -1776,6 +1776,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                         });
 
                         this.persistentStorage.setBookmarks(existings);
+                        this.saveBookmarkData();
                         break;
                 }
             }
@@ -1793,6 +1794,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                     .forEach(b => currentBookmarks.push(b))
                     ;
                 this.persistentStorage.setBookmarks(currentBookmarks);
+                this.saveBookmarkData();
             }
 
             this.purgeAllDecorations();
