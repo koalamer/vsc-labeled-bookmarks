@@ -29,6 +29,8 @@ import { BookmarkStorageInWorkspaceState } from './storage/bookmark_storage_in_w
 import { BookmarkStorageInFile } from './storage/bookmark_storage_in_file';
 import { StorageMenuPickItem } from './storage_menu_pick_item';
 import { RateLimiter } from './rate_limiter/rate_limiter';
+import { FolderMappingStats } from './storage/folder_mapping_stats';
+import { FolderMatchStats as FolderMatchStats } from './storage/folder_match_stats';
 
 export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupProvider {
     public ctx: ExtensionContext;
@@ -723,68 +725,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
-        // vscode.window.showOpenDialog({
-        //     canSelectFiles: true,
-        //     canSelectFolders: false,
-        //     canSelectMany: false,
-        //     defaultUri: undefined,
-        //     filters: {"json": ["json"]},
-        //     openLabel: "the label",
-        //     title: "the title",
-        // }).then((result) => {
-        //     if (typeof result !== "undefined") {
-        //         vscode.window.showInformationMessage(result.map(u => u.fsPath).join("; "));
-        //     }
-        // });
-
-        // vscode.window.showSaveDialog({
-        //     defaultUri: undefined,
-        //     filters: {"json": ["json"]},
-        //     saveLabel: "the label",
-        //     title: "the title",
-        // }).then((result) => {
-        //     if (typeof result !== "undefined") {
-        //         vscode.window.showInformationMessage(result.fsPath);
-        //     }
-        // });
-
-        // let workspaceFolders = vscode.workspace.workspaceFolders;
-        // if (typeof workspaceFolders === "undefined") {
-        //     return;
-        // }
-        // workspaceFolders.forEach((x) => vscode.window.showInformationMessage(x.uri.toString()));
-
-        // let vscDir = vscode.Uri.joinPath(mainFolder.uri, ".vscode");
-        // // vscode.window.showInformationMessage(vscDir.toString());
-
-        // // FileType.Directory = 2
-        // // vscode.workspace.fs.stat(vscDir).then(
-        // //     (stat: vscode.FileStat) => {
-        // //         vscode.window.showInformationMessage("stat: " + stat.type.toString());
-        // //     },
-        // //     () => {
-        // //         vscode.window.showInformationMessage("failed");
-        // //         vscode.workspace.fs.createDirectory(vscDir);
-        // //     }
-        // // );
-
-        // vscode.workspace.fs.writeFile(vscode.Uri.file(vscDir.fsPath + "/labeled_bookmarks.json"), new Uint8Array()).then(
-        //     () => {
-        //         vscode.window.showInformationMessage("writing file success");
-        //     },
-        //     (reason) => {
-        //         vscode.window.showErrorMessage("write failure: " + reason);
-        //     }
-        // );
-
-        // let bookmarkStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, "");
-        // let readBookmarks = bookmarkStorage.getBookmarks();
-        // vscode.window.showInformationMessage(typeof readBookmarks);
-
-        // let fileStorage = new BookmarkStorageInFile(vscode.Uri.file(".vscode/labeled_bookmarks.json"), (bms) => {
-        //     vscode.window.showInformationMessage('file read');
-        // });
-        // // let bookmarkStorageFile = vscode.Uri.joinPath(vscDir, "labeledBookmarks.json");
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
@@ -1736,7 +1676,25 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         if (actionParameters.loadFromTarget) {
             await targetStorage.readStorage();
 
-            // TODO check workspace folder list and align bookmark paths
+            try {
+                let [incomingFileMapping, mappingStats] = await this.mapIncomingFolders(this.persistentStorage, targetStorage);
+                let mappedBookmarks: SerializableBookmark[] = [];
+                targetStorage.getBookmarks().forEach(b => {
+                    let mappedFilePath = incomingFileMapping.get(b.fsPath);
+                    if (typeof mappedFilePath === "undefined" || mappedFilePath === "") {
+                        return;
+                    }
+
+                    let tempUri = Uri.parse(mappedFilePath);
+
+                    b.fsPath = tempUri.fsPath;
+                    mappedBookmarks.push(b);
+                });
+                targetStorage.setBookmarks(mappedBookmarks);
+            } catch (e) {
+                vscode.window.showWarningMessage('Bookmark data import aborted: ' + e);
+                return;
+            }
 
             let existingGroups = this.groups.map(g => g.name);
             let incomingGroups = targetStorage.getGroups().map(g => g.name);
@@ -2403,5 +2361,217 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             this.persistenceDelay,
             repeatedWriteDelay
         );
+    }
+
+    private async mapIncomingFolders(
+        currentStorage: BookmarkDataStorage,
+        incomingStorage: BookmarkDataStorage
+    ): Promise<[Map<string, string>, FolderMappingStats]> {
+        let localFolderMapping: Map<string, string> = new Map();
+        currentStorage.getWorkspaceFolders().forEach(f => localFolderMapping.set(f, f.replace(/\\/g, "/") + "/"));
+
+        let incomingFolderMapping: Map<string, string> = new Map();
+        incomingStorage.getWorkspaceFolders().forEach(f => incomingFolderMapping.set(f, f.replace(/\\/g, "/") + "/"));
+
+        let pendingFileMapping: Map<string, string> = new Map();
+        incomingStorage.getBookmarks().forEach(b => pendingFileMapping.set(b.fsPath, b.fsPath.replace(/\\/g, "/")));
+        let doneFileMapping: Map<string, string> = new Map();
+
+        let stats = new FolderMappingStats();
+
+        // count files in folders
+        let incomingFolderFileCount: Map<string, number> = new Map();
+        incomingFolderMapping.forEach((incomingFolderNormalized, incomingFolderOrig) => {
+            let fileCount = 0;
+            pendingFileMapping.forEach((incomingFileNormalized, _) => {
+                if (incomingFileNormalized.startsWith(incomingFolderNormalized)) {
+                    fileCount++;
+                }
+            });
+            incomingFolderFileCount.set(incomingFolderOrig, fileCount);
+        });
+
+        // ignore empty incoming folders
+        incomingFolderFileCount.forEach((fileCount, incomingFolderOrig) => {
+            if (fileCount === 0) {
+                incomingFolderMapping.delete(incomingFolderOrig);
+            }
+        });
+
+        // move perfect matches into doneFileMapping
+        localFolderMapping.forEach((localFolderNormalized, localFolderOrig) => {
+            if (!incomingFolderMapping.has(localFolderOrig)) {
+                return;
+            }
+
+            incomingFolderMapping.delete(localFolderOrig);
+            incomingFolderFileCount.delete(localFolderOrig);
+            pendingFileMapping.forEach((filePathNormalized, filePathOrig) => {
+                if (filePathNormalized.startsWith(localFolderNormalized)) {
+                    doneFileMapping.set(filePathOrig, filePathOrig);
+                    pendingFileMapping.delete(filePathOrig);
+                    stats.perfectlyMatching++;
+                }
+            });
+        });
+
+        // handle off-folder files
+        for (let [filePathOrig, filePathNormalized] of pendingFileMapping) {
+            let matchingFolderFound = false;
+
+            for (let [_, incomingFolderNormalized] of incomingFolderMapping) {
+                if (filePathNormalized.startsWith(incomingFolderNormalized)) {
+                    matchingFolderFound = true;
+                    break;
+                }
+            };
+
+            if (matchingFolderFound) {
+                continue;
+            }
+
+            pendingFileMapping.delete(filePathOrig);
+
+            let doesFileExist = await this.fileExists(filePathOrig);
+            if (doesFileExist) {
+                doneFileMapping.set(filePathOrig, filePathOrig);
+                stats.offFolderExisting++;
+                continue;
+            }
+
+            doneFileMapping.set(filePathOrig, "");
+            stats.offFolderMissing++;
+        };
+
+        // stat existing file count for various folder pairings
+        let folderMatchStats: Map<string, Map<string, FolderMatchStats>> = new Map();
+        // incomingFolderMapping.forEach((incomingFolderNormalized, incomingFolderOrig) => {
+        for (let [incomingFolderOrig, incomingFolderNormalized] of incomingFolderMapping) {
+            let subStats = new Map<string, FolderMatchStats>();
+
+            // localFolderMapping.forEach((localFolderNormalized, localFolderOrig) =>{
+            for (let [localFolderOrig, localFolderNormalized] of localFolderMapping) {
+                let stats = new FolderMatchStats();
+
+                // pendingFileMapping.forEach((pendingFileNormalized, _pendingFileOrig) => {
+                for (let [_pendingFileOrig, pendingFileNormalized] of pendingFileMapping) {
+                    stats.fileCount++;
+
+                    if (!pendingFileNormalized.startsWith(incomingFolderNormalized)) {
+                        continue;
+                    }
+
+                    let mappedPath = pendingFileNormalized.replace(incomingFolderNormalized, localFolderNormalized);
+                    if (await this.fileExists(mappedPath)) {
+                        stats.existingFileCount++;
+                    }
+                };
+                subStats.set(localFolderOrig, stats);
+            };
+            folderMatchStats.set(incomingFolderOrig, subStats);
+        };
+
+        for (let [incomingFolderOrig, incomingFolderNormalized] of incomingFolderMapping) {
+            let matchingLocalFolder = "";
+            let totalMatchCount = 0;
+            let partialMatchCount = 0;
+            let nonMatchCount = 0;
+
+            let statsForIncomingFolder = folderMatchStats.get(incomingFolderOrig);
+            if (typeof statsForIncomingFolder === "undefined") {
+                continue;
+            }
+
+            statsForIncomingFolder.forEach((stats, localFolderOrig) => {
+                if (stats.existingFileCount === 0) {
+                    nonMatchCount++;
+                    return;
+                }
+
+                if (stats.existingFileCount < stats.fileCount) {
+                    partialMatchCount++;
+                    return;
+                }
+
+                matchingLocalFolder = localFolderOrig;
+                totalMatchCount++;
+            });
+
+            if (totalMatchCount !== 1 || partialMatchCount !== 0 || matchingLocalFolder === "") {
+                let assignmentOptions: StorageMenuPickItem[] = [];
+                let optionToSkip = new StorageMenuPickItem(
+                    "",
+                    "do not import bookmarks of this imported folder",
+                    ""
+                );
+
+                statsForIncomingFolder.forEach((stats, localFolderOrig) => {
+                    assignmentOptions.push(new StorageMenuPickItem(
+                        localFolderOrig,
+                        localFolderOrig,
+                        stats.existingFileCount + " of " + stats.fileCount + " files actually exist"
+                    ));
+                });
+
+                assignmentOptions.push(optionToSkip);
+
+                let selectedAssignment = await vscode.window.showQuickPick(
+                    assignmentOptions,
+                    {
+                        canPickMany: false,
+                        ignoreFocusOut: false,
+                        matchOnDescription: false,
+                        matchOnDetail: false,
+                        placeHolder: "select equivalent for '" + incomingFolderOrig + "'",
+                        title: "Select local target folder for imported bookmarks",
+                    }
+                );
+
+                if (
+                    typeof selectedAssignment === "undefined"
+                    || selectedAssignment.payload === ""
+                ) {
+                    continue;
+                }
+
+                matchingLocalFolder = selectedAssignment.payload;
+            }
+
+            if (matchingLocalFolder === "") {
+                vscode.window.showWarningMessage("Skipped importing folder: " + incomingFolderOrig);
+                continue;
+            }
+
+            pendingFileMapping.forEach((incomingFileNormalized, incomingFileOrig) => {
+                if (!incomingFileNormalized.startsWith(incomingFolderNormalized)) {
+                    return;
+                }
+
+                let matchingFolderNormalized = localFolderMapping.get(matchingLocalFolder);
+                if (typeof matchingFolderNormalized === "undefined") {
+                    vscode.window.showErrorMessage("Could not identify matching folder: " + matchingLocalFolder);
+                    return;
+                }
+
+                let translatedPath = incomingFileNormalized.replace(incomingFolderNormalized, matchingFolderNormalized);
+                doneFileMapping.set(incomingFileOrig, translatedPath);
+                pendingFileMapping.delete(incomingFileOrig);
+            });
+        }
+
+        if (pendingFileMapping.size > 0) {
+            vscode.window.showWarningMessage("There were bookmasks skipped during import: " + pendingFileMapping.size);
+        }
+
+        return [doneFileMapping, stats];
+    }
+
+    private async fileExists(filePath: string): Promise<boolean> {
+        try {
+            let fileStat = await vscode.workspace.fs.stat(Uri.file(filePath));
+            return (fileStat.type & vscode.FileType.File) !== 0;
+        } catch (e) {
+            return false;
+        }
     }
 }
