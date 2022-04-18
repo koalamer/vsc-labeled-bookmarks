@@ -162,6 +162,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
 
     private decorationFactory: DecorationFactory;
 
+    private webview: BookmarkWebview;
+
     constructor(ctx: ExtensionContext, treeviewRefreshCallback: () => void) {
         this.ctx = ctx;
         this.treeViewRefreshCallback = treeviewRefreshCallback;
@@ -209,6 +211,23 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
         this.statusBarItem.command = 'vsc-labeled-bookmarks.selectGroup';
         this.statusBarItem.show();
+
+        // webview init
+        let actionOptions: Map<string, string> = new Map();
+        this.storageActionOptions.forEach((action, key) => {
+            actionOptions.set(key, action.label);
+        });
+
+        let storageTypeOptions: Map<string, string> = new Map();
+        storageTypeOptions.set("workspaceState", "workspace state");
+        storageTypeOptions.set("file", "file");
+
+        this.webview = new BookmarkWebview(
+            this.ctx,
+            this,
+            actionOptions,
+            storageTypeOptions
+        );
     }
 
     public async initPhase2() {
@@ -726,21 +745,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
-        let actionOptions: Map<string, string> = new Map();
-        this.storageActionOptions.forEach((action, key) => {
-            actionOptions.set(key, action.label);
-        });
-
-        let storageTypeOptions: Map<string, string> = new Map();
-        storageTypeOptions.set("workspaceState", "workspace state");
-        storageTypeOptions.set("file", "file");
-
-        let webview = new BookmarkWebview(
-            this.ctx,
-            this,
-            actionOptions,
-            storageTypeOptions
-        );
+        this.webview.reveal();
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {

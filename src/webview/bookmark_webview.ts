@@ -6,7 +6,7 @@ import { WebviewPanel } from "vscode";
 import { WebviewState } from "./webview_state";
 
 export class BookmarkWebview {
-    private panel: WebviewPanel;
+    private panel: WebviewPanel | undefined;
     private formState: WebviewState;
 
     private ctx: ExtensionContext;
@@ -15,6 +15,8 @@ export class BookmarkWebview {
     private storageTypeOptions: Map<string, string>;
 
     private logoImageUrl: string;
+    private jsUrl: string;
+    private cssUrl: string;
 
     public constructor(
         ctx: ExtensionContext,
@@ -35,22 +37,34 @@ export class BookmarkWebview {
         this.actionOptions = actionOptions;
         this.storageTypeOptions = storageTypeOptions;
 
-        this.panel = vscode.window.createWebviewPanel(
-            'labeledBookmarks',
-            'Labeled Bookmarks',
-            vscode.ViewColumn.Active,
-            {
-                enableScripts: true,
-                enableFindWidget: false,
-                localResourceRoots: [vscode.Uri.file(this.ctx.extensionPath)],
-            }
-        );
+        this.logoImageUrl = "";
+        this.jsUrl = "";
+        this.cssUrl = "";
+    }
+
+    public reveal() {
+        if (typeof this.panel === "undefined") {
+            this.panel = vscode.window.createWebviewPanel(
+                'labeledBookmarks',
+                'Labeled Bookmarks',
+                vscode.ViewColumn.Active,
+                {
+                    enableScripts: true,
+                    enableFindWidget: false,
+                    localResourceRoots: [vscode.Uri.file(this.ctx.extensionPath)],
+                }
+            );
+        }
+
+        this.panel.reveal();
 
         if (typeof this.panel === "undefined") {
             throw new Error("Could not initialize webview.");
         }
 
         this.logoImageUrl = this.toWebviewUrl(["resources", "vsc-labeled-bookmarks-logo.png"]);
+        this.jsUrl = this.toWebviewUrl(["resources", "webview.js"]);
+        this.cssUrl = this.toWebviewUrl(["resources", "webview.css"]);
 
         this.panel.iconPath = Uri.file(path.join(this.ctx.extensionPath, "resources", "vsc-labeled-bookmarks-logo.png"));
 
@@ -62,12 +76,16 @@ export class BookmarkWebview {
             this.ctx.subscriptions
         );
 
-        // things to handle:
-        // this.panel.onDidChangeViewState();
-        // this.panel.onDidDispose();
+        this.panel.onDidDispose(() => {
+            this.panel = undefined;
+        });
     }
 
     private toWebviewUrl(pathElements: string[]): string {
+        if (typeof this.panel === "undefined") {
+            throw new Error("Webview is uninitialized.");
+        }
+
         pathElements.unshift(this.ctx.extensionPath);
         return this.panel.webview.asWebviewUri(
             Uri.file(
@@ -76,6 +94,10 @@ export class BookmarkWebview {
     }
 
     private sendMessageToWebView(message: any) {
+        if (typeof this.panel === "undefined") {
+            throw new Error("Webview is uninitialized.");
+        }
+
         this.panel.webview.postMessage(message);
     }
 
@@ -84,6 +106,10 @@ export class BookmarkWebview {
     }
 
     private getWebviewContents() {
+        if (typeof this.panel === "undefined") {
+            throw new Error("Webview is uninitialized.");
+        }
+
         return `<!DOCTYPE html>
         <html lang="en">
         <head>
@@ -97,37 +123,15 @@ export class BookmarkWebview {
                     "/>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Cat Coding</title>
-            <style type="text/css">
-                body {
-                    font-family: var(--vscode-editor-font-family);
-                    font-weight: var(--vscode-editor-font-weight);
-                    font-size: var(--vscode-editor-font-size);
-                }
-
-                #labeled-bookmarks-logo{
-                    width: 50px;
-                    height: 50px;
-                }
-            </style>
+            <link rel="stylesheet" href="${this.cssUrl}" />
+            <script src="${this.jsUrl}" defer></script> 
         </head>
         <body>
-            <script>
-            const vscode = acquireVsCodeApi();
-
-            // post message to the extension
-            vscode.postMessage({});
-
-            // receive messages from the extension
-            window.addEventListener('message', event => {
-                const message = event.data; // The JSON data our extension sent
-            });
-            </script>
-
             <h1>Heading 1</h1>
             <h2>Heading 2</h2>
             <h3>Heading 3</h3>
             <p>Asdk kajdsf kjash fkjasdh fkajsdhf kjasdh fkjashfdk asdkfh kjf</p>
-            <img src="` + this.logoImageUrl + `" id="labeled-bookmarks-logo"/>
+            <img src="${this.logoImageUrl}" id="labeled-bookmarks-logo"/>
         </body>
         </html>`;
     }
