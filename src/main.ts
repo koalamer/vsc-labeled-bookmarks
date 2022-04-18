@@ -31,6 +31,7 @@ import { StringPayloadPickItem } from './string_payload_pick_item';
 import { RateLimiter } from './rate_limiter/rate_limiter';
 import { FolderMappingStats } from './storage/folder_mapping_stats';
 import { FolderMatchStats as FolderMatchStats } from './storage/folder_match_stats';
+import { BookmarkWebview } from './webview/bookmark_webview';
 
 export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupProvider {
     public ctx: ExtensionContext;
@@ -725,6 +726,21 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
+        let actionOptions: Map<string, string> = new Map();
+        this.storageActionOptions.forEach((action, key) => {
+            actionOptions.set(key, action.label);
+        });
+
+        let storageTypeOptions: Map<string, string> = new Map();
+        storageTypeOptions.set("workspaceState", "workspace state");
+        storageTypeOptions.set("file", "file");
+
+        let webview = new BookmarkWebview(
+            this.ctx,
+            this,
+            actionOptions,
+            storageTypeOptions
+        );
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
