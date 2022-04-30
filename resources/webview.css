@@ -1,10 +1,36 @@
 body {
-    font-family: var(--vscode-editor-font-family);
-    font-weight: var(--vscode-editor-font-weight);
-    font-size: var(--vscode-editor-font-size);
+    margin: 2em;
+    padding: 0;
 }
 
-#labeled-bookmarks-logo {
-    width: 50px;
-    height: 50px;
+.back-to-main {
+    float: right;
+}
+
+.card-grid-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    column-gap: 1em;
+    row-gap: 1em;
+    justify-content: center;
+}
+
+.card-grid-container div {
+    flex: 1;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #88888888;
+    padding: 0 1em 0 1em;
+
+    min-width: 40em;
+    max-width: 150em;
+}
+
+.card-grid-container div:hover {
+    background-color: #88888833;
+}
+
+.card-grid-container div:active {
+    background-color: #88888888;
 }

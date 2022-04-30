@@ -32,8 +32,9 @@ import { RateLimiter } from './rate_limiter/rate_limiter';
 import { FolderMappingStats } from './storage/folder_mapping_stats';
 import { FolderMatchStats as FolderMatchStats } from './storage/folder_match_stats';
 import { BookmarkWebview } from './webview/bookmark_webview';
+import { StorageManager } from './interface/storage_manager';
 
-export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupProvider {
+export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupProvider, StorageManager {
     public ctx: ExtensionContext;
     private treeViewRefreshCallback = () => { };
 
@@ -225,6 +226,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.webview = new BookmarkWebview(
             this.ctx,
             this,
+            this,
             actionOptions,
             storageTypeOptions
         );
@@ -233,7 +235,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     public async initPhase2() {
         this.loadLocalState();
 
-        await this.executeStoreageAction(
+        await this.executeStorageAction(
             "switchTo",
             this.persistentStorageType,
             (this.persistentStorageType === "file") ? this.persistToFilePath : ""
@@ -1577,7 +1579,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                                     title: "Bookmark storage: " + actionLabel,
                                 }).then((result) => {
                                     if (typeof result !== "undefined") {
-                                        this.executeStoreageAction(action, targetType, result?.fsPath);
+                                        this.executeStorageAction(action, targetType, result?.fsPath);
                                     }
                                 });
                                 break;
@@ -1593,21 +1595,21 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                                     title: "Bookmark storage: " + actionLabel,
                                 }).then((result) => {
                                     if (typeof result !== "undefined") {
-                                        this.executeStoreageAction(action, targetType, result[0]?.fsPath);
+                                        this.executeStorageAction(action, targetType, result[0]?.fsPath);
                                     }
                                 });
                                 break;
                         }
                         break;
                     case "workspaceState":
-                        this.executeStoreageAction(action, targetType, "");
+                        this.executeStorageAction(action, targetType, "");
                         break;
                 }
             }
         });
     }
 
-    private async executeStoreageAction(action: string, targetType: string, target: string) {
+    public async executeStorageAction(action: string, targetType: string, target: string) {
         let actionParameters = this.storageActionOptions.get(action);
         if (typeof actionParameters === "undefined") {
             vscode.window.showErrorMessage("unknown bookmark storage action: " + action);
@@ -1824,6 +1826,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         if (actionParameters.switchToTarget || actionParameters.loadFromTarget) {
             await this.initBookmarkDataUsingStorage();
         }
+    }
+
+    public getActiveStorage(): BookmarkDataStorage {
+        return this.persistentStorage;
     }
 
     private moveBookmarksBetween(src: Group, dst: Group) {
