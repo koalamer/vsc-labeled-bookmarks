@@ -6,11 +6,20 @@ const vscode = acquireVsCodeApi();
 // receive messages from the extension
 window.addEventListener('message', event => {
     const message = event.data; // The JSON data our extension sent
-    window.alert(message);
+    console.log(message);
+
+    switch (message.operation) {
+        case "set":
+            document.querySelectorAll("[name=" + message.name + "]").forEach(function (element) {
+                element.value = message.value;
+            });
+            break;
+    }
 });
 
-function sendSingleParam(name, value) {
+function sendSingleParam(operation, name, value) {
     vscode.postMessage({
+        "operation": operation,
         "name": name,
         "value": value
     });
@@ -19,6 +28,14 @@ function sendSingleParam(name, value) {
 document.querySelectorAll("[data-page]").forEach(function (element) {
     element.addEventListener('click', function (_event) {
         let pageName = element.getAttribute('data-page');
-        sendSingleParam("page", pageName);
+        sendSingleParam("show", "page", pageName);
+    });
+});
+
+document.querySelectorAll(".file-selector").forEach(function (element) {
+    element.addEventListener('click', function (_event) {
+        let fileInputName = element.getAttribute('data-file-input-name');
+        let accessType = element.getAttribute('data-access-type');
+        sendSingleParam("selectFile", fileInputName, accessType);
     });
 });

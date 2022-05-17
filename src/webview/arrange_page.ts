@@ -11,7 +11,7 @@ export class ArrangePage extends WebViewContent {
         this.header = new HeaderContent("Arrange");
     }
 
-    public getContent(): string {
-        return this.header.getContent();
+    public async getContent(): Promise<string> {
+        return await this.header.getContent();
     }
 }

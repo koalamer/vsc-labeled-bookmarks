@@ -11,7 +11,7 @@ export class ImportPage extends WebViewContent {
         this.header = new HeaderContent("Import");
     }
 
-    public getContent(): string {
-        return this.header.getContent();
+    public async getContent(): Promise<string> {
+        return await this.header.getContent();
     }
 }

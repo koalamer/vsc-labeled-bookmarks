@@ -1,7 +1,7 @@
 import { WebViewContent } from "./webview_content";
 import { HeaderContent } from "./header_content";
 
-export class ExportAsDocumentPage extends WebViewContent {
+export class ExportDocumentPage extends WebViewContent {
 
     private header: HeaderContent;
 
@@ -11,7 +11,7 @@ export class ExportAsDocumentPage extends WebViewContent {
         this.header = new HeaderContent("Export as Document");
     }
 
-    public getContent(): string {
-        return this.header.getContent();
+    public async getContent(): Promise<string> {
+        return await this.header.getContent();
     }
 }

@@ -11,7 +11,7 @@ export class SwitchPage extends WebViewContent {
         this.header = new HeaderContent("Switch Database");
     }
 
-    public getContent(): string {
-        return this.header.getContent();
+    public async getContent(): Promise<string> {
+        return await this.header.getContent();
     }
 }

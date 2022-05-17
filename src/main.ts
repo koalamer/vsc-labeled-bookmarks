@@ -228,7 +228,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             this,
             this,
             actionOptions,
-            storageTypeOptions
+            storageTypeOptions,
+            this.decorationFactory
         );
     }
 

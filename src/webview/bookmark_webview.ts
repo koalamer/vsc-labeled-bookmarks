@@ -3,30 +3,29 @@ import * as path from 'path';
 import { ExtensionContext, Uri } from 'vscode';
 import { BookmarkDataProvider } from '../interface/bookmark_data_provider';
 import { WebviewPanel } from "vscode";
-import { WebviewState } from "./webview_state";
 import { StorageManager } from '../interface/storage_manager';
 import { WebViewContent } from './webview_content';
 import { MainPage } from './main_page';
 import { ExportPage } from './export_page';
-import { MessageChannel } from 'worker_threads';
-import { type } from 'os';
 import { ImportPage } from './import_page';
 import { MovePage } from './move_page';
 import { SwitchPage } from './switch_page';
 import { ArrangePage } from './arrange_page';
-import { ExportAsDocumentPage } from './export_as_document';
+import { ExportDocumentPage } from './export_document_page';
+import { WebviewContentHelper } from '../interface/webview_content_helper';
+import { SerializableGroup } from '../storage/serializable_group';
+import { DecorationFactory } from '../decoration_factory';
 
-export class BookmarkWebview {
+export class BookmarkWebview implements WebviewContentHelper {
     private panel: WebviewPanel | undefined;
-    private formState: WebviewState;
 
     private ctx: ExtensionContext;
     private bookmarkDataProvider: BookmarkDataProvider;
     private storageManager: StorageManager;
     private actionOptions: Map<string, string>;
     private storageTypeOptions: Map<string, string>;
+    private decorationFactory: DecorationFactory;
 
-    private logoImageUrl: string;
     private jsUrl: string;
     private cssUrl: string;
 
@@ -38,7 +37,8 @@ export class BookmarkWebview {
         bookmarkDataProvider: BookmarkDataProvider,
         storageManager: StorageManager,
         actionOptions: Map<string, string>,
-        storageTypeOptions: Map<string, string>
+        storageTypeOptions: Map<string, string>,
+        decorationFactory: DecorationFactory
     ) {
         if (actionOptions.size === 0
             || storageTypeOptions.size === 0
@@ -46,15 +46,13 @@ export class BookmarkWebview {
             throw new Error("Webview initialization failed");
         };
 
-        this.formState = new WebviewState();
-
         this.ctx = ctx;
         this.bookmarkDataProvider = bookmarkDataProvider;
         this.storageManager = storageManager;
         this.actionOptions = actionOptions;
         this.storageTypeOptions = storageTypeOptions;
+        this.decorationFactory = decorationFactory;
 
-        this.logoImageUrl = "";
         this.jsUrl = "";
         this.cssUrl = "";
 
@@ -64,12 +62,12 @@ export class BookmarkWebview {
         this.addPage(mainPage);
         this.activePage = mainPage;
 
-        this.addPage(new ExportPage());
+        this.addPage(new ExportPage(storageManager, this));
         this.addPage(new ImportPage());
         this.addPage(new MovePage());
         this.addPage(new SwitchPage());
         this.addPage(new ArrangePage());
-        this.addPage(new ExportAsDocumentPage());
+        this.addPage(new ExportDocumentPage());
     }
 
     private addPage(page: WebViewContent) {
@@ -96,9 +94,8 @@ export class BookmarkWebview {
             throw new Error("Could not initialize webview.");
         }
 
-        this.logoImageUrl = this.toWebviewUrl(["resources", "vsc-labeled-bookmarks-logo.png"]);
-        this.jsUrl = this.toWebviewUrl(["resources", "webview.js"]);
-        this.cssUrl = this.toWebviewUrl(["resources", "webview.css"]);
+        this.jsUrl = this.pathElementsToUrl(["resources", "webview.js"]);
+        this.cssUrl = this.pathElementsToUrl(["resources", "webview.css"]);
 
         this.panel.iconPath = Uri.file(path.join(this.ctx.extensionPath, "resources", "vsc-labeled-bookmarks-logo.png"));
 
@@ -115,7 +112,15 @@ export class BookmarkWebview {
         this.refresh();
     }
 
-    private toWebviewUrl(pathElements: string[]): string {
+    public pathToUrl(path: string): string {
+        if (typeof this.panel === "undefined") {
+            throw new Error("Webview is uninitialized.");
+        }
+
+        return this.panel.webview.asWebviewUri(Uri.file(path)).toString();
+    }
+
+    public pathElementsToUrl(pathElements: string[]): string {
         if (typeof this.panel === "undefined") {
             throw new Error("Webview is uninitialized.");
         }
@@ -127,24 +132,102 @@ export class BookmarkWebview {
             )).toString();
     }
 
+    public uriToUrl(uri: Uri): string {
+        if (typeof this.panel === "undefined") {
+            throw new Error("Webview is uninitialized.");
+        }
+
+        return this.panel.webview.asWebviewUri(uri).toString();
+    }
+
+    public getGroupListFormControls(groups: SerializableGroup[], prefix: string): string {
+        let html = "";
+
+        for (let g of groups) {
+            let [svg, _fileNamePostfix] = this.decorationFactory.generateSvg(
+                g.shape,
+                g.color,
+                g.iconText
+            );
+            let controlName = `group.${prefix}.${g.name}`;
+            html += `<div>
+                    <input type="checkbox" name="${controlName}" id="${controlName}">
+                    <label for="${controlName}">
+                        <svg viewBox="0 0 32 32" class="group-icon">${svg}</svg>
+                        ${g.name}
+                    </label>
+                </div>`;
+        };
+        return html;
+    }
+
     private sendMessageToWebView(message: any) {
         if (typeof this.panel === "undefined") {
             throw new Error("Webview is uninitialized.");
         }
 
         this.panel.webview.postMessage(message);
+        // vscode.window.showInformationMessage(JSON.stringify(message));
     }
 
     private receiveMessageFromWebview(message: any) {
+        let operation: string = message.operation ?? "";
         let name: string = message.name ?? "";
         let value: any = message.value ?? "";
 
-        if (name === "page") {
+        if (operation === "show" && name === "page") {
             this.switchToPage(value);
             return;
         }
-        // todo handle incoming message
+
+        if (operation === "selectFile") {
+            let aWorkspaceFolder = vscode.workspace.workspaceFolders
+                ? vscode.workspace.workspaceFolders[0]?.uri
+                : undefined;
+
+            if (value === "read") {
+                vscode.window.showOpenDialog({
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: false,
+                    defaultUri: aWorkspaceFolder,
+                    filters: { "json": ["json"] },
+                    title: "Labeled Bookmarks: select file to read",
+                }).then((result) => {
+                    if (typeof result !== "undefined") {
+                        this.sendMessageToWebView({
+                            operation: "set",
+                            name: name,
+                            value: result[0].fsPath,
+                        });
+                    }
+                });
+                return;
+            }
+
+            if (value === "write") {
+                vscode.window.showSaveDialog({
+                    defaultUri: aWorkspaceFolder,
+                    filters: { "json": ["json"] },
+                    saveLabel: undefined,
+                    title: "Labeled Bookmarks: select file to write to",
+                }).then((result) => {
+                    if (typeof result !== "undefined") {
+                        this.sendMessageToWebView({
+                            operation: "set",
+                            name: name,
+                            value: result.fsPath,
+                        });
+                    }
+                });
+                return;
+            }
+        }
+
+        // todo handle unhadled incoming message
         vscode.window.showInformationMessage(JSON.stringify(message));
+
+        this.activePage.processMessage(operation, name, value);
     }
 
     private refresh() {
@@ -152,7 +235,13 @@ export class BookmarkWebview {
             throw new Error("Wwebview is uninitialized.");
         }
 
-        this.panel.webview.html = this.getWebviewContents();
+        this.getWebviewContents().then((contents) => {
+            if (typeof this.panel === "undefined") {
+                throw new Error("Wwebview is uninitialized.");
+            }
+
+            this.panel.webview.html = contents;
+        });
     }
 
     private switchToPage(pageName: string) {
@@ -169,7 +258,7 @@ export class BookmarkWebview {
         this.refresh();
     }
 
-    private getWebviewContents() {
+    private async getWebviewContents() {
         if (typeof this.panel === "undefined") {
             throw new Error("Webview is uninitialized.");
         }
@@ -191,7 +280,7 @@ export class BookmarkWebview {
                     <script src="${this.jsUrl}" defer></script> 
                 </head>
                 <body>
-                    ${this.activePage.getContent()}
+                    ${await this.activePage.getContent()}
                 </body>
             </html>`;
     }

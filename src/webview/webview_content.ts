@@ -7,12 +7,16 @@ export abstract class WebViewContent {
         return this.name;
     };
 
-    public setSingleParam(name: string, value: any): void {
-        this.params.set(name, value);
+    public processMessage(operation: string, name: string, value: any): void {
+        switch (operation) {
+            case "set":
+                this.params.set(name, value);
+                break;
+        }
     }
 
-    public getContent(): string {
-        return ``;
+    public getContent(): Promise<string> {
+        return Promise.resolve(``);
     }
 
 }

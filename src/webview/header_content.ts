@@ -9,7 +9,7 @@ export class HeaderContent extends WebViewContent {
         this.subTitle = subTitle;
     }
 
-    public getContent(): string {
+    public async getContent(): Promise<string> {
         let subTitle = "";
         let mainLink = "";
 

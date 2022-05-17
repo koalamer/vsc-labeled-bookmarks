@@ -102,7 +102,7 @@ export class DecorationFactory {
         this.lineEndLabelType = lineEndLabelType;
     }
 
-    async create(shape: string, color: string, iconText: string, lineLabel?: string): Promise<[TextEditorDecorationType, Uri]> {
+    public generateSvg(shape: string, color: string, iconText: string): [string, string] {
         iconText = iconText.normalize();
 
         if (shape !== "unicode") {
@@ -144,6 +144,11 @@ export class DecorationFactory {
 
         color = this.normalizeColorFormat(color);
         svg = svg.replace("888888ff", color);
+        return [svg, fileNamePostfix];
+    }
+
+    async create(shape: string, color: string, iconText: string, lineLabel?: string): Promise<[TextEditorDecorationType, Uri]> {
+        let [svg, fileNamePostfix] = this.generateSvg(shape, color, iconText);
 
         let fileName = shape + "_" + color + "_" + fileNamePostfix + ".svg";
         let bytes = Uint8Array.from(svg.split("").map(c => { return c.charCodeAt(0); }));

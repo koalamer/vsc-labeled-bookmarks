@@ -27,10 +27,48 @@ body {
     max-width: 150em;
 }
 
-.card-grid-container div:hover {
+.card-grid-container div:hover,
+input[type=button]:hover {
     background-color: #88888833;
 }
 
-.card-grid-container div:active {
+.card-grid-container div:active,
+input[type=button]:active {
     background-color: #88888888;
+}
+
+input[type=text] {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--vscode-editor-foreground);
+}
+
+input[type=button] {
+    background-color: transparent;
+    border-color: #88888888;
+    border-style: solid;
+    color: var(--vscode-editor-foreground);
+}
+
+input[type=button].submit {
+    padding: 1em;
+}
+
+p.file-selection {
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+}
+
+p.file-selection input[type=button] {
+    flex-grow: 0;
+}
+
+p.file-selection input[type=text] {
+    flex-grow: 1;
+}
+
+svg.group-icon {
+    width: 16px;
+    height: 16px;
 }

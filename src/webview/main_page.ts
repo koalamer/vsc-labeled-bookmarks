@@ -11,8 +11,8 @@ export class MainPage extends WebViewContent {
         this.header = new HeaderContent("");
     }
 
-    public getContent(): string {
-        return this.header.getContent() + `
+    public async getContent(): Promise<string> {
+        return await this.header.getContent() + `
             <div class="card-grid-container">
                 <div data-page="exportTo">
                     <h3>Export to JSON</h3>
