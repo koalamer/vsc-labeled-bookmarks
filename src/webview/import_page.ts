@@ -8,7 +8,7 @@ export class ImportPage extends WebViewContent {
     public constructor() {
         super();
         this.name = "importFrom";
-        this.header = new HeaderContent("Import");
+        this.header = new HeaderContent("Import", this.name);
     }
 
     public async getContent(): Promise<string> {

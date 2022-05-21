@@ -10,18 +10,20 @@ export class ExportPage extends WebViewContent {
 
     private storageManger: StorageManager;
     private selectedGroups: string[] = [];
-    private selectedBookmark: string[] = [];
 
     public constructor(storageManager: StorageManager, webviewContentHelper: WebviewContentHelper) {
         super();
         this.name = "exportTo";
-        this.header = new HeaderContent("Export");
+        this.header = new HeaderContent("Export", this.name);
         this.webviewContentHelper = webviewContentHelper;
 
         this.storageManger = storageManager;
     }
 
-    public processMessage(name: string, value: any): void {
+    public processMessage(operation: string, name: string, value: any): void {
+        if (operation === "submit") {
+            // TODO process form
+        }
     }
 
     public async getContent(): Promise<string> {
@@ -30,9 +32,9 @@ export class ExportPage extends WebViewContent {
     }
 
     private async bodyContent() {
-        let activeStorageGroupControls = await this.webviewContentHelper.getGroupListFormControls(
+        let activeStorageGroupControls = this.webviewContentHelper.getGroupListFormControls(
             this.storageManger.getActiveStorage().getGroups(),
-            "active"
+            "groups"
         );
 
         return `<form name="export">
@@ -58,12 +60,13 @@ export class ExportPage extends WebViewContent {
                 />
             </p>
  
-            <h2>Execute</h2>
+            <hr />
             <p>
                 <input
                     type="button"
                     class="submit"
                     value="Export"
+                    data-form="export"
                 />
             </p>
         </form>`;

@@ -39,3 +39,42 @@ document.querySelectorAll(".file-selector").forEach(function (element) {
         sendSingleParam("selectFile", fileInputName, accessType);
     });
 });
+
+function submitForm(formName) {
+    window.alert(`form[name=${formName}]`);
+    let form = document.querySelector(`form[name=${formName}]`);
+    let checkboxGroupPrefix = "checkboxGroup.";
+
+    let formData = {};
+
+    new FormData(form).forEach((value, key) => {
+        if (key.startsWith(checkboxGroupPrefix)) {
+            let prefixLength = checkboxGroupPrefix.length;
+            let groupNameEndPos = key.indexOf(".", prefixLength);
+
+            if (groupNameEndPos === -1) {
+                formData[key] = value;
+                return;
+            }
+
+            let groupName = key.substring(prefixLength, groupNameEndPos);
+            let groupKey = key.substring(groupNameEndPos + 1);
+            if (typeof formData[groupName] === "undefined") {
+                formData[groupName] = {};
+            }
+
+            formData[groupName][groupKey] = (value === "on");
+            return;
+        }
+
+        formData[key] = value;
+    });
+    sendSingleParam("submit", formName, JSON.stringify(formData));
+}
+
+document.querySelectorAll(".submit").forEach(function (element) {
+    element.addEventListener('click', function (_event) {
+        let formName = element.getAttribute("data-form");
+        submitForm(formName);
+    });
+});

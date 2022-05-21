@@ -8,7 +8,7 @@ export class ExportDocumentPage extends WebViewContent {
     public constructor() {
         super();
         this.name = "exportAsDocument";
-        this.header = new HeaderContent("Export as Document");
+        this.header = new HeaderContent("Export as Document", this.name);
     }
 
     public async getContent(): Promise<string> {

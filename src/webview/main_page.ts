@@ -8,7 +8,7 @@ export class MainPage extends WebViewContent {
     public constructor() {
         super();
         this.name = "main";
-        this.header = new HeaderContent("");
+        this.header = new HeaderContent("", this.name);
     }
 
     public async getContent(): Promise<string> {

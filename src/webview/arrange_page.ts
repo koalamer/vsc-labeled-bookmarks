@@ -8,7 +8,7 @@ export class ArrangePage extends WebViewContent {
     public constructor() {
         super();
         this.name = "arrange";
-        this.header = new HeaderContent("Arrange");
+        this.header = new HeaderContent("Arrange", this.name);
     }
 
     public async getContent(): Promise<string> {

@@ -8,7 +8,7 @@ export class MovePage extends WebViewContent {
     public constructor() {
         super();
         this.name = "moveTo";
-        this.header = new HeaderContent("Move Database");
+        this.header = new HeaderContent("Move Database", this.name);
     }
 
     public async getContent(): Promise<string> {

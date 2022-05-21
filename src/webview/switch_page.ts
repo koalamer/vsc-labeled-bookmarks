@@ -8,7 +8,7 @@ export class SwitchPage extends WebViewContent {
     public constructor() {
         super();
         this.name = "switchTo";
-        this.header = new HeaderContent("Switch Database");
+        this.header = new HeaderContent("Switch Database", this.name);
     }
 
     public async getContent(): Promise<string> {

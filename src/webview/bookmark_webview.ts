@@ -84,6 +84,7 @@ export class BookmarkWebview implements WebviewContentHelper {
                     enableScripts: true,
                     enableFindWidget: true,
                     localResourceRoots: [vscode.Uri.file(this.ctx.extensionPath)],
+                    retainContextWhenHidden: true,
                 }
             );
         }
@@ -140,7 +141,7 @@ export class BookmarkWebview implements WebviewContentHelper {
         return this.panel.webview.asWebviewUri(uri).toString();
     }
 
-    public getGroupListFormControls(groups: SerializableGroup[], prefix: string): string {
+    public getGroupListFormControls(groups: SerializableGroup[], groupName: string): string {
         let html = "";
 
         for (let g of groups) {
@@ -149,10 +150,11 @@ export class BookmarkWebview implements WebviewContentHelper {
                 g.color,
                 g.iconText
             );
-            let controlName = `group.${prefix}.${g.name}`;
+            let controlName = `checkboxGroup.${groupName}.${g.name}`;
             html += `<div>
-                    <input type="checkbox" name="${controlName}" id="${controlName}">
                     <label for="${controlName}">
+                        <input type="checkbox" name="${controlName}" id="${controlName}">
+                         
                         <svg viewBox="0 0 32 32" class="group-icon">${svg}</svg>
                         ${g.name}
                     </label>

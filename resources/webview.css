@@ -3,8 +3,9 @@ body {
     padding: 0;
 }
 
-.back-to-main {
+.header-link {
     float: right;
+    margin-left: 1em;
 }
 
 .card-grid-container {
@@ -71,4 +72,16 @@ p.file-selection input[type=text] {
 svg.group-icon {
     width: 16px;
     height: 16px;
+}
+
+label:hover {
+    background-color: #88888833;
+}
+
+hr {
+    border: 1px solid #88888888;
+}
+
+hr+.card-grid-container {
+    margin-top: 1em;
 }
