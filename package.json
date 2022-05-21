@@ -120,8 +120,8 @@
         "title": "Bookmarks: move bookmarks"
       },
       {
-        "command": "vsc-labeled-bookmarks.showStorageActionMenu",
-        "title": "Bookmarks: show storage action menu"
+        "command": "vsc-labeled-bookmarks.showStorageActionPanel",
+        "title": "Bookmarks: show storage action panel"
       },
       {
         "command": "vsc-labeled-bookmarks.activateTreeItem",
@@ -227,8 +227,8 @@
         "key": "ctrl+alt+b ctrl+i"
       },
       {
-        "command": "vsc-labeled-bookmarks.showStorageActionMenu",
-        "key": "ctrl+alt+b ctrl+s"
+        "command": "vsc-labeled-bookmarks.showStorageActionPanel",
+        "key": "ctrl+alt+b p"
       }
     ],
     "configuration": {

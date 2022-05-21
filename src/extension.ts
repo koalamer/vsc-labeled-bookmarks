@@ -118,8 +118,8 @@ function activatePhase2(context: ExtensionContext): void {
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerCommand(
-		'vsc-labeled-bookmarks.showStorageActionMenu',
-		() => main.actionShowStorageActionMenu());
+		'vsc-labeled-bookmarks.showStorageActionPanel',
+		() => main.actionshowStorageActionPanel());
 	context.subscriptions.push(disposable);
 
 	disposable = vscode.commands.registerTextEditorCommand(

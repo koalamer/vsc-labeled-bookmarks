@@ -60,10 +60,10 @@ function submitForm(formName) {
             let groupName = key.substring(prefixLength, groupNameEndPos);
             let groupKey = key.substring(groupNameEndPos + 1);
             if (typeof formData[groupName] === "undefined") {
-                formData[groupName] = {};
+                formData[groupName] = new Array();
             }
 
-            formData[groupName][groupKey] = (value === "on");
+            formData[groupName].push(groupKey);
             return;
         }
 

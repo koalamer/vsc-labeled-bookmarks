@@ -239,7 +239,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         await this.executeStorageAction(
             "switchTo",
             this.persistentStorageType,
-            (this.persistentStorageType === "file") ? this.persistToFilePath : ""
+            (this.persistentStorageType === "file") ? this.persistToFilePath : "",
+            []
         );
     }
 
@@ -748,7 +749,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
-        this.webview.reveal();
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
@@ -1518,99 +1518,11 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         });
     }
 
-    public actionShowStorageActionMenu() {
-        let pickItems: QuickPickItem[] = [];
-
-        this.storageActionOptions.forEach((v, k) => {
-            pickItems.push(new StringPayloadPickItem(k, v.label, v.description));
-        });
-
-        vscode.window.showQuickPick(
-            pickItems,
-            {
-                canPickMany: false,
-                ignoreFocusOut: false,
-                matchOnDescription: false,
-                matchOnDetail: false,
-                placeHolder: "select bookmark storage action",
-                title: "Bookmark storage actions",
-            }
-        ).then((selected) => {
-            if (typeof selected !== "undefined") {
-                let tmp = selected as StringPayloadPickItem;
-                this.showStorageActionMenuStorageTypeFor(tmp.payload);
-            }
-        });
+    public actionshowStorageActionPanel() {
+        this.webview.reveal();
     }
 
-    private async showStorageActionMenuStorageTypeFor(action: string) {
-        let pickItems: QuickPickItem[] = [];
-
-        pickItems.push(new StringPayloadPickItem("workspaceState", "workspace state", ""));
-        pickItems.push(new StringPayloadPickItem("file", "file", ""));
-
-        let actionLabel = this.storageActionOptions.get(action)?.label;
-
-        vscode.window.showQuickPick(
-            pickItems,
-            {
-                canPickMany: false,
-                ignoreFocusOut: false,
-                matchOnDescription: false,
-                matchOnDetail: false,
-                placeHolder: "select bookmark storage type",
-                title: "Bookmark storage: " + actionLabel,
-            }
-        ).then((selected) => {
-            if (typeof selected !== "undefined") {
-                let tmp = selected as StringPayloadPickItem;
-                let targetType = tmp.payload;
-                switch (targetType) {
-                    case "file":
-                        let aWorkspaceFolder = vscode.workspace.workspaceFolders
-                            ? vscode.workspace.workspaceFolders[0]?.uri
-                            : undefined;
-                        switch (action) {
-                            case "moveTo":
-                            case "exportTo":
-                                vscode.window.showSaveDialog({
-                                    defaultUri: aWorkspaceFolder,
-                                    filters: { "json": ["json"] },
-                                    saveLabel: undefined,
-                                    title: "Bookmark storage: " + actionLabel,
-                                }).then((result) => {
-                                    if (typeof result !== "undefined") {
-                                        this.executeStorageAction(action, targetType, result?.fsPath);
-                                    }
-                                });
-                                break;
-                            case "switchTo":
-                            case "importFrom":
-                                vscode.window.showOpenDialog({
-                                    canSelectFiles: true,
-                                    canSelectFolders: false,
-                                    canSelectMany: false,
-                                    defaultUri: aWorkspaceFolder,
-                                    filters: { "json": ["json"] },
-                                    openLabel: undefined,
-                                    title: "Bookmark storage: " + actionLabel,
-                                }).then((result) => {
-                                    if (typeof result !== "undefined") {
-                                        this.executeStorageAction(action, targetType, result[0]?.fsPath);
-                                    }
-                                });
-                                break;
-                        }
-                        break;
-                    case "workspaceState":
-                        this.executeStorageAction(action, targetType, "");
-                        break;
-                }
-            }
-        });
-    }
-
-    public async executeStorageAction(action: string, targetType: string, target: string) {
+    public async executeStorageAction(action: string, targetType: string, target: string, selectedGroups: string[]) {
         let actionParameters = this.storageActionOptions.get(action);
         if (typeof actionParameters === "undefined") {
             vscode.window.showErrorMessage("unknown bookmark storage action: " + action);
@@ -1643,26 +1555,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             }
 
             if (actionParameters.writeToTargetSelectively) {
-                let pickItems = this.groups.map(
-                    group => GroupPickItem.fromGroup(group, this.getTempGroupBookmarkList(group).length)
-                );
-
-                let selectedItems = await vscode.window.showQuickPick(
-                    pickItems,
-                    {
-                        canPickMany: true,
-                        matchOnDescription: false,
-                        placeHolder: "select bookmark groups to be exported",
-                        title: "Bookmark storage: " + actionParameters.label
-                    }
-                );
-
-                if (typeof selectedItems === "undefined") {
-                    return;
-                }
-
-                let selectedGroups = selectedItems.map(pickItem => pickItem.group.name);
-
                 let filteredGroups = this.persistentStorage.getGroups()
                     .filter(g => selectedGroups.includes(g.name));
                 targetStorage.setGroups(filteredGroups);

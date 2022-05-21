@@ -45,7 +45,7 @@ Groups were implemented to be able to separate one set of bookmarks (for one top
 
 ### Persistent Storage
 
-The default place to persist bookmarks is the workspace state, which is local to the workstation (and user) the IDE is running on. The other storage type available is the file storage which uses json to store bookmark data. Storage location can be changed and json storage files can be exported and imported using `ctrl+alt+b ctrl+s` which will display a list of possible storage actions to perform:
+The default place to persist bookmarks is the workspace state, which is local to the workstation (and user) the IDE is running on. The other storage type available is the file storage which uses JSON to store bookmark data. Storage location can be changed and JSON storage files can be exported and imported using `ctrl+alt+b b` which will display a list of possible storage actions to perform:
 
 * move to another storage location: this will move the current bookmarks to another location and clean the current location. (Does not delete storage files, only blanks them.)
 * switch to using another storage location: abandon using the current storage (keeping its current state), and start using another storage and its bookmarks.
@@ -126,7 +126,7 @@ Or you can delete them using `ctrl+alt+b d` and selecting them manually.
 ## Known Issues
 
 * Bookmark icons might interfere with placing breakpoints. Use `ctrl+alt+b h` to hide/unhide the bookmark icons to avoid this.
-* The default bookmark data storage is the workspace state which is local to the IDE. If you are working on a remote, different workstations will not see eachother's bookmarks. In such cases switch to file storage by using `ctrl+alt+b ctrl+s`.
+* The default bookmark data storage is the workspace state which is local to the IDE. If you are working on a remote, different workstations will not see eachother's bookmarks. In such cases switch to file storage by using `ctrl+alt+b p`.
 * On Mac the backward navigation shortcut `ctrl+alt+j` is also used by the notebook editor command "join with next cell" with the activation condition "notebookEditorFocused". If you happen to be using that, you might want to change the assignment of either of these conflicting actions. If you are not using notebooks, there should be no problem.
 * The content of the bookmarked line is stored within the bookmark itself for display purposes, and it is updated when changes in the file/line trigger a file changed event. However, not all changes to files trigger such an event. Git operations and even source code formatters might cause file changes without triggering a proper update of the bookmarks, and so markings can drift off the originally marked code and the stored line text might get off sync from the actual line content.
 * If a bookmark becomes invalid because the file got truncated by an outside action, and it now points to a not existing line, the bookmark's icon will float around at the end of the file. I don't want to go overboard with file system watching and what not, so if you see a suspiciously placed bookmark icon, try navigating to the next bookmark. If it is in fact invalid, it will get marked as such, and it will be easy to identify and delete it using `ctrl+alt+b d`.

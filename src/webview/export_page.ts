@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import { WebViewContent } from "./webview_content";
 import { HeaderContent } from "./header_content";
 import { StorageManager } from "../interface/storage_manager";
@@ -7,9 +8,7 @@ export class ExportPage extends WebViewContent {
 
     private header: HeaderContent;
     private webviewContentHelper: WebviewContentHelper;
-
     private storageManger: StorageManager;
-    private selectedGroups: string[] = [];
 
     public constructor(storageManager: StorageManager, webviewContentHelper: WebviewContentHelper) {
         super();
@@ -20,9 +19,24 @@ export class ExportPage extends WebViewContent {
         this.storageManger = storageManager;
     }
 
-    public processMessage(operation: string, name: string, value: any): void {
-        if (operation === "submit") {
-            // TODO process form
+    public processMessage(operation: string, name: string, formData: any): void {
+        if (operation === "submit" && name === "export") {
+            let params = JSON.parse(formData);
+
+            let exportFile: string = params.exportFile ?? "";
+            let selectedGroups: string[] = params.groups ?? [];
+
+            if (exportFile === "") {
+                vscode.window.showErrorMessage("No export file selected.");
+                return;
+            }
+
+            if (selectedGroups.length === 0) {
+                vscode.window.showErrorMessage("No groups were selected.");
+                return;
+            }
+
+            this.storageManger.executeStorageAction("exportTo", "file", exportFile, selectedGroups);
         }
     }
 

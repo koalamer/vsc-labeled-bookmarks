@@ -19,7 +19,7 @@ export class HeaderContent extends WebViewContent {
             subTitle = ` - ${this.subTitle}`;
             mainLink = `
                 <h3 class="header-link"><a data-page="main" href="">back to main</a></h3>
-                <h3 class="header-link"><a data-page="${this.page}" href="" data-date="${new Date().toLocaleString()}">refresh</a></h3>
+                <h3 class="header-link"><a data-page="${this.page}" href="" data-date="${new Date().toLocaleString()}">reload</a></h3>
             `;
         }
 
