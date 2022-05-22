@@ -65,7 +65,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         eraseCurrent: boolean,
         switchToTarget: boolean,
         loadFromTarget: boolean,
-        loadFromTargetSelectively: boolean
+        loadFromTargetSelectively: boolean,
+        simplifyFolderPaths: boolean,
+        allowOutOfFolderFiles: boolean,
     }> = new Map([
         ["moveTo",
             {
@@ -76,7 +78,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 eraseCurrent: true,
                 switchToTarget: true,
                 loadFromTarget: false,
-                loadFromTargetSelectively: false
+                loadFromTargetSelectively: false,
+                simplifyFolderPaths: false,
+                allowOutOfFolderFiles: true
             }
         ],
         ["switchTo",
@@ -88,7 +92,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 eraseCurrent: false,
                 switchToTarget: true,
                 loadFromTarget: false,
-                loadFromTargetSelectively: false
+                loadFromTargetSelectively: false,
+                simplifyFolderPaths: false,
+                allowOutOfFolderFiles: true
             }
         ],
         ["exportTo",
@@ -100,7 +106,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 eraseCurrent: false,
                 switchToTarget: false,
                 loadFromTarget: false,
-                loadFromTargetSelectively: false
+                loadFromTargetSelectively: false,
+                simplifyFolderPaths: true,
+                allowOutOfFolderFiles: false
             }
         ],
         ["importFrom",
@@ -112,7 +120,9 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 eraseCurrent: false,
                 switchToTarget: false,
                 loadFromTarget: true,
-                loadFromTargetSelectively: true
+                loadFromTargetSelectively: true,
+                simplifyFolderPaths: true,
+                allowOutOfFolderFiles: false
             }
         ]
     ]);
@@ -749,6 +759,35 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
     }
 
     public editorActionRunDevAction(textEditor: TextEditor) {
+        let bm = new SerializableBookmark(
+            "path",
+            1,
+            2,
+            "label",
+            "line text",
+            "default"
+        );
+
+        let bm2 = SerializableBookmark.copyOne(bm);
+
+        let bmList = [bm, bm2];
+        let bmList2 = SerializableBookmark.copyList(bmList);
+
+        vscode.window.showInformationMessage(JSON.stringify(bmList2));
+
+        let g = new SerializableGroup(
+            "name",
+            "color",
+            "shape",
+            "icon text"
+        );
+
+        let g2 = SerializableGroup.copyOne(g);
+
+        let gList = [g, g2];
+        let gList2 = SerializableGroup.copyList(gList);
+
+        vscode.window.showInformationMessage(JSON.stringify(gList2));
     }
 
     public editorActionToggleBookmark(textEditor: TextEditor) {
@@ -1554,19 +1593,49 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 await this.persistentStorage.persist();
             }
 
-            if (actionParameters.writeToTargetSelectively) {
-                let filteredGroups = this.persistentStorage.getGroups()
-                    .filter(g => selectedGroups.includes(g.name));
-                targetStorage.setGroups(filteredGroups);
+            let tempWorkspaceFolders = this.persistentStorage.getWorkspaceFolders().map((f) => f);
+            let tempBookmarks = SerializableBookmark.copyList(this.persistentStorage.getBookmarks());
+            let tempGroups = SerializableGroup.copyList(this.persistentStorage.getGroups());
 
-                let filteredBookmarks = this.persistentStorage.getBookmarks()
-                    .filter(b => selectedGroups.includes(b.groupName));
-                targetStorage.setBookmarks(filteredBookmarks);
-            } else {
-                targetStorage.setBookmarks(this.persistentStorage.getBookmarks());
-                targetStorage.setGroups(this.persistentStorage.getGroups());
+            if (!actionParameters.allowOutOfFolderFiles) {
+                tempBookmarks = tempBookmarks.filter((bm) => {
+                    for (let f of tempWorkspaceFolders) {
+                        if (bm.fsPath.startsWith(f)) {
+                            return true;
+                        }
+                    };
+                    return false;
+                });
             }
-            targetStorage.setWorkspaceFolders(this.persistentStorage.getWorkspaceFolders());
+
+            if (actionParameters.simplifyFolderPaths) {
+                let simpleFolderName = 'FOLDER';
+                tempWorkspaceFolders.sort((a, b) => { return b.length - a.length; });
+                tempBookmarks.forEach((bm) => {
+                    tempWorkspaceFolders.forEach((f, fi) => {
+                        if (bm.fsPath.startsWith(f)) {
+                            bm.fsPath = simpleFolderName + (fi + 1) + bm.fsPath.substring(f.length);
+                            return;
+                        }
+                    });
+                });
+
+                tempWorkspaceFolders = tempWorkspaceFolders.map((_f, fi) => { return simpleFolderName + (fi + 1); });
+            }
+
+            if (actionParameters.writeToTargetSelectively) {
+                tempGroups = tempGroups
+                    .filter(g => selectedGroups.includes(g.name));
+                targetStorage.setGroups(tempGroups);
+
+                tempBookmarks = tempBookmarks
+                    .filter(b => selectedGroups.includes(b.groupName));
+                targetStorage.setBookmarks(tempBookmarks);
+            } else {
+                targetStorage.setBookmarks(tempBookmarks);
+                targetStorage.setGroups(tempGroups);
+            }
+            targetStorage.setWorkspaceFolders(tempWorkspaceFolders);
             targetStorage.setTimestamp(this.persistentStorage.getTimestamp());
             await targetStorage.persist();
         }

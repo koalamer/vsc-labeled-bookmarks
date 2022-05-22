@@ -1,4 +1,5 @@
 import { Group } from "../group";
+import { SerializableBookmark } from "./serializable_bookmark";
 
 export class SerializableGroup {
     name: string;
@@ -25,5 +26,23 @@ export class SerializableGroup {
             group.shape,
             group.iconText
         );
+    }
+
+    public static copyOne(g: SerializableGroup): SerializableGroup {
+        return new SerializableGroup(
+            g.name,
+            g.color,
+            g.shape,
+            g.iconText
+        );
+    }
+
+    public static copyList(list: SerializableGroup[]): SerializableGroup[] {
+        let newList = new Array<SerializableGroup>();
+        for (let sg of list) {
+            let copy = SerializableGroup.copyOne(sg);
+            newList.push(copy);
+        };
+        return newList;
     }
 }
