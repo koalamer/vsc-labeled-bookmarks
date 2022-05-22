@@ -43,13 +43,13 @@ document.querySelectorAll(".file-selector").forEach(function (element) {
 function submitForm(formName) {
     window.alert(`form[name=${formName}]`);
     let form = document.querySelector(`form[name=${formName}]`);
-    let checkboxGroupPrefix = "checkboxGroup.";
+    let valueGroupPrefix = "valueGroup.";
 
     let formData = {};
 
     new FormData(form).forEach((value, key) => {
-        if (key.startsWith(checkboxGroupPrefix)) {
-            let prefixLength = checkboxGroupPrefix.length;
+        if (key.startsWith(valueGroupPrefix)) {
+            let prefixLength = valueGroupPrefix.length;
             let groupNameEndPos = key.indexOf(".", prefixLength);
 
             if (groupNameEndPos === -1) {

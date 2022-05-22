@@ -3,6 +3,10 @@ body {
     padding: 0;
 }
 
+label {
+    line-height: 1.5;
+}
+
 .header-link {
     float: right;
     margin-left: 1em;
@@ -55,17 +59,19 @@ input[type=button].submit {
     padding: 1em;
 }
 
-p.file-selection {
+.file-selection {
     display: flex;
     flex-direction: row;
     gap: 1em;
 }
 
-p.file-selection input[type=button] {
+.file-selection input[type=button],
+.file-selection input[type=radio],
+.file-selection label {
     flex-grow: 0;
 }
 
-p.file-selection input[type=text] {
+.file-selection input[type=text] {
     flex-grow: 1;
 }
 

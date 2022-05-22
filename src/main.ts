@@ -1609,7 +1609,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             }
 
             if (actionParameters.simplifyFolderPaths) {
-                let simpleFolderName = 'FOLDER';
+                let simpleFolderName = '@FOLDER';
                 tempWorkspaceFolders.sort((a, b) => { return b.length - a.length; });
                 tempBookmarks.forEach((bm) => {
                     tempWorkspaceFolders.forEach((f, fi) => {

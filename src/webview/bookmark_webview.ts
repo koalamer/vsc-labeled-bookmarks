@@ -64,7 +64,7 @@ export class BookmarkWebview implements WebviewContentHelper {
 
         this.addPage(new ExportPage(storageManager, this));
         this.addPage(new ImportPage());
-        this.addPage(new MovePage());
+        this.addPage(new MovePage(storageManager, this));
         this.addPage(new SwitchPage());
         this.addPage(new ArrangePage());
         this.addPage(new ExportDocumentPage());
@@ -110,7 +110,7 @@ export class BookmarkWebview implements WebviewContentHelper {
             this.panel = undefined;
         });
 
-        this.refresh();
+        this.refreshView();
     }
 
     public pathToUrl(path: string): string {
@@ -150,9 +150,9 @@ export class BookmarkWebview implements WebviewContentHelper {
                 g.color,
                 g.iconText
             );
-            let controlName = `checkboxGroup.${groupName}.${g.name}`;
+            let controlName = `valueGroup.${groupName}.${g.name}`;
             html += `<div>
-                    <label for="${controlName}">
+                    <label>
                         <input type="checkbox" name="${controlName}" id="${controlName}">
                          
                         <svg viewBox="0 0 32 32" class="group-icon">${svg}</svg>
@@ -232,7 +232,7 @@ export class BookmarkWebview implements WebviewContentHelper {
         this.activePage.processMessage(operation, name, value);
     }
 
-    private refresh() {
+    public refreshView() {
         if (typeof this.panel === "undefined") {
             throw new Error("Wwebview is uninitialized.");
         }
@@ -257,7 +257,7 @@ export class BookmarkWebview implements WebviewContentHelper {
         }
 
         this.activePage = page;
-        this.refresh();
+        this.refreshView();
     }
 
     private async getWebviewContents() {
