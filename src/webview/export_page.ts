@@ -15,7 +15,6 @@ export class ExportPage extends WebViewContent {
         this.name = "exportTo";
         this.header = new HeaderContent("Export", this.name);
         this.webviewContentHelper = webviewContentHelper;
-
         this.storageManger = storageManager;
     }
 

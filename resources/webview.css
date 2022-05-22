@@ -3,6 +3,16 @@ body {
     padding: 0;
 }
 
+input[type=checkbox] {
+    width: 1.2em;
+    height: 1.2em;
+}
+
+input[type=radio] {
+    width: 1.2em;
+    height: 1.2em;
+}
+
 label {
     line-height: 1.5;
 }

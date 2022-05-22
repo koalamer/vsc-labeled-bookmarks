@@ -65,7 +65,7 @@ export class BookmarkWebview implements WebviewContentHelper {
         this.addPage(new ExportPage(storageManager, this));
         this.addPage(new ImportPage());
         this.addPage(new MovePage(storageManager, this));
-        this.addPage(new SwitchPage());
+        this.addPage(new SwitchPage(storageManager, this));
         this.addPage(new ArrangePage());
         this.addPage(new ExportDocumentPage());
     }
