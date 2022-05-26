@@ -1,8 +1,8 @@
-import * as vscode from 'vscode';
 import { WebViewContent } from "./webview_content";
 import { HeaderContent } from "./header_content";
 import { StorageManager } from "../interface/storage_manager";
 import { WebviewContentHelper } from "../interface/webview_content_helper";
+import { StorageActionResult } from '../storage/storage_action_result';
 
 export class MovePage extends WebViewContent {
 
@@ -27,24 +27,30 @@ export class MovePage extends WebViewContent {
             let targetFile: string = params.targetFile ?? "";
 
             if (storageType === "") {
-                vscode.window.showErrorMessage("No storage type selected.");
+                this.storageActionResult = StorageActionResult.simpleError("No storage type selected.");
+                this.webviewContentHelper.refreshView();
                 return;
             }
 
             if (storageType === "file" && targetFile === "") {
-                vscode.window.showErrorMessage("No target file selected.");
+                this.storageActionResult = StorageActionResult.simpleError("No target file selected.");
+                this.webviewContentHelper.refreshView();
                 return;
             }
 
             this.storageManger.executeStorageAction("moveTo", storageType, targetFile, []).then(
-                () => { this.webviewContentHelper.refreshView(); }
+                (storageActionResult) => {
+                    this.storageActionResult = storageActionResult;
+                    this.webviewContentHelper.refreshView();
+                }
             );
         }
     }
 
     public async getContent(): Promise<string> {
         return await this.header.getContent() +
-            await this.bodyContent();
+            await this.bodyContent()
+            + this.getStorageActionContent();
     }
 
     private async bodyContent(): Promise<string> {

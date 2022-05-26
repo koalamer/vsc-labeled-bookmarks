@@ -101,3 +101,11 @@ hr {
 hr+.card-grid-container {
     margin-top: 1em;
 }
+
+.error-message {
+    color: var(--vscode-editorError-foreground);
+}
+
+.warning-message {
+    color: var(--vscode-editorWarning-foreground);
+}

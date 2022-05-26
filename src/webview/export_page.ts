@@ -3,6 +3,7 @@ import { WebViewContent } from "./webview_content";
 import { HeaderContent } from "./header_content";
 import { StorageManager } from "../interface/storage_manager";
 import { WebviewContentHelper } from "../interface/webview_content_helper";
+import { StorageActionResult } from '../storage/storage_action_result';
 
 export class ExportPage extends WebViewContent {
 
@@ -26,22 +27,30 @@ export class ExportPage extends WebViewContent {
             let selectedGroups: string[] = params.groups ?? [];
 
             if (exportFile === "") {
-                vscode.window.showErrorMessage("No export file selected.");
+                this.storageActionResult = StorageActionResult.simpleError("No export file selected.");
+                this.webviewContentHelper.refreshView();
                 return;
             }
 
             if (selectedGroups.length === 0) {
-                vscode.window.showErrorMessage("No groups were selected.");
+                this.storageActionResult = StorageActionResult.simpleError("No groups were selected.");
+                this.webviewContentHelper.refreshView();
                 return;
             }
 
-            this.storageManger.executeStorageAction("exportTo", "file", exportFile, selectedGroups);
+            this.storageManger.executeStorageAction("exportTo", "file", exportFile, selectedGroups).then(
+                (storageActionResult) => {
+                    this.storageActionResult = storageActionResult;
+                    this.webviewContentHelper.refreshView();
+                }
+            );
         }
     }
 
     public async getContent(): Promise<string> {
         return await this.header.getContent()
-            + await this.bodyContent();
+            + await this.bodyContent()
+            + this.getStorageActionContent();
     }
 
     private async bodyContent() {

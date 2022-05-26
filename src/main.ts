@@ -33,6 +33,7 @@ import { FolderMappingStats } from './storage/folder_mapping_stats';
 import { FolderMatchStats as FolderMatchStats } from './storage/folder_match_stats';
 import { BookmarkWebview } from './webview/bookmark_webview';
 import { StorageManager } from './interface/storage_manager';
+import { StorageActionResult } from './storage/storage_action_result';
 
 export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupProvider, StorageManager {
     public ctx: ExtensionContext;
@@ -1561,11 +1562,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.webview.reveal();
     }
 
-    public async executeStorageAction(action: string, targetType: string, target: string, selectedGroups: string[]) {
+    public async executeStorageAction(action: string, targetType: string, target: string, selectedGroups: string[]): Promise<StorageActionResult> {
         let actionParameters = this.storageActionOptions.get(action);
         if (typeof actionParameters === "undefined") {
-            vscode.window.showErrorMessage("unknown bookmark storage action: " + action);
-            return;
+            return StorageActionResult.simpleError("unknown bookmark storage action: " + action);
         }
 
         let targetStorage: BookmarkDataStorage;
@@ -1574,18 +1574,16 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         } else if (targetType === "workspaceState") {
             targetStorage = new BookmarkStorageInWorkspaceState(this.ctx.workspaceState, target);
         } else {
-            vscode.window.showErrorMessage("unknown bookmark storage target type: " + targetType);
-            return;
+            return StorageActionResult.simpleError("unknown bookmark storage target type: " + targetType);
         }
 
         if (
             targetStorage.getStorageType() === this.persistentStorage.getStorageType()
             && targetStorage.getStoragePath() === this.persistentStorage.getStoragePath()
         ) {
-            vscode.window.showErrorMessage(
+            return StorageActionResult.simpleError(
                 "The selected storage is the current one. Aborting " + actionParameters.label + "."
             );
-            return;
         }
 
         if (actionParameters.writeToTarget) {
@@ -1677,8 +1675,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 });
                 targetStorage.setBookmarks(mappedBookmarks);
             } catch (e) {
-                vscode.window.showWarningMessage('Bookmark data import aborted: ' + e);
-                return;
+                return StorageActionResult.simpleError('Bookmark data import aborted: ' + e);
             }
 
             let existingGroups = this.groups.map(g => g.name);
@@ -1788,6 +1785,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         if (actionParameters.switchToTarget || actionParameters.loadFromTarget) {
             await this.initBookmarkDataUsingStorage();
         }
+
+        return StorageActionResult.simpleSuccess();
     }
 
     public getActiveStorage(): BookmarkDataStorage {
