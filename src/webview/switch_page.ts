@@ -7,14 +7,12 @@ import { StorageActionResult } from '../storage/storage_action_result';
 export class SwitchPage extends WebViewContent {
 
     private header: HeaderContent;
-    private webviewContentHelper: WebviewContentHelper;
     private storageManger: StorageManager;
 
     public constructor(storageManager: StorageManager, webviewContentHelper: WebviewContentHelper) {
-        super();
+        super(webviewContentHelper);
         this.name = "switchTo";
-        this.header = new HeaderContent("Switch Database", this.name);
-        this.webviewContentHelper = webviewContentHelper;
+        this.header = new HeaderContent(webviewContentHelper, "Switch Database", this.name);
         this.storageManger = storageManager;
     }
 
@@ -27,20 +25,20 @@ export class SwitchPage extends WebViewContent {
 
             if (storageType === "") {
                 this.storageActionResult = StorageActionResult.simpleError("No storage type selected.");
-                this.webviewContentHelper.refreshView();
+                this.refreshAfterAction();
                 return;
             }
 
             if (storageType === "file" && otherFile === "") {
                 this.storageActionResult = StorageActionResult.simpleError("No file selected.");
-                this.webviewContentHelper.refreshView();
+                this.refreshAfterAction();
                 return;
             }
 
             this.storageManger.executeStorageAction("switchTo", storageType, otherFile, []).then(
                 (storageActionResult) => {
                     this.storageActionResult = storageActionResult;
-                    this.webviewContentHelper.refreshView();
+                    this.refreshAfterAction();
                 }
             );
         }

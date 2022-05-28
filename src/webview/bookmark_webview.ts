@@ -58,16 +58,16 @@ export class BookmarkWebview implements WebviewContentHelper {
 
         this.pages = new Map();
 
-        let mainPage = new MainPage();
+        let mainPage = new MainPage(this);
         this.addPage(mainPage);
         this.activePage = mainPage;
 
         this.addPage(new ExportPage(storageManager, this));
-        this.addPage(new ImportPage());
+        this.addPage(new ImportPage(this));
         this.addPage(new MovePage(storageManager, this));
         this.addPage(new SwitchPage(storageManager, this));
-        this.addPage(new ArrangePage());
-        this.addPage(new ExportDocumentPage());
+        this.addPage(new ArrangePage(this));
+        this.addPage(new ExportDocumentPage(this));
     }
 
     private addPage(page: WebViewContent) {
@@ -170,6 +170,14 @@ export class BookmarkWebview implements WebviewContentHelper {
 
         this.panel.webview.postMessage(message);
         // vscode.window.showInformationMessage(JSON.stringify(message));
+    }
+
+    public setHtmlContent(selector: string, html: string) {
+        this.sendMessageToWebView({
+            operation: "setHtml",
+            selector: selector,
+            html: html,
+        });
     }
 
     private receiveMessageFromWebview(message: any) {

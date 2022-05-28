@@ -6,4 +6,5 @@ export interface WebviewContentHelper {
     uriToUrl(uri: Uri): string;
     getGroupListFormControls(groups: SerializableGroup[], prefix: string): string;
     refreshView(): void;
+    setHtmlContent(selector: string, html: string): void;
 }

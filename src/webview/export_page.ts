@@ -8,14 +8,12 @@ import { StorageActionResult } from '../storage/storage_action_result';
 export class ExportPage extends WebViewContent {
 
     private header: HeaderContent;
-    private webviewContentHelper: WebviewContentHelper;
     private storageManger: StorageManager;
 
     public constructor(storageManager: StorageManager, webviewContentHelper: WebviewContentHelper) {
-        super();
+        super(webviewContentHelper);
         this.name = "exportTo";
-        this.header = new HeaderContent("Export", this.name);
-        this.webviewContentHelper = webviewContentHelper;
+        this.header = new HeaderContent(webviewContentHelper, "Export", this.name);
         this.storageManger = storageManager;
     }
 
@@ -28,20 +26,20 @@ export class ExportPage extends WebViewContent {
 
             if (exportFile === "") {
                 this.storageActionResult = StorageActionResult.simpleError("No export file selected.");
-                this.webviewContentHelper.refreshView();
+                this.refreshAfterAction();
                 return;
             }
 
             if (selectedGroups.length === 0) {
                 this.storageActionResult = StorageActionResult.simpleError("No groups were selected.");
-                this.webviewContentHelper.refreshView();
+                this.refreshAfterAction();
                 return;
             }
 
             this.storageManger.executeStorageAction("exportTo", "file", exportFile, selectedGroups).then(
                 (storageActionResult) => {
                     this.storageActionResult = storageActionResult;
-                    this.webviewContentHelper.refreshView();
+                    this.refreshAfterAction();
                 }
             );
         }

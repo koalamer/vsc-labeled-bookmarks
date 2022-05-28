@@ -1,3 +1,4 @@
+import { WebviewContentHelper } from "../interface/webview_content_helper";
 import { HeaderContent } from "./header_content";
 import { WebViewContent } from "./webview_content";
 
@@ -5,10 +6,10 @@ export class MainPage extends WebViewContent {
 
     private header: HeaderContent;
 
-    public constructor() {
-        super();
+    public constructor(webviewContentHelper: WebviewContentHelper) {
+        super(webviewContentHelper);
         this.name = "main";
-        this.header = new HeaderContent("", this.name);
+        this.header = new HeaderContent(webviewContentHelper, "", this.name);
     }
 
     public async getContent(): Promise<string> {

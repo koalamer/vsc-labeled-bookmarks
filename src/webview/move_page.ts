@@ -7,13 +7,12 @@ import { StorageActionResult } from '../storage/storage_action_result';
 export class MovePage extends WebViewContent {
 
     private header: HeaderContent;
-    private webviewContentHelper: WebviewContentHelper;
     private storageManger: StorageManager;
 
     public constructor(storageManager: StorageManager, webviewContentHelper: WebviewContentHelper) {
-        super();
+        super(webviewContentHelper);
         this.name = "moveTo";
-        this.header = new HeaderContent("Move Database", this.name);
+        this.header = new HeaderContent(webviewContentHelper, "Move Database", this.name);
         this.webviewContentHelper = webviewContentHelper;
 
         this.storageManger = storageManager;
@@ -28,20 +27,20 @@ export class MovePage extends WebViewContent {
 
             if (storageType === "") {
                 this.storageActionResult = StorageActionResult.simpleError("No storage type selected.");
-                this.webviewContentHelper.refreshView();
+                this.refreshAfterAction();
                 return;
             }
 
             if (storageType === "file" && targetFile === "") {
                 this.storageActionResult = StorageActionResult.simpleError("No target file selected.");
-                this.webviewContentHelper.refreshView();
+                this.refreshAfterAction();
                 return;
             }
 
             this.storageManger.executeStorageAction("moveTo", storageType, targetFile, []).then(
                 (storageActionResult) => {
                     this.storageActionResult = storageActionResult;
-                    this.webviewContentHelper.refreshView();
+                    this.refreshAfterAction();
                 }
             );
         }

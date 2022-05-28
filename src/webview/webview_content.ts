@@ -1,11 +1,18 @@
+import { WebviewContentHelper } from "../interface/webview_content_helper";
 import { StorageActionResult } from "../storage/storage_action_result";
 
 export abstract class WebViewContent {
 
+    public static readonly resultContainerId = "actionResult";
+
     protected name: string = "abstract";
     protected params: Map<string, any> = new Map();
     protected storageActionResult: StorageActionResult | undefined;
+    protected webviewContentHelper: WebviewContentHelper;
 
+    public constructor(webviewContentHelper: WebviewContentHelper) {
+        this.webviewContentHelper = webviewContentHelper;
+    }
 
     public getName(): string {
         return this.name;
@@ -23,7 +30,23 @@ export abstract class WebViewContent {
         return Promise.resolve(``);
     }
 
+    public refreshAfterAction() {
+        if (this.storageActionResult?.success) {
+            this.webviewContentHelper.refreshView();
+            return;
+        }
+
+        this.webviewContentHelper.setHtmlContent(
+            "#" + WebViewContent.resultContainerId,
+            this.getStorageActionContentInner()
+        );
+    }
+
     public getStorageActionContent() {
+        return `<div id="${WebViewContent.resultContainerId}">${this.getStorageActionContentInner()}</div>`;
+    }
+
+    public getStorageActionContentInner() {
         if (typeof this.storageActionResult === "undefined") {
             return "";
         }

@@ -6,7 +6,6 @@ const vscode = acquireVsCodeApi();
 // receive messages from the extension
 window.addEventListener('message', event => {
     const message = event.data; // The JSON data our extension sent
-    console.log(message);
 
     switch (message.operation) {
         case "set":
@@ -14,6 +13,13 @@ window.addEventListener('message', event => {
                 element.value = message.value;
             });
             break;
+        case "setHtml":
+            document.querySelectorAll(message.selector).forEach(function (element) {
+                element.innerHTML = message.html;
+            });
+            break;
+        default:
+            throw new Error("Unknown operation");
     }
 });
 
@@ -41,7 +47,6 @@ document.querySelectorAll(".file-selector").forEach(function (element) {
 });
 
 function submitForm(formName) {
-    window.alert(`form[name=${formName}]`);
     let form = document.querySelector(`form[name=${formName}]`);
     let valueGroupPrefix = "valueGroup.";
 

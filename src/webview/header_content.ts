@@ -1,3 +1,4 @@
+import { WebviewContentHelper } from "../interface/webview_content_helper";
 import { WebViewContent as WebViewContent } from "./webview_content";
 
 export class HeaderContent extends WebViewContent {
@@ -5,8 +6,8 @@ export class HeaderContent extends WebViewContent {
     private subTitle: string;
     private page: string;
 
-    public constructor(subTitle: string, page: string) {
-        super();
+    public constructor(webviewContentHelper: WebviewContentHelper, subTitle: string, page: string) {
+        super(webviewContentHelper);
         this.subTitle = subTitle;
         this.page = page;
     }
