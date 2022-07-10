@@ -37,7 +37,7 @@ export class MovePage extends WebViewContent {
                 return;
             }
 
-            this.storageManger.executeStorageAction("moveTo", storageType, targetFile, []).then(
+            this.storageManger.executeStorageAction("moveTo", storageType, targetFile, [], new Map()).then(
                 (storageActionResult) => {
                     this.storageActionResult = storageActionResult;
                     this.refreshAfterAction();

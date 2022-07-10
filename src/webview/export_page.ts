@@ -36,7 +36,7 @@ export class ExportPage extends WebViewContent {
                 return;
             }
 
-            this.storageManger.executeStorageAction("exportTo", "file", exportFile, selectedGroups).then(
+            this.storageManger.executeStorageAction("exportTo", "file", exportFile, selectedGroups, new Map()).then(
                 (storageActionResult) => {
                     this.storageActionResult = storageActionResult;
                     this.refreshAfterAction();

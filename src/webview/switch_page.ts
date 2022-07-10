@@ -35,7 +35,7 @@ export class SwitchPage extends WebViewContent {
                 return;
             }
 
-            this.storageManger.executeStorageAction("switchTo", storageType, otherFile, []).then(
+            this.storageManger.executeStorageAction("switchTo", storageType, otherFile, [], new Map()).then(
                 (storageActionResult) => {
                     this.storageActionResult = storageActionResult;
                     this.refreshAfterAction();

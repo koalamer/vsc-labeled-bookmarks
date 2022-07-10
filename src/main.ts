@@ -67,7 +67,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         switchToTarget: boolean,
         loadFromTarget: boolean,
         loadFromTargetSelectively: boolean,
-        simplifyFolderPaths: boolean,
+        transformFolderPaths: boolean,
         allowOutOfFolderFiles: boolean,
     }> = new Map([
         ["moveTo",
@@ -81,6 +81,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 loadFromTarget: false,
                 loadFromTargetSelectively: false,
                 simplifyFolderPaths: false,
+                transformFolderPaths: false,
                 allowOutOfFolderFiles: true
             }
         ],
@@ -95,6 +96,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 loadFromTarget: false,
                 loadFromTargetSelectively: false,
                 simplifyFolderPaths: false,
+                transformFolderPaths: false,
                 allowOutOfFolderFiles: true
             }
         ],
@@ -109,6 +111,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 loadFromTarget: false,
                 loadFromTargetSelectively: false,
                 simplifyFolderPaths: true,
+                transformFolderPaths: true,
                 allowOutOfFolderFiles: false
             }
         ],
@@ -123,6 +126,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 loadFromTarget: true,
                 loadFromTargetSelectively: true,
                 simplifyFolderPaths: true,
+                transformFolderPaths: true,
                 allowOutOfFolderFiles: false
             }
         ]
@@ -1562,7 +1566,29 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.webview.reveal();
     }
 
-    public async executeStorageAction(action: string, targetType: string, target: string, selectedGroups: string[]): Promise<StorageActionResult> {
+    public async executeStorageAction(
+        action: string,
+        targetType: string,
+        target: string,
+        selectedGroups: string[],
+        pathMapping: Map<string, string> = new Map()
+    ): Promise<StorageActionResult> {
+        let successResult = StorageActionResult.simpleSuccess();
+
+        let normalizedPathMapping: Map<string, string> = new Map();
+        pathMapping.forEach((value, key) => {
+            let normalizedKey = key.replace(/\\/g, "/");
+            if (!normalizedKey.endsWith("/")) {
+                normalizedKey += "/";
+            }
+            let normalizedValue = value.replace(/\\/g, "/");
+            if (!normalizedValue.endsWith("/")) {
+                normalizedValue += "/";
+            }
+            normalizedPathMapping.set(normalizedKey, normalizedValue);
+        });
+        pathMapping = normalizedPathMapping;
+
         let actionParameters = this.storageActionOptions.get(action);
         if (typeof actionParameters === "undefined") {
             return StorageActionResult.simpleError("unknown bookmark storage action: " + action);
@@ -1596,17 +1622,23 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             let tempGroups = SerializableGroup.copyList(this.persistentStorage.getGroups());
 
             if (!actionParameters.allowOutOfFolderFiles) {
+                let skippedFilePaths: Map<string, boolean> = new Map();
                 tempBookmarks = tempBookmarks.filter((bm) => {
                     for (let f of tempWorkspaceFolders) {
                         if (bm.fsPath.startsWith(f)) {
                             return true;
                         }
                     };
+                    skippedFilePaths.set(bm.fsPath, true);
                     return false;
+                });
+
+                skippedFilePaths.forEach((_value, key) => {
+                    successResult.warnings.push("File outside of workspace folder was skipped: " + key);
                 });
             }
 
-            if (actionParameters.simplifyFolderPaths) {
+            if (actionParameters.transformFolderPaths) {
                 let simpleFolderName = '@FOLDER';
                 tempWorkspaceFolders.sort((a, b) => { return b.length - a.length; });
                 tempBookmarks.forEach((bm) => {
@@ -1659,7 +1691,33 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         if (actionParameters.loadFromTarget) {
             await targetStorage.readStorage();
 
+            // group filter on bms first  (selectedGroups)
+
+            if (actionParameters.transformFolderPaths) {
+                let bookmarkedFiles: Map<string, string> = new Map();
+                targetStorage.getBookmarks().forEach((bm) => {
+                    let normalizedPath = bm.fsPath.replace(/\\/g, "/");
+                    bookmarkedFiles.set(normalizedPath, normalizedPath);
+                });
+
+                bookmarkedFiles.forEach((_filePathValue, filePathKey) => {
+                    for (let [mappingKey, mappingValue] of pathMapping) {
+                        if (filePathKey.startsWith(mappingKey)) {
+                            bookmarkedFiles.set(filePathKey, mappingValue + filePathKey.substring(mappingKey.length));
+                            return;
+                        }
+                    }
+                    successResult.warnings.push("file skipped: " + filePathKey);
+                    bookmarkedFiles.delete(filePathKey);
+                });
+
+                // todo collection of bms 
+            }
+
+            /////// new part above
+
             try {
+                // todo skip mapping for switch and move
                 let [incomingFileMapping, mappingStats] = await this.mapIncomingFolders(this.persistentStorage, targetStorage);
                 let mappedBookmarks: SerializableBookmark[] = [];
                 targetStorage.getBookmarks().forEach(b => {
@@ -1786,7 +1844,7 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             await this.initBookmarkDataUsingStorage();
         }
 
-        return StorageActionResult.simpleSuccess();
+        return successResult;
     }
 
     public getActiveStorage(): BookmarkDataStorage {
