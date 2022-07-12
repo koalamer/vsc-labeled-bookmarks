@@ -2,13 +2,17 @@
 
 All notable changes to the "vsc-labeled-bookmarks" extension will be documented in this file.
 
-## [1.1.11] - 2022-05-01
+## [1.1.13] - 2022-09-01
 
 - Fix single letter labeled bookmark uniqueness
 - Add dir name as description to tree view file items
 - Added option to use top and bottom margins when revealing bookmarked location
 - Added action to change persistent storage location and to export / import bookmarks
 - Added time delay between writing into persistent storage to minimize writes
+
+## [1.1.11] - 2022-07-11
+
+- Fix gutter icons that disappeared after latest VSCode rollout
 
 ## [1.1.10] - 2021-09-26
 

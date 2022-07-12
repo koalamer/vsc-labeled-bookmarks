@@ -184,7 +184,8 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
         this.ctx = ctx;
         this.treeViewRefreshCallback = treeviewRefreshCallback;
 
-        this.decorationFactory = new DecorationFactory(this.ctx.globalStorageUri, OverviewRulerLane.Center, "bordered");
+        let gutterIconDirUri = vscode.Uri.joinPath(this.ctx.extensionUri, 'resources', 'gutter_icons');
+        this.decorationFactory = new DecorationFactory(gutterIconDirUri, OverviewRulerLane.Center, "bordered");
 
         this.persistentStorage = new BookmarkStorageDummy();
         this.persistentStorageRateLimiter = new RateLimiter(() => { }, 500, 500);
