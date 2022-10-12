@@ -97,7 +97,6 @@ export class SwitchPage extends WebViewContent {
                     type="button"
                     class="submit"
                     value="Switch"
-                    data-form="switchTo"
                 />
             </p>
         </form>`;

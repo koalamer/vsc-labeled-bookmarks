@@ -87,7 +87,6 @@ export class ExportPage extends WebViewContent {
                     type="button"
                     class="submit"
                     value="Export"
-                    data-form="export"
                 />
             </p>
         </form>`;

@@ -52,15 +52,12 @@ export abstract class WebViewContent {
         }
 
         let result = this.storageActionResult;
-        let outcome = result.success
-            ? "success"
-            : "failure";
+        let resultStyle = result.success ? "info-message" : "error-message";
 
         let content = `
-            <p>
-                ${new Date(result.timestamp).toLocaleString()} - ${outcome}
+            <p class="${resultStyle}">
+                ${new Date(result.timestamp).toLocaleString()}
             </p>
-            <p
         `;
 
         if (result.infos.length + result.warnings.length + result.errors.length === 0) {
@@ -75,7 +72,7 @@ export abstract class WebViewContent {
             content += `<span class="warning-message">${wm}</span><br />`;
         });
         result.infos.forEach((im) => {
-            content += `${im}<br />`;
+            content += `<span class="info-message">${im}</span><br />`;
         });
         content += "</p>";
 

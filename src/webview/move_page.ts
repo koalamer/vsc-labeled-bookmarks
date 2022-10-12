@@ -99,7 +99,6 @@ export class MovePage extends WebViewContent {
                     type="button"
                     class="submit"
                     value="Move"
-                    data-form="moveTo"
                 />
             </p>
         </form>`;

@@ -153,17 +153,39 @@ export class BookmarkWebview implements WebviewContentHelper {
 
             let controlHtml = '';
             if (selectMultiple) {
-                let controlId = `valueGroup.${groupName}.${g.name}`;
+                let controlId = `valueGroup.${groupName}.${this.escapeHTMLParam(g.name)}`;
                 controlHtml = `<input type="checkbox" name="${controlId}" id="${controlId}">`;
             } else {
-                controlHtml = `<input type="radio" name="valueGroup.${groupName}" id="valueGroup.${groupName}.${g.name}">`;
+                controlHtml = `<input type="radio" name="valueGroup.${groupName}" id="valueGroup.${groupName}.${this.escapeHTMLParam(g.name)}">`;
             }
             html += `<div>
                     <label>
                         ${controlHtml}
                          
                         <svg viewBox="0 0 32 32" class="group-icon">${svg}</svg>
-                        ${g.name}
+                        ${this.escapeHTMLParam(g.name)}
+                    </label>
+                </div>`;
+        };
+        return html;
+    }
+
+    public getFolderListFormControls(folders: string[], groupName: string, selectMultiple: false): string {
+        let html = "";
+
+        for (let f of folders) {
+            let controlHtml = '';
+            if (selectMultiple) {
+                let controlId = `valueGroup.${groupName}.${this.escapeHTMLParam(f)}`;
+                controlHtml = `<input type="checkbox" name="${controlId}" id="${controlId}">`;
+            } else {
+                controlHtml = `<input type="radio" name="valueGroup.${groupName}" id="valueGroup.${groupName}.${this.escapeHTMLParam(f)}">`;
+            }
+            html += `<div>
+                    <label>
+                        ${controlHtml}
+                         
+                        ${this.escapeHTMLParam(f)}
                     </label>
                 </div>`;
         };
@@ -316,5 +338,14 @@ export class BookmarkWebview implements WebviewContentHelper {
                     ${await this.activePage.getContent()}
                 </body>
             </html>`;
+    }
+
+    private escapeHTMLParam(plainText: string) {
+        return plainText
+            .replace(/&/g, "&amp;")
+            .replace(/'/g, "&#039;")
+            .replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
     }
 }

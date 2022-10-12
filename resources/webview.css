@@ -103,6 +103,10 @@ hr+.card-grid-container {
     margin-top: 1em;
 }
 
+.info-message {
+    color: var(--vscode-editorInfo-foreground);
+}
+
 .error-message {
     color: var(--vscode-editorError-foreground);
 }

@@ -103,7 +103,7 @@ export class ImportPage extends WebViewContent {
 
             this.storageActionResult = new StorageActionResult(
                 true,
-                ["Import file opened", "Select groups to be imported"],
+                ["Select groups to be imported"],
                 [],
                 []
             );
@@ -180,32 +180,55 @@ export class ImportPage extends WebViewContent {
                 true
             );
 
-            content += `<h2>Select groups to be imported</h2>
-            <p class="group-selection">
-                ` + incomingGroupControls + `
-            </p>
+            let incomingFolderControls = this.webviewContentHelper.getFolderListFormControls(
+                this.importStorage.getWorkspaceFolders(),
+                "incomingFolders",
+                false
+            );
 
-            <p>
-            Current folders: `+ this.storageManger.getActiveStorage().getWorkspaceFolders().join(", ") + `
-            </p>
+            let currentFolderControls = this.webviewContentHelper.getFolderListFormControls(
+                this.storageManger.getActiveStorage().getWorkspaceFolders(),
+                "incomingFolders",
+                false
+            );
 
-            <p>
-            Incoming folders: `+ this.importStorage.getWorkspaceFolders().join(", ") + `
-            </p>
+            content += `
+                <h2>Select groups to be imported</h2>
 
-            <hr />
+                <p class="group-selection">
+                    ` + incomingGroupControls + `
+                </p>
+
+                <h2>Select folder mapping</h2>
+
+                <p>
+                Incoming folders: `+ incomingFolderControls + `
+                </p>
+
+                <p>
+                Current folders: `+ currentFolderControls + `
+                </p>
             `;
         }
 
-        if (this.step > 1) {
-            content += `<p>
-                <input type="button" class="submit" value="Import" data-form="import" />
-            </p>`;
+        content += `<hr />
+            <p>`;
+
+        if (this.step === 1) {
+            content += `<input type="button" class="submit" value="Test" />`;
         }
 
-        // <input type="button" class="reset" value="Reset" data-form="import" />
-        content += `</form>`;
+        if (this.step === 2) {
+            content += `<input type="button" class="submit" value="Import" />`;
+        }
 
+        if (this.step > 0) {
+            content += `<input type="button" class="reset" value="Reset" />`;
+        }
+
+        content += `</p>`;
+
+        content += `</form>`;
         return content;
     }
 }
