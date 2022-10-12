@@ -13,6 +13,7 @@ export class ImportPage extends WebViewContent {
     private header: HeaderContent;
     private storageManger: StorageManager;
 
+    private step: number = 0;
     private importFilePath: string = "";
     private importStorage: BookmarkDataStorage = new BookmarkStorageDummy();
     private selectedGroups: string[] = [];
@@ -34,31 +35,58 @@ export class ImportPage extends WebViewContent {
     }
 
     public processMessage(operation: string, name: string, formData: any) {
-        this.asyncProcessMessageMessage(operation, name, formData);
+        this.asyncProcessMessage(operation, name, formData);
     }
 
-    private async asyncProcessMessageMessage(operation: string, name: string, formData: any) {
-        if (operation === "submit" && name === "importFile") {
+    private async asyncProcessMessage(operation: string, name: string, formData: any) {
+        if (operation === "reset") {
+            this.step = 0;
+            this.storageActionResult = StorageActionResult.simpleSuccess();
+            this.importFilePath = "";
+            this.importStorage = new BookmarkStorageDummy();
+            this.selectedGroups = [];
+            this.conflictResolutionMode = "rename";
+            this.pathMapping = new Map();
+            this.refreshAfterAction();
+            return;
+        }
+
+        if (operation === "fileSelected" && name === "importFilePath") {
+            this.webviewContentHelper.setFormElement("step", "1");
+            this.webviewContentHelper.submitForm();
+        }
+
+        if (operation === "submit") {
             let params = JSON.parse(formData);
 
+            vscode.window.showInformationMessage(params);
+
+            this.step = parseInt(params.step) ?? 0;
             this.importFilePath = params.importFilePath ?? "";
             this.selectedGroups = params.groups ?? [];
             this.conflictResolutionMode = params.conflictResolution ?? "";
+            this.storageActionResult = StorageActionResult.simpleSuccess();
 
-            let incomingPaths: string[] = params.incomingPaths ?? [];
-            let assignedPaths: string[] = params.assignedPaths ?? [];
+            // let incomingPaths: string[] = params.incomingPaths ?? [];
+            // let assignedPaths: string[] = params.assignedPaths ?? [];
 
-            this.pathMapping = new Map();
-            incomingPaths.forEach((v, key) => {
-                if (assignedPaths.length <= key) {
-                    return;
-                }
-                let assignedPath = assignedPaths[key];
-                this.pathMapping.set(v, assignedPath);
-            });
+            // this.pathMapping = new Map();
+            // incomingPaths.forEach((v, key) => {
+            // if (assignedPaths.length <= key) {
+            // return;
+            // }
+            // let assignedPath = assignedPaths[key];
+            // this.pathMapping.set(v, assignedPath);
+            // });
+
+            // wait for file to be selected
+            if (this.step === 0) {
+                return;
+            };
 
             if (this.importFilePath === "") {
-                this.storageActionResult = StorageActionResult.simpleError("No export file selected.");
+                this.storageActionResult = StorageActionResult.simpleError("No import file selected.");
+                this.step = 0;
                 this.refreshAfterAction();
                 return;
             }
@@ -68,24 +96,45 @@ export class ImportPage extends WebViewContent {
                 await this.importStorage.readStorage();
             } catch (e) {
                 this.storageActionResult = StorageActionResult.simpleError("Reading the storage file failed.");
+                this.step = 0;
                 this.refreshAfterAction();
                 return;
             }
 
+            this.storageActionResult = new StorageActionResult(
+                true,
+                ["Import file opened", "Select groups to be imported"],
+                [],
+                []
+            );
+
+            // give time for icon creation
+            await new Promise(r => setTimeout(r, 250));
+
+            this.refreshAfterAction();
+
+            // wait for folder mapping and import group selection
+            if (this.step === 1) {
+                this.refreshAfterAction();
+                return;
+            };
+
             if (this.selectedGroups.length === 0) {
                 this.storageActionResult = StorageActionResult.simpleError("No groups were selected.");
+                this.step = 1;
                 this.refreshAfterAction();
                 return;
             }
 
             if (!ImportPage.conflictResolutionModes.has(this.conflictResolutionMode)) {
                 this.storageActionResult = StorageActionResult.simpleError("Invalid conflisct resolution mode.");
+                this.step = 1;
                 this.refreshAfterAction();
                 return;
             }
 
             // todo path mapping errors can be warnings runtime
-            this.storageManger.executeStorageAction("exportTo", "file", this.importFilePath, this.selectedGroups, this.pathMapping).then(
+            this.storageManger.executeStorageAction("importFrom", "file", this.importFilePath, this.selectedGroups, this.pathMapping).then(
                 (storageActionResult) => {
                     this.storageActionResult = storageActionResult;
                     this.refreshAfterAction();
@@ -101,47 +150,62 @@ export class ImportPage extends WebViewContent {
     }
 
     private async bodyContent() {
+        let content = `<form name="VSCLBForm">
+            <input type="hidden" name="step" id="step" value="${this.step + 1}">`;
 
-        let importFilePath = "";
-
-        let activeStorageGroupControls = "";
-        // let activeStorageGroupControls = this.webviewContentHelper.getGroupListFormControls(
-        //     this.storageManger.getActiveStorage().getGroups(),
-        //     "groups"
-        // );
-
-        return `<form name="export">
+        content += `
             <h2>Select source file</h2>
             <p class="file-selection">
                 <input
                     type="button"
                     class="file-selector"
-                    data-file-input-name="importFile"
+                    data-file-input-name="importFilePath"
                     data-access-type="read"
                     value="..."
                 />
                 <input
                     type="text"
-                    name="importFile"
+                    name="importFilePath"
                     readonly
+                    value="${this.importFilePath}"
                     placeholder="no file selected"
                 />
             </p>
+            `;
 
-            <h2>Select bookmark groups</h2>
+        if (this.step > 0) {
+            let incomingGroupControls = this.webviewContentHelper.getGroupListFormControls(
+                this.importStorage.getGroups(),
+                "groups",
+                true
+            );
+
+            content += `<h2>Select groups to be imported</h2>
             <p class="group-selection">
-                ` + activeStorageGroupControls + `
+                ` + incomingGroupControls + `
+            </p>
+
+            <p>
+            Current folders: `+ this.storageManger.getActiveStorage().getWorkspaceFolders().join(", ") + `
+            </p>
+
+            <p>
+            Incoming folders: `+ this.importStorage.getWorkspaceFolders().join(", ") + `
             </p>
 
             <hr />
-            <p>
-                <input
-                    type="button"
-                    class="submit"
-                    value="Export"
-                    data-form="export"
-                />
-            </p>
-        </form>`;
+            `;
+        }
+
+        if (this.step > 1) {
+            content += `<p>
+                <input type="button" class="submit" value="Import" data-form="import" />
+            </p>`;
+        }
+
+        // <input type="button" class="reset" value="Reset" data-form="import" />
+        content += `</form>`;
+
+        return content;
     }
 }

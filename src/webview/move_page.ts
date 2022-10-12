@@ -19,7 +19,7 @@ export class MovePage extends WebViewContent {
     }
 
     public processMessage(operation: string, name: string, formData: any): void {
-        if (operation === "submit" && name === "moveTo") {
+        if (operation === "submit") {
             let params = JSON.parse(formData);
 
             let storageType: string = params.storageType ?? "";
@@ -63,7 +63,7 @@ export class MovePage extends WebViewContent {
             currentStorageText = "JSON file: " + currentPath;
         }
 
-        return `<form name="moveTo">
+        return `<form name="VSCLBForm">
             <h2>Current location</h2>
             <p>
                 ${currentStorageText}

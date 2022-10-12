@@ -18,7 +18,7 @@ export class ExportPage extends WebViewContent {
     }
 
     public processMessage(operation: string, name: string, formData: any): void {
-        if (operation === "submit" && name === "export") {
+        if (operation === "submit") {
             let params = JSON.parse(formData);
 
             let exportFile: string = params.exportFile ?? "";
@@ -54,10 +54,11 @@ export class ExportPage extends WebViewContent {
     private async bodyContent() {
         let activeStorageGroupControls = this.webviewContentHelper.getGroupListFormControls(
             this.storageManger.getActiveStorage().getGroups(),
-            "groups"
+            "groups",
+            true
         );
 
-        return `<form name="export">
+        return `<form name="VSCLBForm">
             <h2>Select bookmark groups</h2>
             <p class="group-selection">
                 ` + activeStorageGroupControls + `

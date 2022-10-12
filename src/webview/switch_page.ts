@@ -17,7 +17,7 @@ export class SwitchPage extends WebViewContent {
     }
 
     public processMessage(operation: string, name: string, formData: any): void {
-        if (operation === "submit" && name === "switchTo") {
+        if (operation === "submit") {
             let params = JSON.parse(formData);
 
             let storageType: string = params.storageType ?? "";
@@ -61,7 +61,7 @@ export class SwitchPage extends WebViewContent {
             currentStorageText = "JSON file: " + currentPath;
         }
 
-        return `<form name="switchTo">
+        return `<form name="VSCLBForm">
             <h2>Current location</h2>
             <p>
                 ${currentStorageText}

@@ -9,14 +9,19 @@ window.addEventListener('message', event => {
 
     switch (message.operation) {
         case "set":
-            document.querySelectorAll("[name=" + message.name + "]").forEach(function (element) {
-                element.value = message.value;
-            });
+            document.querySelectorAll("[name=" + message.elementName + "]")
+                .forEach(function (element) {
+                    element.value = message.value;
+                });
             break;
         case "setHtml":
             document.querySelectorAll(message.selector).forEach(function (element) {
                 element.innerHTML = message.html;
             });
+            break;
+        case "submit":
+            sendSingleParam("submit-pre", null, null);
+            submitForm();
             break;
         default:
             throw new Error("Unknown operation");
@@ -46,11 +51,14 @@ document.querySelectorAll(".file-selector").forEach(function (element) {
     });
 });
 
-function submitForm(formName) {
-    let form = document.querySelector(`form[name=${formName}]`);
+function submitForm() {
+    sendSingleParam("submit-start", null, null);
+    let form = document.querySelector(`form[name=VSCLBForm]`);
     let valueGroupPrefix = "valueGroup.";
 
     let formData = {};
+
+    sendSingleParam("submit-formdata", null, null);
 
     new FormData(form).forEach((value, key) => {
         if (key.startsWith(valueGroupPrefix)) {
@@ -74,12 +82,17 @@ function submitForm(formName) {
 
         formData[key] = value;
     });
-    sendSingleParam("submit", formName, JSON.stringify(formData));
+    sendSingleParam("submit", null, JSON.stringify(formData));
 }
 
-document.querySelectorAll(".submit").forEach(function (element) {
-    element.addEventListener('click', function (_event) {
-        let formName = element.getAttribute("data-form");
-        submitForm(formName);
+document.querySelectorAll(".submit").forEach(function (submitElement) {
+    submitElement.addEventListener('click', function (_event) {
+        submitForm();
+    });
+});
+
+document.querySelectorAll(".reset").forEach(function (submitElement) {
+    submitElement.addEventListener('click', function (_event) {
+        sendSingleParam("reset", null, null);
     });
 });

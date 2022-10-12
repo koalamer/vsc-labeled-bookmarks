@@ -80,7 +80,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 switchToTarget: true,
                 loadFromTarget: false,
                 loadFromTargetSelectively: false,
-                simplifyFolderPaths: false,
                 transformFolderPaths: false,
                 allowOutOfFolderFiles: true
             }
@@ -95,7 +94,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 switchToTarget: true,
                 loadFromTarget: false,
                 loadFromTargetSelectively: false,
-                simplifyFolderPaths: false,
                 transformFolderPaths: false,
                 allowOutOfFolderFiles: true
             }
@@ -110,7 +108,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 switchToTarget: false,
                 loadFromTarget: false,
                 loadFromTargetSelectively: false,
-                simplifyFolderPaths: true,
                 transformFolderPaths: true,
                 allowOutOfFolderFiles: false
             }
@@ -125,7 +122,6 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 switchToTarget: false,
                 loadFromTarget: true,
                 loadFromTargetSelectively: true,
-                simplifyFolderPaths: true,
                 transformFolderPaths: true,
                 allowOutOfFolderFiles: false
             }
@@ -1689,10 +1685,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
             await originalStorage.persist();
         }
 
-        if (actionParameters.loadFromTarget) {
+        if (actionParameters.loadFromTarget) { //import only
             await targetStorage.readStorage();
 
-            // group filter on bms first  (selectedGroups)
+            // TODO group filter on bms first  (incoming selectedGroups)
 
             if (actionParameters.transformFolderPaths) {
                 let bookmarkedFiles: Map<string, string> = new Map();
@@ -2479,8 +2475,10 @@ export class Main implements BookmarkDataProvider, BookmarkManager, ActiveGroupP
                 continue;
             }
 
+            // off-folder files are ignored...
             pendingFileMapping.delete(filePathOrig);
 
+            // ... unless they exist
             let doesFileExist = await this.fileExists(filePathOrig);
             if (doesFileExist) {
                 doneFileMapping.set(filePathOrig, filePathOrig);

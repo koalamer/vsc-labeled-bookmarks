@@ -65,7 +65,8 @@ input[type=button] {
     color: var(--vscode-editor-foreground);
 }
 
-input[type=button].submit {
+input[type=button].submit,
+input[type=button].reset {
     padding: 1em;
 }
 

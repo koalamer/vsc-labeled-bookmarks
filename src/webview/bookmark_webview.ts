@@ -141,7 +141,7 @@ export class BookmarkWebview implements WebviewContentHelper {
         return this.panel.webview.asWebviewUri(uri).toString();
     }
 
-    public getGroupListFormControls(groups: SerializableGroup[], groupName: string): string {
+    public getGroupListFormControls(groups: SerializableGroup[], groupName: string, selectMultiple: false): string {
         let html = "";
 
         for (let g of groups) {
@@ -150,10 +150,17 @@ export class BookmarkWebview implements WebviewContentHelper {
                 g.color,
                 g.iconText
             );
-            let controlName = `valueGroup.${groupName}.${g.name}`;
+
+            let controlHtml = '';
+            if (selectMultiple) {
+                let controlId = `valueGroup.${groupName}.${g.name}`;
+                controlHtml = `<input type="checkbox" name="${controlId}" id="${controlId}">`;
+            } else {
+                controlHtml = `<input type="radio" name="valueGroup.${groupName}" id="valueGroup.${groupName}.${g.name}">`;
+            }
             html += `<div>
                     <label>
-                        <input type="checkbox" name="${controlName}" id="${controlName}">
+                        ${controlHtml}
                          
                         <svg viewBox="0 0 32 32" class="group-icon">${svg}</svg>
                         ${g.name}
@@ -169,7 +176,7 @@ export class BookmarkWebview implements WebviewContentHelper {
         }
 
         this.panel.webview.postMessage(message);
-        // vscode.window.showInformationMessage(JSON.stringify(message));
+        vscode.window.showWarningMessage(JSON.stringify(message));
     }
 
     public setHtmlContent(selector: string, html: string) {
@@ -177,6 +184,20 @@ export class BookmarkWebview implements WebviewContentHelper {
             operation: "setHtml",
             selector: selector,
             html: html,
+        });
+    }
+
+    public setFormElement(elementName: string, value: string) {
+        this.sendMessageToWebView({
+            operation: "set",
+            elementName: elementName,
+            value: value,
+        });
+    }
+
+    public submitForm() {
+        this.sendMessageToWebView({
+            operation: "submit",
         });
     }
 
@@ -205,10 +226,11 @@ export class BookmarkWebview implements WebviewContentHelper {
                     title: "Labeled Bookmarks: select file to read",
                 }).then((result) => {
                     if (typeof result !== "undefined") {
-                        this.sendMessageToWebView({
-                            operation: "set",
+                        this.setFormElement(name, result[0].fsPath);
+                        this.receiveMessageFromWebview({
+                            operation: 'fileSelected',
                             name: name,
-                            value: result[0].fsPath,
+                            value: value
                         });
                     }
                 });
@@ -223,10 +245,11 @@ export class BookmarkWebview implements WebviewContentHelper {
                     title: "Labeled Bookmarks: select file to write to",
                 }).then((result) => {
                     if (typeof result !== "undefined") {
-                        this.sendMessageToWebView({
-                            operation: "set",
+                        this.setFormElement(name, result.fsPath);
+                        this.receiveMessageFromWebview({
+                            operation: 'fileSelected',
                             name: name,
-                            value: result.fsPath,
+                            value: value
                         });
                     }
                 });
