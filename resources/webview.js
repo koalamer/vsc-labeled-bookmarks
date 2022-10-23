@@ -21,7 +21,7 @@ window.addEventListener('message', event => {
             break;
         case "submit":
             sendSingleParam("submit-pre", null, null);
-            submitForm();
+            submitForm("remoteTriggered");
             break;
         default:
             throw new Error("Unknown operation");
@@ -51,10 +51,11 @@ document.querySelectorAll(".file-selector").forEach(function (element) {
     });
 });
 
-function submitForm() {
+function submitForm(submitter) {
     sendSingleParam("submit-start", null, null);
     let form = document.querySelector(`form[name=VSCLBForm]`);
-    let valueGroupPrefix = "valueGroup.";
+    const valueGroupPrefix = "valueGroup.";
+    const mappingPrefix = "mapping.";
 
     let formData = {};
 
@@ -80,19 +81,32 @@ function submitForm() {
             return;
         }
 
+        if (key.startsWith(mappingPrefix)) {
+            let prefixLength = mappingPrefix.length;
+            let groupNameEndPos = key.indexOf(".", prefixLength);
+
+            if (groupNameEndPos === -1) {
+                formData[key] = value;
+                return;
+            }
+
+            let groupName = key.substring(prefixLength, groupNameEndPos);
+            let groupKey = key.substring(groupNameEndPos + 1);
+            if (typeof formData[groupName] === "undefined") {
+                formData[groupName] = {};
+            }
+
+            formData[groupName][groupKey] = value;
+            return;
+        }
+
         formData[key] = value;
     });
-    sendSingleParam("submit", null, JSON.stringify(formData));
+    sendSingleParam("submit", submitter, JSON.stringify(formData));
 }
 
 document.querySelectorAll(".submit").forEach(function (submitElement) {
     submitElement.addEventListener('click', function (_event) {
-        submitForm();
-    });
-});
-
-document.querySelectorAll(".reset").forEach(function (submitElement) {
-    submitElement.addEventListener('click', function (_event) {
-        sendSingleParam("reset", null, null);
+        submitForm(submitElement.value);
     });
 });

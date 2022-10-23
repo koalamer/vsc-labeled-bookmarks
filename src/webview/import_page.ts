@@ -8,6 +8,9 @@ import { StorageActionResult } from "../storage/storage_action_result";
 import { BookmarkStorageDummy } from "../storage/bookmark_storage_dummy";
 import { BookmarkStorageInFile } from "../storage/bookmark_storage_in_file";
 
+const resetSubmitter: string = "Reset";
+const testSubmitter: string = "Test";
+
 export class ImportPage extends WebViewContent {
 
     private header: HeaderContent;
@@ -17,8 +20,9 @@ export class ImportPage extends WebViewContent {
     private importFilePath: string = "";
     private importStorage: BookmarkDataStorage = new BookmarkStorageDummy();
     private selectedGroups: string[] = [];
-    private conflictResolutionMode: string = "rename";
-    private pathMapping: Map<string, string> = new Map();
+    private folderMapping: Map<string, string> = new Map();
+    private fileMapping: Map<string, string> = new Map();
+    private fileStats: Map<string, vscode.FileStat> = new Map();
 
     private static readonly conflictResolutionModes: Map<string, string> = new Map([
         ["skip", "keep existing groups"],
@@ -38,52 +42,50 @@ export class ImportPage extends WebViewContent {
         this.asyncProcessMessage(operation, name, formData);
     }
 
-    private async asyncProcessMessage(operation: string, name: string, formData: any) {
-        if (operation === "reset") {
-            this.step = 0;
-            this.storageActionResult = StorageActionResult.simpleSuccess();
-            this.importFilePath = "";
-            this.importStorage = new BookmarkStorageDummy();
-            this.selectedGroups = [];
-            this.conflictResolutionMode = "rename";
-            this.pathMapping = new Map();
-            this.refreshAfterAction();
-            return;
-        }
+    private async asyncProcessMessage(operation: string, paramName: string, formData: any) {
 
-        if (operation === "fileSelected" && name === "importFilePath") {
+
+        if (operation === "fileSelected" && paramName === "importFilePath") {
             this.webviewContentHelper.setFormElement("step", "1");
             this.webviewContentHelper.submitForm();
         }
 
         if (operation === "submit") {
+            if (paramName === resetSubmitter) {
+                this.step = 0;
+                this.storageActionResult = StorageActionResult.simpleSuccess();
+                this.storageActionResult.infos.push("reset");
+                this.importFilePath = "";
+                this.importStorage = new BookmarkStorageDummy();
+                this.selectedGroups = [];
+                this.folderMapping = new Map();
+                this.fileMapping = new Map();
+                this.fileStats = new Map();
+
+
+                this.refreshAfterAction();
+                return;
+            }
+
             let params = JSON.parse(formData);
 
             vscode.window.showInformationMessage(params);
 
             this.step = parseInt(params.step) ?? 0;
+
+            if (paramName === testSubmitter) {
+                this.step = 2;
+            }
+
             this.importFilePath = params.importFilePath ?? "";
-            this.selectedGroups = params.groups ?? [];
-            this.conflictResolutionMode = params.conflictResolution ?? "";
             this.storageActionResult = StorageActionResult.simpleSuccess();
 
-            // let incomingPaths: string[] = params.incomingPaths ?? [];
-            // let assignedPaths: string[] = params.assignedPaths ?? [];
-
-            // this.pathMapping = new Map();
-            // incomingPaths.forEach((v, key) => {
-            // if (assignedPaths.length <= key) {
-            // return;
-            // }
-            // let assignedPath = assignedPaths[key];
-            // this.pathMapping.set(v, assignedPath);
-            // });
-
-            // wait for file to be selected
+            // step 0: wait for file to be selected
             if (this.step === 0) {
                 return;
             };
 
+            // step 1: wait for the import file to be selected
             if (this.importFilePath === "") {
                 this.storageActionResult = StorageActionResult.simpleError("No import file selected.");
                 this.step = 0;
@@ -94,6 +96,7 @@ export class ImportPage extends WebViewContent {
             this.importStorage = new BookmarkStorageInFile(vscode.Uri.file(this.importFilePath));
             try {
                 await this.importStorage.readStorage();
+                await new Promise(resolve => setTimeout(resolve, 250)); // give time for icon creation
             } catch (e) {
                 this.storageActionResult = StorageActionResult.simpleError("Reading the storage file failed.");
                 this.step = 0;
@@ -101,23 +104,21 @@ export class ImportPage extends WebViewContent {
                 return;
             }
 
-            this.storageActionResult = new StorageActionResult(
-                true,
-                ["Select groups to be imported"],
-                [],
-                []
-            );
-
-            // give time for icon creation
-            await new Promise(r => setTimeout(r, 250));
-
-            this.refreshAfterAction();
-
-            // wait for folder mapping and import group selection
             if (this.step === 1) {
+                this.storageActionResult = new StorageActionResult(
+                    true,
+                    ["Select groups to be imported and how referenced files should be mapped"],
+                    [],
+                    []
+                );
+
                 this.refreshAfterAction();
                 return;
             };
+
+            // step 2: wait for folder mapping and import group selection and test it
+            this.selectedGroups = params.groups ?? [];
+            this.folderMapping = params.folderMapping ? new Map(Object.entries(params.folderMapping)) : new Map();
 
             if (this.selectedGroups.length === 0) {
                 this.storageActionResult = StorageActionResult.simpleError("No groups were selected.");
@@ -126,15 +127,59 @@ export class ImportPage extends WebViewContent {
                 return;
             }
 
-            if (!ImportPage.conflictResolutionModes.has(this.conflictResolutionMode)) {
-                this.storageActionResult = StorageActionResult.simpleError("Invalid conflisct resolution mode.");
+            if (this.folderMapping.size === 0) {
+                this.storageActionResult = StorageActionResult.simpleError("No folder mapping specified.");
                 this.step = 1;
                 this.refreshAfterAction();
                 return;
             }
 
-            // todo path mapping errors can be warnings runtime
-            this.storageManger.executeStorageAction("importFrom", "file", this.importFilePath, this.selectedGroups, this.pathMapping).then(
+            if (this.step === 2) {
+                // update mapping results only for step 2
+                this.fileStats.clear();
+                this.fileMapping.clear();
+
+                let incomingFiles: string[] = new Array();
+                for (let f of this.importStorage.getBookmarks()) {
+                    if (incomingFiles.includes(f.fsPath)) {
+                        continue;
+                    }
+                    incomingFiles.push(f.fsPath);
+                }
+                incomingFiles.sort();
+
+                for (let fileName of incomingFiles) {
+                    fileName = fileName.replace(/\\/g, "/");
+
+                    this.fileMapping.set(fileName, fileName);
+
+                    this.folderMapping.forEach((mappedFolder, incomingFolder) => {
+                        if (fileName.startsWith(incomingFolder)) {
+                            this.fileMapping.set(fileName, mappedFolder + fileName.substring(incomingFolder.length));
+                        }
+                    });
+                }
+
+                for (let [_, mappedFile] of this.fileMapping.entries()) {
+                    if (this.fileStats.has(mappedFile)) {
+                        return;
+                    }
+
+                    try {
+                        let stat = await vscode.workspace.fs.stat(vscode.Uri.file(mappedFile));
+                        this.fileStats.set(mappedFile, stat);
+                    } catch (e) {
+                        ;
+                    }
+
+                };
+
+                this.refreshAfterAction();
+                return;
+            };
+
+            // step 3: do the import
+            this.storageManger.executeStorageAction("importFrom", "file", this.importFilePath, this.selectedGroups, this.folderMapping).then(
                 (storageActionResult) => {
                     this.storageActionResult = storageActionResult;
                     this.refreshAfterAction();
@@ -173,6 +218,7 @@ export class ImportPage extends WebViewContent {
             </p>
             `;
 
+        // file is selected
         if (this.step > 0) {
             let incomingGroupControls = this.webviewContentHelper.getGroupListFormControls(
                 this.importStorage.getGroups(),
@@ -180,16 +226,12 @@ export class ImportPage extends WebViewContent {
                 true
             );
 
-            let incomingFolderControls = this.webviewContentHelper.getFolderListFormControls(
-                this.importStorage.getWorkspaceFolders(),
-                "incomingFolders",
-                false
-            );
-
-            let currentFolderControls = this.webviewContentHelper.getFolderListFormControls(
-                this.storageManger.getActiveStorage().getWorkspaceFolders(),
-                "incomingFolders",
-                false
+            let folderMappingControls = this.webviewContentHelper.getMappingFormControls(
+                this.importStorage.getWorkspaceFolders()
+                    .map((f) => { return f.replace(/\\/g, "/"); }),
+                this.storageManger.getActiveStorage().getWorkspaceFolders()
+                    .map((f) => { return f.replace(/\\/g, "/"); }),
+                "folderMapping"
             );
 
             content += `
@@ -202,28 +244,60 @@ export class ImportPage extends WebViewContent {
                 <h2>Select folder mapping</h2>
 
                 <p>
-                Incoming folders: `+ incomingFolderControls + `
+                    `+ folderMappingControls + `
                 </p>
 
-                <p>
-                Current folders: `+ currentFolderControls + `
+            `;
+        }
+
+        // mapping test results
+        if (this.step === 2) {
+            let fileStatHTML = "<ul>";
+
+            this.fileMapping.forEach((newPath, origPath) => {
+                let stats = this.fileStats.get(newPath);
+                let statHTML = "";
+                if (typeof stats === "undefined") {
+                    statHTML = `<span class="error-message">failed to stat</span>`;
+                } else if (stats.type & vscode.FileType.Unknown) {
+                    statHTML = `<span class="error-message">unknown</span>`;
+                } else if (stats.type & vscode.FileType.File) {
+                    statHTML = `<span class="info-message">existing file</span>`;
+                } else if (stats.type & vscode.FileType.Directory) {
+                    statHTML = `<span class="error-message">directory</span>`;
+                }
+
+                fileStatHTML += `<li>
+                    <div>from ${origPath}</div>
+                    <div>to ${statHTML} ${newPath}</div>
+                    </li>`;
+            });
+            fileStatHTML += "</ul>";
+
+
+            content += `
+                <h2>Resulting file path translation</h2>
+
+                <p class="group-selection">
+                    ${fileStatHTML}
                 </p>
+
             `;
         }
 
         content += `<hr />
             <p>`;
 
-        if (this.step === 1) {
-            content += `<input type="button" class="submit" value="Test" />`;
+        if (this.step > 0) {
+            content += `<input type="button" class="submit" value="${resetSubmitter}" />`;
+        }
+
+        if (this.step >= 1) {
+            content += `<input type="button" class="submit" value="${testSubmitter}" />`;
         }
 
         if (this.step === 2) {
             content += `<input type="button" class="submit" value="Import" />`;
-        }
-
-        if (this.step > 0) {
-            content += `<input type="button" class="reset" value="Reset" />`;
         }
 
         content += `</p>`;

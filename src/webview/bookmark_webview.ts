@@ -170,23 +170,27 @@ export class BookmarkWebview implements WebviewContentHelper {
         return html;
     }
 
-    public getFolderListFormControls(folders: string[], groupName: string, selectMultiple: false): string {
+    public getMappingFormControls(
+        items: string[],
+        options: string[],
+        groupName: string
+    ): string {
         let html = "";
 
-        for (let f of folders) {
+        let optionsHTML = "";
+        for (let o of options) {
+            optionsHTML += `<option value="${this.escapeHTMLParam(o)}">${this.escapeHTMLParam(o)}</option>`;
+        }
+
+
+        for (let i of items) {
             let controlHtml = '';
-            if (selectMultiple) {
-                let controlId = `valueGroup.${groupName}.${this.escapeHTMLParam(f)}`;
-                controlHtml = `<input type="checkbox" name="${controlId}" id="${controlId}">`;
-            } else {
-                controlHtml = `<input type="radio" name="valueGroup.${groupName}" id="valueGroup.${groupName}.${this.escapeHTMLParam(f)}">`;
-            }
+            let controlId = `mapping.${groupName}.${this.escapeHTMLParam(i)}`;
+            controlHtml = `<select name="${controlId}" id="${controlId}">${optionsHTML}</select>`;
             html += `<div>
-                    <label>
-                        ${controlHtml}
+                    ${this.escapeHTMLParam(i)}
                          
-                        ${this.escapeHTMLParam(f)}
-                    </label>
+                    ${controlHtml}
                 </div>`;
         };
         return html;
