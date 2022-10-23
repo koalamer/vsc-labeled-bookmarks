@@ -55,7 +55,8 @@ export class ExportPage extends WebViewContent {
         let activeStorageGroupControls = this.webviewContentHelper.getGroupListFormControls(
             this.storageManger.getActiveStorage().getGroups(),
             "groups",
-            true
+            true,
+            []
         );
 
         return `<form name="VSCLBForm">

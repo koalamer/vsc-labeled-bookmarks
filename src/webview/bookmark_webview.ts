@@ -141,7 +141,7 @@ export class BookmarkWebview implements WebviewContentHelper {
         return this.panel.webview.asWebviewUri(uri).toString();
     }
 
-    public getGroupListFormControls(groups: SerializableGroup[], groupName: string, selectMultiple: false): string {
+    public getGroupListFormControls(groups: SerializableGroup[], groupName: string, selectMultiple: false, selected: string[]): string {
         let html = "";
 
         for (let g of groups) {
@@ -152,11 +152,13 @@ export class BookmarkWebview implements WebviewContentHelper {
             );
 
             let controlHtml = '';
+            let checkedParam = selected.includes(g.name) ? " checked " : "";
             if (selectMultiple) {
                 let controlId = `valueGroup.${groupName}.${this.escapeHTMLParam(g.name)}`;
-                controlHtml = `<input type="checkbox" name="${controlId}" id="${controlId}">`;
+                controlHtml = `<input type="checkbox" name="${controlId}" id="${controlId}" ${checkedParam}>`;
             } else {
-                controlHtml = `<input type="radio" name="valueGroup.${groupName}" id="valueGroup.${groupName}.${this.escapeHTMLParam(g.name)}">`;
+                controlHtml = `<input type="radio" name="valueGroup.${groupName}"
+                    id="valueGroup.${groupName}.${this.escapeHTMLParam(g.name)}" ${checkedParam}>`;
             }
             html += `<div>
                     <label>
@@ -173,17 +175,14 @@ export class BookmarkWebview implements WebviewContentHelper {
     public getMappingFormControls(
         items: string[],
         options: string[],
-        groupName: string
+        groupName: string,
+        selected: Map<string, string>
     ): string {
         let html = "";
 
-        let optionsHTML = "";
-        for (let o of options) {
-            optionsHTML += `<option value="${this.escapeHTMLParam(o)}">${this.escapeHTMLParam(o)}</option>`;
-        }
-
-
         for (let i of items) {
+            let optionsHTML = this.getOptionsHTML(options, selected.get(i) ?? "");
+
             let controlHtml = '';
             let controlId = `mapping.${groupName}.${this.escapeHTMLParam(i)}`;
             controlHtml = `<select name="${controlId}" id="${controlId}">${optionsHTML}</select>`;
@@ -194,6 +193,17 @@ export class BookmarkWebview implements WebviewContentHelper {
                 </div>`;
         };
         return html;
+    }
+
+    private getOptionsHTML(options: string[], selected: string): string {
+        let optionsHTML = "";
+
+        for (let o of options) {
+            let selectedParam = o === selected ? " selected " : "";
+            optionsHTML += `<option value="${this.escapeHTMLParam(o)}" ${selectedParam}>${this.escapeHTMLParam(o)}</option>`;
+        }
+
+        return optionsHTML;
     }
 
     private sendMessageToWebView(message: any) {

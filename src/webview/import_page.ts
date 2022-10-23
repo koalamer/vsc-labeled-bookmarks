@@ -223,7 +223,8 @@ export class ImportPage extends WebViewContent {
             let incomingGroupControls = this.webviewContentHelper.getGroupListFormControls(
                 this.importStorage.getGroups(),
                 "groups",
-                true
+                true,
+                this.selectedGroups
             );
 
             let folderMappingControls = this.webviewContentHelper.getMappingFormControls(
@@ -231,7 +232,8 @@ export class ImportPage extends WebViewContent {
                     .map((f) => { return f.replace(/\\/g, "/"); }),
                 this.storageManger.getActiveStorage().getWorkspaceFolders()
                     .map((f) => { return f.replace(/\\/g, "/"); }),
-                "folderMapping"
+                "folderMapping",
+                this.folderMapping
             );
 
             content += `
