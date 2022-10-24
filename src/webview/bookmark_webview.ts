@@ -212,7 +212,6 @@ export class BookmarkWebview implements WebviewContentHelper {
         }
 
         this.panel.webview.postMessage(message);
-        vscode.window.showWarningMessage(JSON.stringify(message));
     }
 
     public setHtmlContent(selector: string, html: string) {
@@ -292,9 +291,6 @@ export class BookmarkWebview implements WebviewContentHelper {
                 return;
             }
         }
-
-        // todo handle unhadled incoming message
-        vscode.window.showInformationMessage(JSON.stringify(message));
 
         this.activePage.processMessage(operation, name, value);
     }

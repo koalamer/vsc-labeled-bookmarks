@@ -9,7 +9,7 @@ import { BookmarkStorageDummy } from "../storage/bookmark_storage_dummy";
 import { BookmarkStorageInFile } from "../storage/bookmark_storage_in_file";
 
 const resetSubmitter: string = "Reset";
-const testSubmitter: string = "Test";
+const testSubmitter: string = "Test Mapping";
 
 export class ImportPage extends WebViewContent {
 
@@ -17,6 +17,7 @@ export class ImportPage extends WebViewContent {
     private storageManger: StorageManager;
 
     private step: number = 0;
+    private nextStep: number = 0;
     private importFilePath: string = "";
     private importStorage: BookmarkDataStorage = new BookmarkStorageDummy();
     private selectedGroups: string[] = [];
@@ -24,12 +25,12 @@ export class ImportPage extends WebViewContent {
     private fileMapping: Map<string, string> = new Map();
     private fileStats: Map<string, vscode.FileStat> = new Map();
 
-    private static readonly conflictResolutionModes: Map<string, string> = new Map([
-        ["skip", "keep existing groups"],
-        ["merge", "merge contents of groups"],
-        ["replace", "replace existing groups with imported"],
-        ["rename", "rename incoming group"]
-    ]);
+    // private static readonly conflictResolutionModes: Map<string, string> = new Map([
+    //     ["skip", "keep existing groups"],
+    //     ["merge", "merge contents of groups"],
+    //     ["replace", "replace existing groups with imported"],
+    //     ["rename", "rename incoming group"]
+    // ]);
 
     public constructor(storageManager: StorageManager, webviewContentHelper: WebviewContentHelper) {
         super(webviewContentHelper);
@@ -53,6 +54,7 @@ export class ImportPage extends WebViewContent {
         if (operation === "submit") {
             if (paramName === resetSubmitter) {
                 this.step = 0;
+                this.nextStep = 1;
                 this.storageActionResult = StorageActionResult.simpleSuccess();
                 this.storageActionResult.infos.push("reset");
                 this.importFilePath = "";
@@ -62,19 +64,17 @@ export class ImportPage extends WebViewContent {
                 this.fileMapping = new Map();
                 this.fileStats = new Map();
 
-
                 this.refreshAfterAction();
                 return;
             }
 
             let params = JSON.parse(formData);
 
-            vscode.window.showInformationMessage(params);
-
             this.step = parseInt(params.step) ?? 0;
 
             if (paramName === testSubmitter) {
                 this.step = 2;
+                this.nextStep = 3;
             }
 
             this.importFilePath = params.importFilePath ?? "";
@@ -82,13 +82,14 @@ export class ImportPage extends WebViewContent {
 
             // step 0: wait for file to be selected
             if (this.step === 0) {
+                this.nextStep = 1;
                 return;
             };
 
             // step 1: wait for the import file to be selected
             if (this.importFilePath === "") {
                 this.storageActionResult = StorageActionResult.simpleError("No import file selected.");
-                this.step = 0;
+                this.nextStep = 0;
                 this.refreshAfterAction();
                 return;
             }
@@ -99,12 +100,13 @@ export class ImportPage extends WebViewContent {
                 await new Promise(resolve => setTimeout(resolve, 250)); // give time for icon creation
             } catch (e) {
                 this.storageActionResult = StorageActionResult.simpleError("Reading the storage file failed.");
-                this.step = 0;
+                this.nextStep = 0;
                 this.refreshAfterAction();
                 return;
             }
 
             if (this.step === 1) {
+                this.nextStep = 2;
                 this.storageActionResult = new StorageActionResult(
                     true,
                     ["Select groups to be imported and how referenced files should be mapped"],
@@ -122,14 +124,14 @@ export class ImportPage extends WebViewContent {
 
             if (this.selectedGroups.length === 0) {
                 this.storageActionResult = StorageActionResult.simpleError("No groups were selected.");
-                this.step = 1;
+                this.nextStep = 1;
                 this.refreshAfterAction();
                 return;
             }
 
             if (this.folderMapping.size === 0) {
                 this.storageActionResult = StorageActionResult.simpleError("No folder mapping specified.");
-                this.step = 1;
+                this.nextStep = 1;
                 this.refreshAfterAction();
                 return;
             }
@@ -174,17 +176,21 @@ export class ImportPage extends WebViewContent {
 
                 };
 
+                this.nextStep = 3;
                 this.refreshAfterAction();
                 return;
             };
 
             // step 3: do the import
-            this.storageManger.executeStorageAction("importFrom", "file", this.importFilePath, this.selectedGroups, this.folderMapping).then(
-                (storageActionResult) => {
-                    this.storageActionResult = storageActionResult;
-                    this.refreshAfterAction();
-                }
-            );
+            if (this.step === 3) {
+                this.storageManger.executeStorageAction("importFrom", "file", this.importFilePath, this.selectedGroups, this.folderMapping).then(
+                    (storageActionResult) => {
+                        this.storageActionResult = storageActionResult;
+                        this.nextStep = 4;
+                        this.refreshAfterAction();
+                    }
+                );
+            }
         }
     }
 
@@ -196,7 +202,7 @@ export class ImportPage extends WebViewContent {
 
     private async bodyContent() {
         let content = `<form name="VSCLBForm">
-            <input type="hidden" name="step" id="step" value="${this.step + 1}">`;
+            <input type="hidden" name="step" id="step" value="${this.nextStep}">`;
 
         content += `
             <h2>Select source file</h2>
@@ -278,7 +284,7 @@ export class ImportPage extends WebViewContent {
 
 
             content += `
-                <h2>Resulting file path translation</h2>
+                <h2>Resulting file path mapping</h2>
 
                 <p class="group-selection">
                     ${fileStatHTML}
@@ -294,7 +300,7 @@ export class ImportPage extends WebViewContent {
             content += `<input type="button" class="submit" value="${resetSubmitter}" />`;
         }
 
-        if (this.step >= 1) {
+        if (this.step === 1 || this.step === 2) {
             content += `<input type="button" class="submit" value="${testSubmitter}" />`;
         }
 
