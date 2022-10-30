@@ -2,7 +2,7 @@
 
 All notable changes to the "vsc-labeled-bookmarks" extension will be documented in this file.
 
-## [1.1.13] - 2022-09-01
+## [1.1.13] - 2022-12-01
 
 - Fix single letter labeled bookmark uniqueness
 - Add dir name as description to tree view file items
